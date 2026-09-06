@@ -5,10 +5,11 @@ import {
   HeartPulse, Inbox, LayoutDashboard, LogOut, Menu, MessageSquareText, PackageSearch,
   Settings, ShieldCheck, Stethoscope, TicketCheck, Timer, Users, WandSparkles, X
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 
-type NavItem = { label:string; path:string; icon:React.ComponentType<{size?:number}> }
+type NavItem = { label:string; path:string; icon:LucideIcon }
 
 const nav:NavItem[] = [
   {label:'Dashboard',path:'/',icon:LayoutDashboard},
