@@ -143,24 +143,28 @@ function SearchOverlay({session,open,onClose,lang}:{session:Session;open:boolean
     const handle=setTimeout(async()=>{
       setLoading(true);setError('')
       const memberships=await supabase.from('organization_memberships').select('organization_id,is_active').eq('user_id',session.user.id).eq('is_active',true)
-      if(memberships.error||!memberships.data?.length){setError(memberships.error?.message||'No organization found');setLoading(false);return}
+      if(memberships.error||!memberships.data?.length){setError(memberships.error?.message||(lang==='es'?'No se encontró un consultorio activo.':'No active practice found.'));setLoading(false);return}
       const preferred=localStorage.getItem('oculivo-org-id')||''
       const allowed=(memberships.data||[]).map(m=>String(m.organization_id))
       const org=allowed.includes(preferred)?preferred:allowed[0]
-      const sources:[string,string,string][]=[
-        ['patients','/patients','Patients'],['appointments','/schedule','Schedule'],['communication_threads','/inbox','Inbox'],
-        ['communication_messages','/phone','Phone'],['optical_orders','/optical','Optical'],['clinical_records','/clinical','Clinical'],
-        ['invoices','/billing','Billing'],['documents','/documents','Documents'],['support_tickets','/support','Support']
+      const sources:{table:string;route:string;label:string;columns:string}[]=[
+        {table:'patients',route:'/patients',label:lang==='es'?'Pacientes':'Patients',columns:'id,first_name,last_name,email,phone,status'},
+        {table:'appointments',route:'/schedule',label:lang==='es'?'Agenda':'Schedule',columns:'id,appointment_type,starts_at,status,room'},
+        {table:'communication_threads',route:'/inbox',label:lang==='es'?'Bandeja':'Inbox',columns:'id,subject,phone_number,email_address,channel,status,last_message_at'},
+        {table:'optical_orders',route:'/optical',label:lang==='es'?'Óptica':'Optical',columns:'id,order_number,order_type,status'},
+        {table:'invoices',route:'/billing',label:lang==='es'?'Facturación':'Billing',columns:'id,invoice_number,status,patient_amount,amount_paid,created_at'},
+        {table:'documents',route:'/documents',label:lang==='es'?'Documentos':'Documents',columns:'id,file_name,document_type,created_at'},
+        {table:'support_tickets',route:'/support',label:lang==='es'?'Soporte':'Support',columns:'id,subject,category,priority,status,created_at'}
       ]
-      const results=await Promise.all(sources.map(async([table,route,label])=>{
-        const r=await supabase.from(table).select('*').eq('organization_id',org).limit(60)
+      const results=await Promise.all(sources.map(async({table,route,label,columns})=>{
+        const r=await supabase.from(table).select(columns).eq('organization_id',org).limit(60)
         if(r.error)return {error:r.error.message,hits:[] as SearchHit[]}
         const q=query.trim().toLowerCase()
-        const found=((r.data||[]) as Record<string,unknown>[]).filter(row=>JSON.stringify(row).toLowerCase().includes(q)).slice(0,8).map(row=>({table,route,title:hitTitle(row),meta:`${label}${hitMeta(row)?' · '+hitMeta(row):''}`}))
+        const found=((r.data||[]) as Record<string,unknown>[]).filter(row=>JSON.stringify(row).toLowerCase().includes(q)).slice(0,8).map(row=>({table,route,title:hitTitle(row),meta:label+(hitMeta(row)?' · '+hitMeta(row):'')}))
         return {error:'',hits:found}
       }))
       const bad=results.find(x=>x.error)
-      if(bad?.error)setError(bad.error)
+      if(bad?.error)setError(lang==='es'?'No se pudo completar la búsqueda.':'Search could not be completed.')
       setHits(results.flatMap(x=>x.hits).slice(0,30))
       setLoading(false)
     },250)
