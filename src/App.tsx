@@ -8,6 +8,7 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
+import { LiveModulePage, LiveOverview } from './components/LiveModules'
 
 type NavItem = { label:string; path:string; icon:LucideIcon }
 
@@ -89,22 +90,6 @@ function ModulePage({title,description}:{title:string;description:string}){
   return <section className="page"><div className="page-head"><div><span className="date-kicker">OCULIVO WORKSPACE</span><h1>{title}</h1><p>{description}</p></div></div><div className="panel large-panel"><h2>{title}</h2><p>This route is connected to the production shell and ready for the recovered Oculivo module implementation.</p></div></section>
 }
 
-function Overview(){
-  return <section className="page overview-page">
-    <div className="page-head overview-head"><div><span className="date-kicker">MONDAY, AUGUST 29</span><h1>Overview</h1><p>Good morning. Here’s what’s happening across your practice.</p></div><button className="location-button"><span className="status-dot"/>All locations<ChevronDown size={14}/></button></div>
-    <div className="metric-grid">
-      <article className="metric-card"><div><span>Today’s appointments</span><CalendarDays size={17}/></div><strong>0</strong><p>No activity yet</p></article>
-      <article className="metric-card"><div><span>New patient requests</span><Users size={17}/></div><strong>0</strong><p>No activity yet</p></article>
-      <article className="metric-card"><div><span>Open conversations</span><MessageSquareText size={17}/></div><strong>0</strong><p>No messages yet</p></article>
-      <article className="metric-card"><div><span>Unfilled chair time</span><Clock3 size={17}/></div><strong>—</strong><p>No matches yet</p></article>
-    </div>
-    <div className="overview-grid">
-      <section className="panel schedule-panel"><div className="panel-title-row"><div><h2>Today’s patient flow</h2><p>No appointments loaded yet</p></div><a href="/schedule">View full schedule</a></div><div className="table-head"><span>TIME</span><span>PATIENT & VISIT</span><span>PROVIDER</span><span>STATUS</span></div><div className="empty-row"><span>—</span><div className="patient-empty"><i/><div><strong>No appointments yet</strong><p>Add your first appointment to begin</p></div></div><span>—</span><span className="ready-pill">Ready</span></div></section>
-      <section className="panel inbox-panel"><div className="panel-title-row"><div><h2>Unified inbox</h2><p>Email, SMS, phone & portal</p></div><span className="tiny-count">0 open</span></div><div className="inbox-empty"><MessageSquareText size={28}/><strong>No conversations yet</strong><p>Connect a channel or start a conversation to see activity here.</p></div></section>
-    </div>
-  </section>
-}
-
 function AiWidget(){
   return <div className="ai-widget"><div className="ai-head"><span className="ai-icon"><Sparkles size={15}/></span><div><strong>Ask Oculivo</strong><span>Practice intelligence</span></div><button>×</button></div><div className="ai-card">Three schedule gaps can be filled today. Want me to draft outreach messages for approval?</div><div className="ai-actions"><button>Show matches</button><button>Not now</button></div><div className="ai-input"><span>Ask about your practice...</span><b>↑</b></div><small>AI suggestions require your approval.</small></div>
 }
@@ -125,8 +110,8 @@ function Shell({session}:{session:Session}){
       <div className="sidebar-foot"><div className="user-chip"><div className="avatar">{name.slice(0,1).toUpperCase()}</div><div><strong>Practice owner</strong><span>Practice owner</span></div></div><Settings size={17}/></div>
     </aside>
     <div className="app-main">
-      <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><div className="searchbox"><Search size={18}/><span>Search patients, calls, orders, messages...</span></div><button className="kbd">⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className="active">EN</button><button>ES</button></div><button className="secondary-action"><Phone size={16}/>Call</button><button className="icon-action"><Bell size={17}/><i/></button><button className="new-patient"><Plus size={17}/>New patient</button></div></header>
-      <Routes><Route path="/" element={<Overview/>}/>{Object.entries(moduleCopy).map(([path,[title,description]])=><Route key={path} path={path} element={<ModulePage title={title} description={description}/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>
+      <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><div className="searchbox"><Search size={18}/><span>Search patients, calls, orders, messages...</span></div><button className="kbd">⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className="active">EN</button><button>ES</button></div><NavLink to="/phone" className="secondary-action"><Phone size={16}/>Call</NavLink><button className="icon-action"><Bell size={17}/><i/></button><NavLink to="/patients" className="new-patient"><Plus size={17}/>New patient</NavLink></div></header>
+      <Routes><Route path="/" element={<LiveOverview session={session}/>}/>{Object.entries(moduleCopy).map(([path,[title,description]])=><Route key={path} path={path} element={<LiveModulePage path={path} title={title} description={description} session={session}/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>
     </div>
     <AiWidget/>
     <button className="ai-fab"><Sparkles size={19}/></button>
