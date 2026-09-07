@@ -11,6 +11,7 @@ export default function AssistantDrawer({session,lang}:{session:Session;lang:Lan
   const [open,setOpen]=useState(false),[messages,setMessages]=useState<Msg[]>([]),[text,setText]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
   const end=useRef<HTMLDivElement|null>(null)
   useEffect(()=>{end.current?.scrollIntoView({behavior:'smooth'})},[messages,busy])
+  useEffect(()=>{const onOpen=()=>setOpen(true);window.addEventListener('oculivo-ai-open',onOpen);return()=>window.removeEventListener('oculivo-ai-open',onOpen)},[])
 
   async function send(e:React.FormEvent){
     e.preventDefault()
@@ -37,7 +38,6 @@ export default function AssistantDrawer({session,lang}:{session:Session;lang:Lan
   }
 
   return <>
-    <button className="ai-launcher" onClick={()=>setOpen(true)} aria-label={lang==='es'?'Abrir asistente Oculivo':'Open Oculivo AI'}><Sparkles size={18}/><span>{lang==='es'?'Preguntar a Oculivo':'Ask Oculivo'}</span></button>
     {open&&<aside className="ai-drawer">
       <header><div className="ai-drawer-icon"><Bot size={18}/></div><div><strong>Oculivo AI</strong><span>{lang==='es'?'Asistente del consultorio':'Practice assistant'}</span></div><button onClick={()=>setOpen(false)}><X size={18}/></button></header>
       <div className="ai-safety">{lang==='es'?'Puede ayudar con flujos del consultorio y resumir contexto. No cambia contraseñas ni ejecuta nómina.':'Can help with practice workflows and summarize context. It cannot change passwords or run payroll.'}</div>
