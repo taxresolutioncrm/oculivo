@@ -9,6 +9,7 @@ import type { LucideIcon } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { LiveModulePage, LiveOverview } from './components/LiveModules'
+import AssistantDrawer from './components/AssistantDrawer'
 
 type Lang = 'en' | 'es'
 type NavItem = { key:string; path:string; icon:LucideIcon }
@@ -217,6 +218,7 @@ function Shell({session}:{session:Session}){
       <Routes><Route path="/" element={<LiveOverview session={session} lang={lang}/>}/>{Object.entries(moduleCopy[lang]).map(([path,[title,description]])=><Route key={path} path={path} element={<LiveModulePage path={path} title={title} description={description} session={session} lang={lang}/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>
     </div>
     <SearchOverlay session={session} open={searchOpen} onClose={()=>setSearchOpen(false)} lang={lang}/>
+    <AssistantDrawer session={session} lang={lang}/>
     {open&&<div className="overlay" onClick={()=>setOpen(false)}/>}
   </div>
 }
