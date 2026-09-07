@@ -183,6 +183,7 @@ function Shell({session}:{session:Session}){
   const [selectedOrgId,setSelectedOrgId]=useState(()=>localStorage.getItem('oculivo-org-id')||'')
   const [lang,setLang]=useState<Lang>(()=>(localStorage.getItem('oculivo-lang')==='es'?'es':'en'))
   const location=useLocation()
+  const navigate=useNavigate()
   useEffect(()=>setOpen(false),[location.pathname])
   useEffect(()=>{
     let active=true
@@ -210,6 +211,7 @@ function Shell({session}:{session:Session}){
   const t=labels[lang]
   const selectedOrg=orgs.find(o=>o.id===selectedOrgId)||orgs[0]
   function chooseOrg(id:string){localStorage.setItem('oculivo-org-id',id);setSelectedOrgId(id);setOrgMenuOpen(false);window.dispatchEvent(new CustomEvent('oculivo-org-change',{detail:id}))}
+  function openNewPatient(){if(location.pathname==='/patients'){window.dispatchEvent(new Event('oculivo-new-patient'));return}sessionStorage.setItem('oculivo-open-new-patient','1');navigate('/patients')}
   async function signOut(){await supabase.auth.signOut()}
 
   return <div className="app-shell">
@@ -223,7 +225,7 @@ function Shell({session}:{session:Session}){
       <div className="sidebar-foot"><div className="user-chip"><div className="avatar">{name.slice(0,1).toUpperCase()}</div><div><strong>{session.user.email||'Practice owner'}</strong><span>{selectedOrg?.role|| (lang==='es'?'Usuario autenticado':'Authenticated user')}</span></div></div><button className="logout-button" onClick={()=>void signOut()} aria-label={lang==='es'?'Cerrar sesión':'Sign out'} title={lang==='es'?'Cerrar sesión':'Sign out'}><LogOut size={16}/></button></div>
     </aside>
     <div className="app-main">
-      <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><button className="searchbox search-trigger" onClick={()=>setSearchOpen(true)}><Search size={18}/><span>{t.search}</span></button><button className="kbd" onClick={()=>setSearchOpen(true)}>⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div><NavLink to="/phone" className="secondary-action"><Phone size={16}/>{t.call}</NavLink><NavLink to="/inbox" className="icon-action" aria-label="Notifications" title={lang==='es'?'Abrir bandeja':'Open inbox'}><Bell size={17}/></NavLink><NavLink to="/patients" className="new-patient"><Plus size={17}/>{t.newPatient}</NavLink></div></header>
+      <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><button className="searchbox search-trigger" onClick={()=>setSearchOpen(true)}><Search size={18}/><span>{t.search}</span></button><button className="kbd" onClick={()=>setSearchOpen(true)}>⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div><NavLink to="/phone" className="secondary-action"><Phone size={16}/>{t.call}</NavLink><NavLink to="/inbox" className="icon-action" aria-label={lang==='es'?'Abrir bandeja':'Open inbox'} title={lang==='es'?'Abrir bandeja':'Open inbox'}><Bell size={17}/></NavLink><button type="button" className="new-patient" onClick={openNewPatient}><Plus size={17}/>{t.newPatient}</button></div></header>
       <Routes><Route path="/" element={<LiveOverview session={session} lang={lang}/>}/>{Object.entries(moduleCopy[lang]).map(([path,[title,description]])=><Route key={path} path={path} element={<LiveModulePage path={path} title={title} description={description} session={session} lang={lang}/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>
     </div>
     <SearchOverlay session={session} open={searchOpen} onClose={()=>setSearchOpen(false)} lang={lang}/>
