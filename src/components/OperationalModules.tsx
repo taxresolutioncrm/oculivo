@@ -26,7 +26,7 @@ function useOrg(session:Session){
     const o=await supabase.from('organizations').select('name').eq('id',id).maybeSingle()
     if(!a)return
     if(o.error){setError(o.error.message);return}
-    setOrg({organizationId:id,role:s(mem.role)||'staff',organizationName:s(o.data?.name)||'Practice'})
+    setError('');setOrg({organizationId:id,role:s(mem.role)||'staff',organizationName:s(o.data?.name)||'Practice'})
   })();return()=>{a=false}},[session.user.id,v])
   return {org,error}
 }
