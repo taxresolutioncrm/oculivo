@@ -16,9 +16,6 @@ begin
 end
 $$;
 
--- Authenticated application users keep ordinary DML subject to each table's RLS.
-grant select, insert, update, delete on all tables in schema public to authenticated;
-
--- Future public tables inherit the same baseline: no direct anon table access.
+-- Preserve each table's existing authenticated DML grants; only dangerous table-level
+-- capabilities are removed here. Future public tables get no direct anon privileges.
 alter default privileges in schema public revoke all on tables from anon;
-alter default privileges in schema public grant select, insert, update, delete on tables to authenticated;
