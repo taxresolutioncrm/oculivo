@@ -8,3 +8,78 @@
 
 .search-trigger{border:0;background:transparent;text-align:left;cursor:pointer;min-width:0}.search-overlay{position:fixed;inset:0;background:rgba(7,8,24,.48);backdrop-filter:blur(4px);z-index:60;display:flex;align-items:flex-start;justify-content:center;padding:86px 18px 18px}.search-modal{width:min(720px,100%);background:#fff;border:1px solid #dddfea;border-radius:14px;box-shadow:0 26px 80px rgba(17,15,46,.24);overflow:hidden}.search-modal-head{height:54px;display:grid;grid-template-columns:22px 1fr 34px;align-items:center;gap:10px;padding:0 14px;border-bottom:1px solid #e7e8ef;color:#70768c}.search-modal-head input{border:0;outline:0;font-size:13px;color:#171b35;background:transparent;min-width:0}.search-modal-head button{border:0;background:transparent;color:#767c91;display:grid;place-items:center;cursor:pointer}.search-results{max-height:min(66vh,560px);overflow:auto;padding:8px}.search-results>button{width:100%;border:0;background:transparent;text-align:left;padding:11px 12px;border-radius:9px;display:flex;flex-direction:column;gap:4px;cursor:pointer}.search-results>button:hover{background:#f3f1ff}.search-results>button strong{font-size:11px;color:#181d39}.search-results>button span{font-size:9px;color:#777d91}.search-state{padding:30px 18px;text-align:center;font-size:11px;color:#777d91}.search-state.error{color:#8a3d51}.help-card{text-decoration:none}.icon-action{cursor:pointer}
 @media(max-width:760px){.search-overlay{padding-top:70px}.search-modal{border-radius:12px}}
+
+
+/* Closeout polish */
+:root{--sidebar-w:244px;--surface:#ffffff;--surface-soft:#f8f8fc;--text:#11162f;--shadow:0 12px 32px rgba(18,20,48,.07)}
+body{background:#f5f6fb;color:var(--text)}
+.sidebar{width:var(--sidebar-w);box-shadow:10px 0 34px rgba(8,8,28,.08)}
+.app-main{margin-left:var(--sidebar-w)}
+.sidebar-top{height:62px;padding:0 16px}
+.brand-lockup strong{font-size:15px;letter-spacing:.115em}
+.brand-mark{width:28px;height:28px}
+.practice-wrap{position:relative;padding:0 12px 8px}
+.practice-switch{width:100%;margin:12px 0 0;padding:11px 12px;border-radius:12px;cursor:pointer;text-align:left}
+.practice-switch:hover{border-color:#45456d;background:#1c1c3a}
+.practice-switch strong{font-size:12px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.practice-switch span{font-size:8px}
+.practice-menu{position:absolute;left:12px;right:12px;top:68px;background:#17172f;border:1px solid #343455;border-radius:12px;padding:6px;z-index:50;box-shadow:0 18px 44px rgba(0,0,0,.28);display:grid;gap:4px}
+.practice-menu button{border:0;background:transparent;color:#d9d9e7;border-radius:8px;padding:9px 10px;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
+.practice-menu button:hover,.practice-menu button.active{background:#29264d}
+.practice-menu strong{font-size:11px}
+.practice-menu span{font-size:8px;color:#8d90ad;text-transform:capitalize}
+.sidebar nav{padding:2px 12px;gap:3px}
+.nav-item{padding:10px 10px;border-radius:9px;font-size:13px}
+.nav-item svg{width:18px;height:18px}
+.help-card{margin:12px;padding:12px}
+.help-card strong{font-size:11px}.help-card small{font-size:9px;line-height:1.4}
+.sidebar-foot{padding:12px 14px}
+.user-chip strong{font-size:11px;max-width:148px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-chip span{font-size:9px;text-transform:capitalize}
+.logout-button{width:34px;height:34px;border:1px solid #31314e;background:#17172f;color:#a7aac0;border-radius:9px;display:grid;place-items:center;cursor:pointer}
+.logout-button:hover{color:#fff;border-color:#4a4a70;background:#22223e}
+.topbar{height:64px;padding:0 20px 0 28px;gap:12px;box-shadow:0 1px 0 rgba(18,21,49,.02)}
+.search-trigger{height:38px;border:1px solid #e4e5ef;background:#fafbfe;border-radius:10px;padding:0 12px;max-width:620px}
+.search-trigger:hover{border-color:#d6d2ea;background:#fff}
+.searchbox{font-size:13px}.kbd{height:38px}
+.secondary-action,.icon-action,.new-patient{height:38px;font-size:11px;border-radius:9px}
+.lang-toggle{height:38px;align-items:center}.lang-toggle button{font-size:9px}
+.page{padding:34px 38px 48px}
+.page-head{margin-bottom:22px;gap:24px}
+.page h1{font-size:32px;line-height:1.15;margin:8px 0 6px}
+.page-head p{font-size:13px;line-height:1.55;max-width:760px}
+.date-kicker{font-size:9px;color:#83899f}
+.refresh-button{font-size:11px;padding:9px 12px;border-radius:9px}
+.org-context{font-size:11px;margin:-6px 0 16px}
+.metric-grid{gap:14px}
+.metric-card{border-radius:14px;padding:18px;min-height:140px;box-shadow:var(--shadow)}
+.metric-card>div span{font-size:12px;font-weight:700}.metric-card strong{font-size:32px}.metric-card p{font-size:10.5px}
+.panel{border-radius:14px;box-shadow:var(--shadow)}
+.overview-grid{gap:14px;margin-top:14px}
+.schedule-panel,.inbox-panel{min-height:300px}
+.panel-title-row{padding:16px 17px;border-bottom:1px solid #eeeeF4}
+.panel-title-row h2{font-size:13px}.panel-title-row p{font-size:10.5px}
+.panel-title-row a{font-size:9px;font-weight:800}
+.live-panel{padding:16px}
+.record-list{gap:12px}
+.record-card{padding:14px;border-radius:11px;transition:border-color .15s ease,box-shadow .15s ease}
+.record-card:hover{border-color:#d6d1eb;box-shadow:0 8px 22px rgba(41,33,88,.06)}
+.record-card-head strong{font-size:13px}.record-card-head span{font-size:9.5px}
+.record-fields{gap:10px 16px;margin-top:12px}.record-fields span{font-size:7.5px}.record-fields b{font-size:10px}
+.status-badge{font-weight:800}
+.chat-layout{grid-template-columns:210px 1fr;gap:14px}
+.chat-channels,.chat-main{min-height:500px}
+.chat-channels{border:1px solid #282845}
+.chat-channels>button{font-size:11px;padding:9px}
+.chat-message{font-size:11px;padding:10px 12px}.chat-message p{font-size:10.5px}
+.chat-compose{padding:12px}.chat-compose input{font-size:11px;padding:10px 11px}.chat-compose button{font-size:10px}
+.manual-grid,.report-grid{gap:14px}.manual-card,.report-card{padding:20px}
+.manual-card h2{font-size:15px}.manual-card p{font-size:11px}
+.report-card span{font-size:9.5px}.report-card strong{font-size:34px}
+.live-empty{min-height:210px}.live-empty strong{font-size:14px}.live-empty p{font-size:11px}
+.live-error strong{font-size:13px}.live-error p{font-size:11px}
+.search-modal{border-radius:16px}.search-modal-head{height:58px}.search-modal-head input{font-size:14px}.search-results>button{padding:12px 13px}.search-results>button strong{font-size:12px}.search-results>button span{font-size:9.5px}
+.auth-card{border-radius:20px;box-shadow:0 24px 70px rgba(15,20,50,.1)}
+.auth-card input{font-size:14px}
+.primary-button{font-size:14px}
+@media(max-width:760px){.sidebar{width:min(88vw,320px)}.app-main{margin-left:0}.page{padding:22px 15px 34px}.topbar{height:58px;padding:0 10px}.new-patient{padding:0 10px}.page h1{font-size:28px}.practice-wrap{padding-left:12px;padding-right:12px}}
