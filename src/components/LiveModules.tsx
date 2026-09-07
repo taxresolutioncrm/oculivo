@@ -187,10 +187,11 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
   const [body,setBody] = useState('')
   const [error,setError] = useState('')
   const [busy,setBusy] = useState(false)
+  const [newChannel,setNewChannel] = useState('')
 
   async function loadChannels() {
     if (!org) return
-    const result = await supabase.from('team_channels').select('*').eq('organization_id',org.organizationId)
+    const result = await supabase.from('team_channels').select('*').eq('organization_id',org.organizationId).order('created_at',{ascending:true})
     if (result.error) { setError(result.error.message); return }
     const next = (result.data || []) as Row[]
     setChannels(next)
@@ -199,7 +200,7 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
 
   async function loadMessages(id=channelId) {
     if (!org || !id) { setMessages([]); return }
-    const result = await supabase.from('team_messages').select('*').eq('organization_id',org.organizationId).eq('channel_id',id).limit(100)
+    const result = await supabase.from('team_messages').select('*').eq('organization_id',org.organizationId).eq('channel_id',id).order('created_at',{ascending:true}).limit(200)
     if (result.error) setError(result.error.message)
     else setMessages((result.data || []) as Row[])
   }
@@ -207,13 +208,17 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
   useEffect(()=>{setChannelId('');setMessages([]);void loadChannels()},[org?.organizationId])
   useEffect(()=>{void loadMessages(channelId)},[channelId,org?.organizationId])
 
-  async function createGeneral() {
-    if (!org) return
+  async function createChannel(name='general') {
+    if (!org || !['owner','admin','manager'].includes(org.role)) return
+    const clean=name.trim().toLowerCase().replace(/[^a-z0-9-_ ]+/g,'').replace(/\s+/g,'-').slice(0,40)
+    if(!clean)return
     setBusy(true); setError('')
+    const existing=channels.find(c=>text(c.name).toLowerCase()===clean)
+    if(existing){setChannelId(String(existing.id));setNewChannel('');setBusy(false);return}
     const result = await supabase.from('team_channels').insert({
       organization_id: org.organizationId,
-      name: 'general',
-      description: 'Practice-wide team chat',
+      name: clean,
+      description: clean==='general' ? 'Practice-wide team chat' : 'Practice team channel',
       is_private: false,
       created_by: session.user.id,
     }).select('*').single()
@@ -221,13 +226,14 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
     else {
       await loadChannels()
       if (result.data?.id) setChannelId(String(result.data.id))
+      setNewChannel('')
     }
     setBusy(false)
   }
 
   async function sendMessage(e:React.FormEvent) {
     e.preventDefault()
-    if (!org || !channelId || !body.trim()) return
+    if (!org || !channelId || !body.trim() || org.role==='read_only') return
     setBusy(true); setError('')
     const result = await supabase.from('team_messages').insert({
       organization_id: org.organizationId,
@@ -245,7 +251,8 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
     {orgLoading ? <div className="live-loading">Loading team chat…</div> : orgError ? <ErrorBox message={orgError} lang={lang}/> :
     <div className="chat-layout">
       <aside className="chat-channels">
-        <div className="chat-channel-title"><strong>Channels</strong>{!channels.length && <button onClick={()=>void createGeneral()} disabled={busy}><Plus size={14}/>General</button>}</div>
+        <div className="chat-channel-title"><strong>{lang==='es'?'Canales':'Channels'}</strong>{['owner','admin','manager'].includes(org.role)&&!channels.length&&<button onClick={()=>void createChannel('general')} disabled={busy}><Plus size={14}/>General</button>}</div>
+        {['owner','admin','manager'].includes(org.role)&&<form className="chat-channel-create" onSubmit={e=>{e.preventDefault();void createChannel(newChannel)}}><input value={newChannel} onChange={e=>setNewChannel(e.target.value)} placeholder={lang==='es'?'Nuevo canal':'New channel'}/><button disabled={busy||!newChannel.trim()}><Plus size={13}/></button></form>}
         {channels.map(c=><button key={String(c.id)} className={channelId===String(c.id)?'active':''} onClick={()=>setChannelId(String(c.id))}># {text(c.name)||'channel'}{c.is_private===true?' 🔒':''}</button>)}
       </aside>
       <section className="panel chat-main">
@@ -253,7 +260,7 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
         {!channelId ? <Empty message={lang==='es'?'Aún no hay canal del equipo':'No team channel yet'} lang={lang}/> :
         <>
           <div className="chat-messages">{messages.length ? messages.map((m,i)=><div className={String(m.sender_id)===session.user.id?'chat-message mine':'chat-message'} key={text(m.id)||String(i)}><div><strong>{String(m.sender_id)===session.user.id?'You':'Team member'}</strong><span>{text(m.created_at).replace('T',' ').slice(0,16)}</span></div><p>{text(m.body)}</p></div>) : <Empty message={lang==='es'?'Aún no hay mensajes':'No messages yet'} lang={lang}/>}</div>
-          <form className="chat-compose" onSubmit={sendMessage}><input value={body} onChange={e=>setBody(e.target.value)} placeholder={lang==='es'?'Mensaje al equipo…':'Message the team…'} /><button disabled={busy || !body.trim()}><Send size={16}/>{lang==='es'?'Enviar':'Send'}</button></form>
+          {org.role==='read_only'?<div className="inbox-readonly-note">{lang==='es'?'Tu rol tiene acceso de solo lectura.':'Your role has read-only access.'}</div>:<form className="chat-compose" onSubmit={sendMessage}><input value={body} onChange={e=>setBody(e.target.value)} placeholder={lang==='es'?'Mensaje al equipo…':'Message the team…'} /><button disabled={busy || !body.trim()}><Send size={16}/>{lang==='es'?'Enviar':'Send'}</button></form>}
         </>}
       </section>
     </div>}
