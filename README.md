@@ -17,7 +17,7 @@ Configure these in the Oculivo Supabase project's Edge Function secrets before p
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `OPENAI_API_KEY` (Oculivo AI)
-- `OPENAI_MODEL` (optional; defaults in function)
+- `OCULIVO_AI_MODEL` (optional; defaults to `gpt-5.6-luna`)
 - `BREVO_API_KEY` (email)
 - `OCULIVO_FROM_EMAIL` (email sender)
 - `SIGNALWIRE_PROJECT_ID`
