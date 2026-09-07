@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell, CalendarDays, CircleDollarSign, Glasses, Inbox, LayoutDashboard,
-  Menu, MessageSquareText, Phone, Search, Settings, Stethoscope, TicketCheck,
+  Menu, MessageSquareText, Phone, Search, Stethoscope, TicketCheck,
   Timer, Users, X, BarChart3, BookOpen, Plus, ChevronDown, LogOut, Files, Sparkles
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
