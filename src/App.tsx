@@ -235,6 +235,6 @@ export default function App(){
     const {data}=supabase.auth.onAuthStateChange((_event,next)=>setSession(next))
     return ()=>data.subscription.unsubscribe()
   },[])
-  if(session===undefined)return <main className="center-page"><div className="loader">Loading Oculivo…</div></main>
+  if(session===undefined)return <main className="center-page"><div className="loader">Oculivo…</div></main>
   return <Routes><Route path="/login" element={session?<Navigate to="/" replace/>:<Login/>}/><Route path="/reset-password" element={<ResetPassword/>}/><Route path="/*" element={session?<Shell session={session}/>:<Navigate to="/login" replace/>}/></Routes>
 }
