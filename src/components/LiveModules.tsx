@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { CalendarDays, MessageSquareText, Plus, RefreshCw, Send, Users } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { BillingOps, ClinicalOps, DocumentsOps, InboxOps, OpticalOps, PatientsOps, ScheduleOps, SupportOps, TimeclockOps } from './OperationalModules'
+import { BillingOps, ClinicalOps, DocumentsOps, OpticalOps, PatientsOps, ScheduleOps, SupportOps, TimeclockOps } from './OperationalModules'
+import { InboxComms, PhoneOps } from './CommunicationsModules'
 
 type Row = Record<string, unknown>
 
@@ -284,7 +285,8 @@ export function LiveModulePage({path,title,description,session,lang}:{path:strin
   if (path === '/timeclock') return <TimeclockOps session={session} lang={lang}/>
   if (path === '/billing') return <BillingOps session={session} lang={lang}/>
   if (path === '/documents') return <DocumentsOps session={session} lang={lang}/>
-  if (path === '/inbox') return <InboxOps session={session} lang={lang}/>
+  if (path === '/inbox') return <InboxComms session={session} lang={lang}/>
+  if (path === '/phone') return <PhoneOps session={session} lang={lang}/>
   if (path === '/support') return <SupportOps session={session} lang={lang}/>
   if (path === '/team-chat') return <TeamChat session={session} lang={lang}/>
   if (path === '/manual') return <ManualPage lang={lang}/>
