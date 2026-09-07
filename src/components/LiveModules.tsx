@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { CalendarDays, MessageSquareText, Plus, RefreshCw, Send, Users } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -59,40 +60,60 @@ function useOrg(session: Session) {
   const [org,setOrg] = useState<OrgContext | null>(null)
   const [error,setError] = useState('')
   const [loading,setLoading] = useState(true)
+  const [selectionVersion,setSelectionVersion] = useState(0)
+
+  useEffect(() => {
+    const onOrgChange = () => setSelectionVersion((v) => v + 1)
+    window.addEventListener('oculivo-org-change', onOrgChange)
+    return () => window.removeEventListener('oculivo-org-change', onOrgChange)
+  }, [])
 
   useEffect(() => {
     let active = true
     ;(async () => {
       setLoading(true)
       setError('')
-      const membership = await supabase
+      const memberships = await supabase
         .from('organization_memberships')
         .select('organization_id,role')
         .eq('user_id', session.user.id)
-        .limit(1)
-        .maybeSingle()
+
       if (!active) return
-      if (membership.error || !membership.data?.organization_id) {
-        setError(membership.error?.message || 'No active Oculivo organization membership was found for this account.')
+      if (memberships.error || !memberships.data?.length) {
+        setOrg(null)
+        setError(memberships.error?.message || 'No active Oculivo organization membership was found for this account.')
         setLoading(false)
         return
       }
-      const organizationId = String(membership.data.organization_id)
+
+      const preferred = localStorage.getItem('oculivo-org-id') || ''
+      const selected = memberships.data.find((m) => String(m.organization_id) === preferred) || memberships.data[0]
+      const organizationId = String(selected.organization_id)
+
+      if (preferred !== organizationId) localStorage.setItem('oculivo-org-id', organizationId)
+
       const organization = await supabase
         .from('organizations')
         .select('name')
         .eq('id', organizationId)
         .maybeSingle()
+
       if (!active) return
+      if (organization.error) {
+        setError(organization.error.message)
+        setLoading(false)
+        return
+      }
+
       setOrg({
         organizationId,
-        role: text(membership.data.role) || 'member',
+        role: text(selected.role) || 'member',
         organizationName: text(organization.data?.name) || 'Your practice',
       })
       setLoading(false)
     })()
     return () => { active = false }
-  }, [session.user.id])
+  }, [session.user.id, selectionVersion])
 
   return {org,error,loading}
 }
@@ -181,7 +202,7 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
     else setMessages((result.data || []) as Row[])
   }
 
-  useEffect(()=>{void loadChannels()},[org?.organizationId])
+  useEffect(()=>{setChannelId('');setMessages([]);void loadChannels()},[org?.organizationId])
   useEffect(()=>{void loadMessages(channelId)},[channelId,org?.organizationId])
 
   async function createGeneral() {
@@ -298,7 +319,7 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
       <article className="metric-card"><div><span>{lang==='es'?'Registros de tiempo':'Time entries'}</span><CalendarDays size={17}/></div><strong>{orgLoading||loading?'…':stats.timeEntries}</strong><p>{lang==='es'?'Tiempo del personal':'Staff time records'}</p></article>
     </div>
     <div className="overview-grid">
-      <section className="panel schedule-panel"><div className="panel-title-row"><div><h2>Patient flow</h2><p>Recent appointments in this practice</p></div><a href="/schedule">View full schedule</a></div><Records rows={appointments}/></section>
+      <section className="panel schedule-panel"><div className="panel-title-row"><div><h2>Patient flow</h2><p>Recent appointments in this practice</p></div><Link to="/schedule">View full schedule</Link></div><Records rows={appointments}/></section>
       <section className="panel inbox-panel"><div className="panel-title-row"><div><h2>Practice status</h2><p>Connected backend snapshot</p></div></div><div className="overview-status"><span><b>{org?.organizationName||'Practice'}</b>Organization</span><span><b>{org?.role||'—'}</b>Your role</span><span><b>{stats.conversations}</b>Communication threads</span></div></section>
     </div>
   </section>
