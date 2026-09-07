@@ -118,16 +118,34 @@ Deno.serve(async (req: Request) => {
 
   let payload: Record<string, unknown>;
   switch (browserBody.action) {
-    case 'create_ticket':
+    case 'create_ticket': {
+      const rawCategory = String(browserBody.category ?? 'technical').toLowerCase();
+      const rawPriority = String(browserBody.priority ?? 'normal').toLowerCase();
+      const categoryMap: Record<string,string> = {
+        technical: 'Bug Report',
+        bug: 'Bug Report',
+        feature_request: 'Feature Request',
+        account: 'Account Issue',
+        billing: 'Billing Question',
+        training: 'Other',
+        other: 'Other',
+      };
+      const priorityMap: Record<string,string> = {
+        low: 'Low',
+        normal: 'Normal',
+        high: 'High',
+        urgent: 'Urgent',
+      };
       payload = {
         ...trusted,
         subject: String(browserBody.subject ?? '').slice(0, 240),
         description: String(browserBody.description ?? '').slice(0, 10000),
-        category: String(browserBody.category ?? 'technical').slice(0, 80),
-        priority: String(browserBody.priority ?? 'normal').slice(0, 40),
+        category: categoryMap[rawCategory] ?? 'Other',
+        priority: priorityMap[rawPriority] ?? 'Normal',
       };
       if (!payload.subject || !payload.description) return json({ error: 'Subject and description are required' }, 400);
       break;
+    }
     case 'list_tickets':
       payload = { ...trusted, status_filter: browserBody.status_filter, limit: browserBody.limit, offset: browserBody.offset };
       break;
