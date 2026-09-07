@@ -121,7 +121,7 @@ function Records({rows}:{rows:Row[]}) {
   </div>
 }
 
-function GenericLivePage({path,title,description,session}:{path:string;title:string;description:string;session:Session}) {
+function GenericLivePage({path,title,description,session,lang}:{path:string;title:string;description:string;session:Session;lang:'en'|'es'}) {
   const {org,error:orgError,loading:orgLoading} = useOrg(session)
   const [rows,setRows] = useState<Row[]>([])
   const [loading,setLoading] = useState(true)
@@ -143,12 +143,12 @@ function GenericLivePage({path,title,description,session}:{path:string;title:str
 
   return <section className="page">
     <div className="page-head">
-      <div><span className="date-kicker">LIVE OCULIVO DATA</span><h1>{title}</h1><p>{description}</p></div>
-      <button className="refresh-button" onClick={()=>void load()} disabled={loading || !org}><RefreshCw size={15}/>{loading?'Loading…':'Refresh'}</button>
+      <div><span className="date-kicker">{lang==='es'?'DATOS DE OCULIVO EN VIVO':'LIVE OCULIVO DATA'}</span><h1>{title}</h1><p>{description}</p></div>
+      <button className="refresh-button" onClick={()=>void load()} disabled={loading || !org}><RefreshCw size={15}/>{loading?(lang==='es'?'Cargando…':'Loading…'):(lang==='es'?'Actualizar':'Refresh')}</button>
     </div>
     {org && <div className="org-context"><strong>{org.organizationName}</strong><span>{org.role}</span></div>}
     <div className="panel live-panel">
-      {orgLoading || loading ? <div className="live-loading">Loading {title.toLowerCase()}…</div> :
+      {orgLoading || loading ? <div className="live-loading">{lang==='es'?`Cargando ${title.toLowerCase()}…`:`Loading ${title.toLowerCase()}…`}</div> :
        orgError ? <ErrorBox message={orgError}/> :
        error ? <ErrorBox message={error}/> :
        <Records rows={rows}/>}
@@ -258,7 +258,7 @@ export function LiveModulePage({path,title,description,session,lang}:{path:strin
   if (path === '/team-chat') return <TeamChat session={session} lang={lang}/>
   if (path === '/manual') return <ManualPage lang={lang}/>
   if (path === '/reports') return <ReportsPage session={session} lang={lang}/>
-  return <GenericLivePage path={path} title={title} description={description} session={session}/>
+  return <GenericLivePage path={path} title={title} description={description} session={session} lang={lang}/>
 }
 
 export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
@@ -292,10 +292,10 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
     {orgError && <ErrorBox message={orgError}/>}
     {error && <ErrorBox message={error}/>}
     <div className="metric-grid">
-      <article className="metric-card"><div><span>Appointments</span><CalendarDays size={17}/></div><strong>{orgLoading||loading?'…':stats.appointments}</strong><p>Practice appointments</p></article>
-      <article className="metric-card"><div><span>Patients</span><Users size={17}/></div><strong>{orgLoading||loading?'…':stats.patients}</strong><p>Patient records</p></article>
-      <article className="metric-card"><div><span>Conversations</span><MessageSquareText size={17}/></div><strong>{orgLoading||loading?'…':stats.conversations}</strong><p>Communication threads</p></article>
-      <article className="metric-card"><div><span>Time entries</span><CalendarDays size={17}/></div><strong>{orgLoading||loading?'…':stats.timeEntries}</strong><p>Staff time records</p></article>
+      <article className="metric-card"><div><span>{lang==='es'?'Citas':'Appointments'}</span><CalendarDays size={17}/></div><strong>{orgLoading||loading?'…':stats.appointments}</strong><p>{lang==='es'?'Citas del consultorio':'Practice appointments'}</p></article>
+      <article className="metric-card"><div><span>{lang==='es'?'Pacientes':'Patients'}</span><Users size={17}/></div><strong>{orgLoading||loading?'…':stats.patients}</strong><p>{lang==='es'?'Registros de pacientes':'Patient records'}</p></article>
+      <article className="metric-card"><div><span>{lang==='es'?'Conversaciones':'Conversations'}</span><MessageSquareText size={17}/></div><strong>{orgLoading||loading?'…':stats.conversations}</strong><p>{lang==='es'?'Hilos de comunicación':'Communication threads'}</p></article>
+      <article className="metric-card"><div><span>{lang==='es'?'Registros de tiempo':'Time entries'}</span><CalendarDays size={17}/></div><strong>{orgLoading||loading?'…':stats.timeEntries}</strong><p>{lang==='es'?'Tiempo del personal':'Staff time records'}</p></article>
     </div>
     <div className="overview-grid">
       <section className="panel schedule-panel"><div className="panel-title-row"><div><h2>Patient flow</h2><p>Recent appointments in this practice</p></div><a href="/schedule">View full schedule</a></div><Records rows={appointments}/></section>
