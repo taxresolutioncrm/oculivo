@@ -121,17 +121,15 @@ export function BillingOps({session,lang}:{session:Session;lang:Lang}){
      const r=await supabase.from('insurance_claims').insert({organization_id:org.organizationId,patient_id:f.patient_id,claim_number:f.claim_number||null,payer_name:f.payer_name,billed_amount:n(f.billed_amount)})
      if(r.error){setMsg(r.error.message);return}
    }else{
-     const r=await supabase.from('payments').insert({organization_id:org.organizationId,patient_id:f.patient_id,invoice_id:f.invoice_id||null,amount:n(f.amount),payment_method:f.payment_method,reference_number:f.reference_number||null,recorded_by:session.user.id})
+     const r=await supabase.rpc('oculivo_record_payment',{
+       p_organization_id:org.organizationId,
+       p_patient_id:f.patient_id,
+       p_invoice_id:f.invoice_id||null,
+       p_amount:n(f.amount),
+       p_payment_method:s(f.payment_method),
+       p_reference_number:s(f.reference_number)||null
+     })
      if(r.error){setMsg(r.error.message);return}
-     if(f.invoice_id){
-       const target=invoices.rows.find(x=>x.id===f.invoice_id)
-       if(target){
-         const nextPaid=n(target.amount_paid)+n(f.amount)
-         const total=n(target.patient_amount)
-         const up=await supabase.from('invoices').update({amount_paid:nextPaid}).eq('id',f.invoice_id).eq('organization_id',org.organizationId)
-         if(up.error){setMsg(up.error.message);return}
-       }
-     }
    }
    setOpen(false);await Promise.all([invoices.load(),claims.load(),payments.load()])
  }
