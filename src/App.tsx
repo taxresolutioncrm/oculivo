@@ -3,7 +3,7 @@ import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'reac
 import {
   Bell, CalendarDays, CircleDollarSign, Glasses, Inbox, LayoutDashboard,
   Menu, MessageSquareText, Phone, Search, Settings, Stethoscope, TicketCheck,
-  Timer, Users, X, BarChart3, BookOpen, Plus, ChevronDown, LogOut
+  Timer, Users, X, BarChart3, BookOpen, Plus, ChevronDown, LogOut, Files
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
@@ -26,14 +26,15 @@ const nav:NavItem[] = [
   {key:'teamChat',path:'/team-chat',icon:MessageSquareText},
   {key:'timeclock',path:'/timeclock',icon:Timer},
   {key:'billing',path:'/billing',icon:CircleDollarSign},
+  {key:'documents',path:'/documents',icon:Files},
   {key:'reports',path:'/reports',icon:BarChart3},
   {key:'manual',path:'/manual',icon:BookOpen},
   {key:'support',path:'/support',icon:TicketCheck},
 ]
 
 const labels:Record<Lang,Record<string,string>> = {
-  en:{overview:'Overview',schedule:'Schedule',patients:'Patients',clinical:'Clinical',optical:'Optical',inbox:'Inbox',phone:'Phone',teamChat:'Team Chat',timeclock:'Timeclock',billing:'Billing',reports:'Reports',manual:'Manual',support:'Support',practice:'PRACTICE',yourPractice:'Your practice',needHelp:'Need help?',contactSupport:'Contact RomyLabs support',search:'Search patients, calls, orders, messages...',call:'Call',newPatient:'New patient'},
-  es:{overview:'Resumen',schedule:'Agenda',patients:'Pacientes',clinical:'Clínica',optical:'Óptica',inbox:'Bandeja',phone:'Teléfono',teamChat:'Chat del equipo',timeclock:'Reloj',billing:'Facturación',reports:'Reportes',manual:'Manual',support:'Soporte',practice:'CONSULTORIO',yourPractice:'Tu consultorio',needHelp:'¿Necesitas ayuda?',contactSupport:'Contactar soporte de RomyLabs',search:'Buscar pacientes, llamadas, órdenes, mensajes...',call:'Llamar',newPatient:'Nuevo paciente'}
+  en:{overview:'Overview',schedule:'Schedule',patients:'Patients',clinical:'Clinical',optical:'Optical',inbox:'Inbox',phone:'Phone',teamChat:'Team Chat',timeclock:'Timeclock',billing:'Billing',documents:'Documents',reports:'Reports',manual:'Manual',support:'Support',practice:'PRACTICE',yourPractice:'Your practice',needHelp:'Need help?',contactSupport:'Contact RomyLabs support',search:'Search patients, calls, orders, messages...',call:'Call',newPatient:'New patient'},
+  es:{overview:'Resumen',schedule:'Agenda',patients:'Pacientes',clinical:'Clínica',optical:'Óptica',inbox:'Bandeja',phone:'Teléfono',teamChat:'Chat del equipo',timeclock:'Reloj',billing:'Facturación',documents:'Documentos',reports:'Reportes',manual:'Manual',support:'Soporte',practice:'CONSULTORIO',yourPractice:'Tu consultorio',needHelp:'¿Necesitas ayuda?',contactSupport:'Contactar soporte de RomyLabs',search:'Buscar pacientes, llamadas, órdenes, mensajes...',call:'Llamar',newPatient:'Nuevo paciente'}
 }
 
 const moduleCopy:Record<Lang,Record<string,[string,string]>> = {
@@ -47,6 +48,7 @@ const moduleCopy:Record<Lang,Record<string,[string,string]>> = {
     '/team-chat':['Team Chat','Internal channels, private conversations and staff coordination.'],
     '/timeclock':['Timeclock','Employee clock-in, clock-out, time entries and workforce operations.'],
     '/billing':['Billing','Insurance, invoices, payments, balances and revenue-cycle workflows.'],
+    '/documents':['Documents','Private practice documents, patient files, clinical attachments, and secure storage.'],
     '/reports':['Reports','Practice operations, patient flow, revenue and team reporting.'],
     '/manual':['Manual','Oculivo help center, product manual and workflow guidance.'],
     '/support':['Support','Support tickets routed into the RomyLabs Admin Portal.'],
@@ -61,6 +63,7 @@ const moduleCopy:Record<Lang,Record<string,[string,string]>> = {
     '/team-chat':['Chat del equipo','Canales internos, conversaciones privadas y coordinación del personal.'],
     '/timeclock':['Reloj','Entrada, salida, registros de tiempo y operaciones del personal.'],
     '/billing':['Facturación','Seguros, facturas, pagos, saldos y ciclo de ingresos.'],
+    '/documents':['Documentos','Documentos privados, archivos de pacientes, adjuntos clínicos y almacenamiento seguro.'],
     '/reports':['Reportes','Operaciones del consultorio, flujo de pacientes, ingresos y equipo.'],
     '/manual':['Manual','Centro de ayuda de Oculivo, manual del producto y guía de flujos.'],
     '/support':['Soporte','Tickets de soporte enviados al portal administrativo de RomyLabs.'],
@@ -142,7 +145,7 @@ function SearchOverlay({session,open,onClose,lang}:{session:Session;open:boolean
       const sources:[string,string,string][]=[
         ['patients','/patients','Patients'],['appointments','/schedule','Schedule'],['communication_threads','/inbox','Inbox'],
         ['communication_messages','/phone','Phone'],['optical_orders','/optical','Optical'],['clinical_records','/clinical','Clinical'],
-        ['invoices','/billing','Billing'],['support_tickets','/support','Support']
+        ['invoices','/billing','Billing'],['documents','/documents','Documents'],['support_tickets','/support','Support']
       ]
       const results=await Promise.all(sources.map(async([table,route,label])=>{
         const r=await supabase.from(table).select('*').eq('organization_id',org).limit(60)
@@ -210,7 +213,7 @@ function Shell({session}:{session:Session}){
       <div className="sidebar-foot"><div className="user-chip"><div className="avatar">{name.slice(0,1).toUpperCase()}</div><div><strong>{session.user.email||'Practice owner'}</strong><span>{selectedOrg?.role|| (lang==='es'?'Usuario autenticado':'Authenticated user')}</span></div></div><button className="logout-button" onClick={()=>void signOut()} aria-label={lang==='es'?'Cerrar sesión':'Sign out'} title={lang==='es'?'Cerrar sesión':'Sign out'}><LogOut size={16}/></button></div>
     </aside>
     <div className="app-main">
-      <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><button className="searchbox search-trigger" onClick={()=>setSearchOpen(true)}><Search size={18}/><span>{t.search}</span></button><button className="kbd" onClick={()=>setSearchOpen(true)}>⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div><NavLink to="/phone" className="secondary-action"><Phone size={16}/>{t.call}</NavLink><button className="icon-action" aria-label="Notifications"><Bell size={17}/></button><NavLink to="/patients" className="new-patient"><Plus size={17}/>{t.newPatient}</NavLink></div></header>
+      <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><button className="searchbox search-trigger" onClick={()=>setSearchOpen(true)}><Search size={18}/><span>{t.search}</span></button><button className="kbd" onClick={()=>setSearchOpen(true)}>⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div><NavLink to="/phone" className="secondary-action"><Phone size={16}/>{t.call}</NavLink><NavLink to="/inbox" className="icon-action" aria-label="Notifications" title={lang==='es'?'Abrir bandeja':'Open inbox'}><Bell size={17}/></NavLink><NavLink to="/patients" className="new-patient"><Plus size={17}/>{t.newPatient}</NavLink></div></header>
       <Routes><Route path="/" element={<LiveOverview session={session} lang={lang}/>}/>{Object.entries(moduleCopy[lang]).map(([path,[title,description]])=><Route key={path} path={path} element={<LiveModulePage path={path} title={title} description={description} session={session} lang={lang}/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>
     </div>
     <SearchOverlay session={session} open={searchOpen} onClose={()=>setSearchOpen(false)} lang={lang}/>
