@@ -250,7 +250,7 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
 
   return <section className="page">
     <div className="page-head"><div><span className="date-kicker">{lang==='es'?'CHAT DEL EQUIPO EN VIVO':'LIVE TEAM CHAT'}</span><h1>{lang==='es'?'Chat del equipo':'Team Chat'}</h1><p>{lang==='es'?'Canales del consultorio y conversaciones internas del personal.':'Practice channels and internal staff conversations.'}</p></div><button className="refresh-button" onClick={()=>void loadMessages()}><RefreshCw size={15}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>
-    {orgLoading ? <div className="live-loading">Loading team chat…</div> : orgError ? <ErrorBox message={orgError} lang={lang}/> :
+    {orgLoading ? <div className="live-loading">{lang==='es'?'Cargando chat del equipo…':'Loading team chat…'}</div> : orgError ? <ErrorBox message={orgError} lang={lang}/> :
     <div className="chat-layout">
       <aside className="chat-channels">
         <div className="chat-channel-title"><strong>{lang==='es'?'Canales':'Channels'}</strong>{['owner','admin','manager'].includes(org?.role||'')&&!channels.length&&<button onClick={()=>void createChannel('general')} disabled={busy}><Plus size={14}/>General</button>}</div>
