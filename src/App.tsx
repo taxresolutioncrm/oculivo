@@ -76,11 +76,13 @@ function Brand(){
 }
 
 function Login(){
+  const [lang,setLang]=useState<Lang>(()=>(localStorage.getItem('oculivo-lang')==='es'?'es':'en'))
   const [email,setEmail]=useState('')
   const [password,setPassword]=useState('')
   const [error,setError]=useState('')
   const [loading,setLoading]=useState(false)
   const navigate=useNavigate()
+  useEffect(()=>{localStorage.setItem('oculivo-lang',lang);document.documentElement.lang=lang},[lang])
 
   async function signIn(e:React.FormEvent){
     e.preventDefault(); setError(''); setLoading(true)
@@ -91,27 +93,29 @@ function Login(){
   }
 
   async function reset(){
-    if(!email){setError('Enter your email address first.');return}
+    if(!email){setError(lang==='es'?'Primero ingresa tu correo electrónico.':'Enter your email address first.');return}
     setError('')
     const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:'https://app.oculivo.com/reset-password'})
-    setError(error ? error.message : 'Password reset email sent.')
+    setError(error ? error.message : (lang==='es'?'Correo de restablecimiento enviado.':'Password reset email sent.'))
   }
 
   return <main className="auth-page">
-    <section className="auth-brand"><div className="auth-brand-inner"><Brand/><span className="eyebrow">RomyLabs Core Connect</span><h1>Modern eye care operations, connected.</h1><p>Scheduling, patients, clinical workflows, optical, billing, communications, documents, and staff operations in one workspace.</p></div></section>
-    <section className="auth-form-wrap"><form className="auth-card" onSubmit={signIn}><div className="brand-mobile"><Brand/></div><h2>Welcome back</h2><p>Sign in to your Oculivo workspace.</p><label>Email<input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Password<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label>{error&&<div className="auth-note">{error}</div>}<button className="primary-button" disabled={loading}>{loading?'Signing in…':'Sign in'}</button><button className="link-button" type="button" onClick={reset}>Forgot password?</button></form></section>
+    <section className="auth-brand"><div className="auth-brand-inner"><Brand/><span className="eyebrow">RomyLabs Core Connect</span><h1>{lang==='es'?'Operaciones modernas para el cuidado de la vista, conectadas.':'Modern eye care operations, connected.'}</h1><p>{lang==='es'?'Agenda, pacientes, flujos clínicos, óptica, facturación, comunicaciones, documentos y operaciones del personal en un solo espacio.':'Scheduling, patients, clinical workflows, optical, billing, communications, documents, and staff operations in one workspace.'}</p></div></section>
+    <section className="auth-form-wrap"><form className="auth-card" onSubmit={signIn}><div className="auth-login-lang"><button type="button" className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button type="button" className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div><div className="brand-mobile"><Brand/></div><h2>{lang==='es'?'Bienvenido de nuevo':'Welcome back'}</h2><p>{lang==='es'?'Inicia sesión en tu espacio de Oculivo.':'Sign in to your Oculivo workspace.'}</p><label>{lang==='es'?'Correo electrónico':'Email'}<input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>{lang==='es'?'Contraseña':'Password'}<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label>{error&&<div className="auth-note">{error}</div>}<button className="primary-button" disabled={loading}>{loading?(lang==='es'?'Iniciando sesión…':'Signing in…'):(lang==='es'?'Iniciar sesión':'Sign in')}</button><button className="link-button" type="button" onClick={reset}>{lang==='es'?'¿Olvidaste tu contraseña?':'Forgot password?'}</button></form></section>
   </main>
 }
 
 function ResetPassword(){
+  const [lang,setLang]=useState<Lang>(()=>(localStorage.getItem('oculivo-lang')==='es'?'es':'en'))
   const [password,setPassword]=useState('')
   const [message,setMessage]=useState('')
+  useEffect(()=>{localStorage.setItem('oculivo-lang',lang);document.documentElement.lang=lang},[lang])
   async function submit(e:React.FormEvent){
     e.preventDefault()
     const {error}=await supabase.auth.updateUser({password})
-    setMessage(error?error.message:'Password updated. You can return to Oculivo.')
+    setMessage(error?error.message:(lang==='es'?'Contraseña actualizada. Ya puedes volver a Oculivo.':'Password updated. You can return to Oculivo.'))
   }
-  return <main className="center-page"><form className="auth-card" onSubmit={submit}><h2>Set new password</h2><label>New password<input type="password" minLength={12} value={password} onChange={e=>setPassword(e.target.value)} required/></label>{message&&<div className="auth-note">{message}</div>}<button className="primary-button">Update password</button></form></main>
+  return <main className="center-page"><form className="auth-card" onSubmit={submit}><div className="auth-login-lang"><button type="button" className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button type="button" className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div><h2>{lang==='es'?'Establecer nueva contraseña':'Set new password'}</h2><label>{lang==='es'?'Nueva contraseña':'New password'}<input type="password" minLength={12} autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label>{message&&<div className="auth-note">{message}</div>}<button className="primary-button">{lang==='es'?'Actualizar contraseña':'Update password'}</button></form></main>
 }
 
 function safeText(v:unknown){return typeof v==='string'||typeof v==='number'?String(v):''}
