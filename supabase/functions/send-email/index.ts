@@ -12,7 +12,7 @@ Deno.serve(async(req:Request)=>{
  const {data:thread}=await userClient.from("communication_threads").select("id,organization_id,channel,email_address,subject").eq("id",b.thread_id).single();
  if(!thread||thread.channel!=="email")return json({error:"Email thread not found or not authorized"},403);
  const {data:membership}=await userClient.from("organization_memberships").select("role,is_active").eq("organization_id",thread.organization_id).eq("user_id",user.id).eq("is_active",true).maybeSingle();
- if(!membership||membership.role==="read_only")return json({error:"Communication permission required"},403);
+ if(!membership||!["owner","admin","manager","provider","staff"].includes(String(membership.role)))return json({error:"Communication permission required"},403);
  const to=(thread.email_address||"").trim(), from=(Deno.env.get("OCULIVO_FROM_EMAIL")||"").trim(), key=Deno.env.get("BREVO_API_KEY")||"";
  if(!to||!from)return json({error:"Email addresses are not configured"},409); if(!key)return json({error:"Email provider is not configured"},503);
  const subject=(b.subject||thread.subject||"Oculivo message").trim();
