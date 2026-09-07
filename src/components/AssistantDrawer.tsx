@@ -24,7 +24,7 @@ export default function AssistantDrawer({session,lang}:{session:Session;lang:Lan
       organization_id:orgId,
       route:window.location.pathname,
       language:lang,
-      history:next.slice(-10)
+      history:messages.slice(-10)
     }})
     if(error){
       setError(lang==='es'?'El asistente de Oculivo no está disponible en este momento.':'Oculivo AI is unavailable right now.')
