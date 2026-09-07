@@ -118,16 +118,16 @@ function useOrg(session: Session) {
   return {org,error,loading}
 }
 
-function Empty({message}:{message:string}) {
-  return <div className="live-empty"><strong>{message}</strong><p>When data is added to Oculivo it will appear here automatically.</p></div>
+function Empty({message,lang='en'}:{message:string;lang?:'en'|'es'}) {
+  return <div className="live-empty"><strong>{message}</strong><p>{lang==='es'?'Cuando se agreguen datos a Oculivo aparecerán aquí automáticamente.':'When data is added to Oculivo it will appear here automatically.'}</p></div>
 }
 
-function ErrorBox({message}:{message:string}) {
-  return <div className="live-error"><strong>Unable to load this workspace</strong><p>{message}</p></div>
+function ErrorBox({message,lang='en'}:{message:string;lang?:'en'|'es'}) {
+  return <div className="live-error"><strong>{lang==='es'?'No se pudo cargar este espacio de trabajo':'Unable to load this workspace'}</strong><p>{message}</p></div>
 }
 
-function Records({rows}:{rows:Row[]}) {
-  if (!rows.length) return <Empty message="No records yet" />
+function Records({rows,lang='en'}:{rows:Row[];lang?:'en'|'es'}) {
+  if (!rows.length) return <Empty message={lang==='es'?'Aún no hay registros':'No records yet'} lang={lang} />
   return <div className="record-list">
     {rows.map((row,index) => {
       const id = text(row.id) || String(index)
@@ -170,9 +170,9 @@ function GenericLivePage({path,title,description,session,lang}:{path:string;titl
     {org && <div className="org-context"><strong>{org.organizationName}</strong><span>{org.role}</span></div>}
     <div className="panel live-panel">
       {orgLoading || loading ? <div className="live-loading">{lang==='es'?`Cargando ${title.toLowerCase()}…`:`Loading ${title.toLowerCase()}…`}</div> :
-       orgError ? <ErrorBox message={orgError}/> :
-       error ? <ErrorBox message={error}/> :
-       <Records rows={rows}/>}
+       orgError ? <ErrorBox message={orgError} lang={lang}/> :
+       error ? <ErrorBox message={error} lang={lang}/> :
+       <Records rows={rows} lang={lang}/>}
     </div>
   </section>
 }
@@ -240,17 +240,17 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
 
   return <section className="page">
     <div className="page-head"><div><span className="date-kicker">{lang==='es'?'CHAT DEL EQUIPO EN VIVO':'LIVE TEAM CHAT'}</span><h1>{lang==='es'?'Chat del equipo':'Team Chat'}</h1><p>{lang==='es'?'Canales del consultorio y conversaciones internas del personal.':'Practice channels and internal staff conversations.'}</p></div><button className="refresh-button" onClick={()=>void loadMessages()}><RefreshCw size={15}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>
-    {orgLoading ? <div className="live-loading">Loading team chat…</div> : orgError ? <ErrorBox message={orgError}/> :
+    {orgLoading ? <div className="live-loading">Loading team chat…</div> : orgError ? <ErrorBox message={orgError} lang={lang}/> :
     <div className="chat-layout">
       <aside className="chat-channels">
         <div className="chat-channel-title"><strong>Channels</strong>{!channels.length && <button onClick={()=>void createGeneral()} disabled={busy}><Plus size={14}/>General</button>}</div>
         {channels.map(c=><button key={String(c.id)} className={channelId===String(c.id)?'active':''} onClick={()=>setChannelId(String(c.id))}># {text(c.name)||'channel'}{c.is_private===true?' 🔒':''}</button>)}
       </aside>
       <section className="panel chat-main">
-        {error && <ErrorBox message={error}/>}
-        {!channelId ? <Empty message="No team channel yet"/> :
+        {error && <ErrorBox message={error} lang={lang}/>}
+        {!channelId ? <Empty message={lang==='es'?'Aún no hay canal del equipo':'No team channel yet'} lang={lang}/> :
         <>
-          <div className="chat-messages">{messages.length ? messages.map((m,i)=><div className={String(m.sender_id)===session.user.id?'chat-message mine':'chat-message'} key={text(m.id)||String(i)}><div><strong>{String(m.sender_id)===session.user.id?'You':'Team member'}</strong><span>{text(m.created_at).replace('T',' ').slice(0,16)}</span></div><p>{text(m.body)}</p></div>) : <Empty message="No messages yet"/>}</div>
+          <div className="chat-messages">{messages.length ? messages.map((m,i)=><div className={String(m.sender_id)===session.user.id?'chat-message mine':'chat-message'} key={text(m.id)||String(i)}><div><strong>{String(m.sender_id)===session.user.id?'You':'Team member'}</strong><span>{text(m.created_at).replace('T',' ').slice(0,16)}</span></div><p>{text(m.body)}</p></div>) : <Empty message={lang==='es'?'Aún no hay mensajes':'No messages yet'} lang={lang}/>}</div>
           <form className="chat-compose" onSubmit={sendMessage}><input value={body} onChange={e=>setBody(e.target.value)} placeholder={lang==='es'?'Mensaje al equipo…':'Message the team…'} /><button disabled={busy || !body.trim()}><Send size={16}/>{lang==='es'?'Enviar':'Send'}</button></form>
         </>}
       </section>
@@ -310,8 +310,8 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
 
   return <section className="page overview-page">
     <div className="page-head overview-head"><div><span className="date-kicker">{lang==='es'?'DATOS EN VIVO DEL CONSULTORIO':'LIVE PRACTICE DATA'}</span><h1>{lang==='es'?'Resumen':'Overview'}</h1><p>{org ? (lang==='es'?`Esto es lo que está pasando en ${org.organizationName}.`:`Here’s what’s happening across ${org.organizationName}.`) : (lang==='es'?'Cargando tu consultorio…':'Loading your practice…')}</p></div><button className="refresh-button" onClick={()=>void load()}><RefreshCw size={15}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>
-    {orgError && <ErrorBox message={orgError}/>}
-    {error && <ErrorBox message={error}/>}
+    {orgError && <ErrorBox message={orgError} lang={lang}/>}
+    {error && <ErrorBox message={error} lang={lang}/>}
     <div className="metric-grid">
       <article className="metric-card"><div><span>{lang==='es'?'Citas':'Appointments'}</span><CalendarDays size={17}/></div><strong>{orgLoading||loading?'…':stats.appointments}</strong><p>{lang==='es'?'Citas del consultorio':'Practice appointments'}</p></article>
       <article className="metric-card"><div><span>{lang==='es'?'Pacientes':'Patients'}</span><Users size={17}/></div><strong>{orgLoading||loading?'…':stats.patients}</strong><p>{lang==='es'?'Registros de pacientes':'Patient records'}</p></article>
@@ -319,8 +319,8 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
       <article className="metric-card"><div><span>{lang==='es'?'Registros de tiempo':'Time entries'}</span><CalendarDays size={17}/></div><strong>{orgLoading||loading?'…':stats.timeEntries}</strong><p>{lang==='es'?'Tiempo del personal':'Staff time records'}</p></article>
     </div>
     <div className="overview-grid">
-      <section className="panel schedule-panel"><div className="panel-title-row"><div><h2>Patient flow</h2><p>Recent appointments in this practice</p></div><Link to="/schedule">View full schedule</Link></div><Records rows={appointments}/></section>
-      <section className="panel inbox-panel"><div className="panel-title-row"><div><h2>Practice status</h2><p>Connected backend snapshot</p></div></div><div className="overview-status"><span><b>{org?.organizationName||'Practice'}</b>Organization</span><span><b>{org?.role||'—'}</b>Your role</span><span><b>{stats.conversations}</b>Communication threads</span></div></section>
+      <section className="panel schedule-panel"><div className="panel-title-row"><div><h2>{lang==='es'?'Flujo de pacientes':'Patient flow'}</h2><p>{lang==='es'?'Citas recientes de este consultorio':'Recent appointments in this practice'}</p></div><Link to="/schedule">{lang==='es'?'Ver agenda completa':'View full schedule'}</Link></div><Records rows={appointments} lang={lang}/></section>
+      <section className="panel inbox-panel"><div className="panel-title-row"><div><h2>{lang==='es'?'Estado del consultorio':'Practice status'}</h2><p>{lang==='es'?'Resumen conectado del backend':'Connected backend snapshot'}</p></div></div><div className="overview-status"><span><b>{org?.organizationName||(lang==='es'?'Consultorio':'Practice')}</b>{lang==='es'?'Organización':'Organization'}</span><span><b>{org?.role||'—'}</b>{lang==='es'?'Tu rol':'Your role'}</span><span><b>{stats.conversations}</b>{lang==='es'?'Hilos de comunicación':'Communication threads'}</span></div></section>
     </div>
   </section>
 }
@@ -331,10 +331,10 @@ function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
   const [error,setError] = useState('')
 
   const sources = useMemo(()=>[
-    ['Patients','patients'],['Appointments','appointments'],['Clinical records','clinical_records'],
-    ['Optical orders','optical_orders'],['Claims','insurance_claims'],['Invoices','invoices'],
-    ['Payments','payments'],['Messages','communication_messages'],['Support tickets','support_tickets'],
-  ] as const,[])
+    [lang==='es'?'Pacientes':'Patients','patients'],[lang==='es'?'Citas':'Appointments','appointments'],[lang==='es'?'Registros clínicos':'Clinical records','clinical_records'],
+    [lang==='es'?'Órdenes ópticas':'Optical orders','optical_orders'],[lang==='es'?'Reclamaciones':'Claims','insurance_claims'],[lang==='es'?'Facturas':'Invoices','invoices'],
+    [lang==='es'?'Pagos':'Payments','payments'],[lang==='es'?'Mensajes':'Messages','communication_messages'],[lang==='es'?'Tickets de soporte':'Support tickets','support_tickets'],
+  ] as const,[lang])
 
   useEffect(()=>{
     if(!org)return
@@ -350,6 +350,6 @@ function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
   },[org?.organizationId])
 
   return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'REPORTES EN VIVO':'LIVE REPORTING'}</span><h1>{lang==='es'?'Reportes':'Reports'}</h1><p>{lang==='es'?'Conteos actuales de registros en los flujos principales de Oculivo.':'Current record counts across core Oculivo workflows.'}</p></div></div>
-    {orgLoading?<div className="live-loading">Loading reports…</div>:orgError?<ErrorBox message={orgError}/>:error?<ErrorBox message={error}/>:<div className="report-grid">{sources.map(([label])=><article className="panel report-card" key={label}><span>{label}</span><strong>{counts[label]??0}</strong></article>)}</div>}
+    {orgLoading?<div className="live-loading">Loading reports…</div>:orgError?<ErrorBox message={orgError} lang={lang}/>:error?<ErrorBox message={error} lang={lang}/>:<div className="report-grid">{sources.map(([label])=><article className="panel report-card" key={label}><span>{label}</span><strong>{counts[label]??0}</strong></article>)}</div>}
   </section>
 }
