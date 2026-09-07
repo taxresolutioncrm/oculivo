@@ -4,7 +4,7 @@
 create or replace function public.oculivo_record_payment(
   p_organization_id uuid,
   p_patient_id uuid,
-  p_invoice_id uuid default null,
+  p_invoice_id uuid,
   p_amount numeric,
   p_payment_method text,
   p_reference_number text default null
