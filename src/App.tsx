@@ -3,7 +3,7 @@ import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'reac
 import {
   Bell, CalendarDays, CircleDollarSign, Glasses, Inbox, LayoutDashboard,
   Menu, MessageSquareText, Phone, Search, Settings, Stethoscope, TicketCheck,
-  Timer, Users, X, BarChart3, BookOpen, Plus, ChevronDown
+  Timer, Users, X, BarChart3, BookOpen, Plus, ChevronDown, LogOut
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
@@ -13,6 +13,7 @@ import { LiveModulePage, LiveOverview } from './components/LiveModules'
 type Lang = 'en' | 'es'
 type NavItem = { key:string; path:string; icon:LucideIcon }
 type SearchHit = { table:string; route:string; title:string; meta:string; row:Record<string,unknown> }
+type OrgOption = { id:string; name:string; role:string }
 
 const nav:NavItem[] = [
   {key:'overview',path:'/',icon:LayoutDashboard},
@@ -133,9 +134,11 @@ function SearchOverlay({session,open,onClose,lang}:{session:Session;open:boolean
     if(!open||query.trim().length<2){setHits([]);return}
     const handle=setTimeout(async()=>{
       setLoading(true);setError('')
-      const membership=await supabase.from('organization_memberships').select('organization_id').eq('user_id',session.user.id).limit(1).maybeSingle()
-      if(membership.error||!membership.data?.organization_id){setError(membership.error?.message||'No organization found');setLoading(false);return}
-      const org=String(membership.data.organization_id)
+      const memberships=await supabase.from('organization_memberships').select('organization_id').eq('user_id',session.user.id)
+      if(memberships.error||!memberships.data?.length){setError(memberships.error?.message||'No organization found');setLoading(false);return}
+      const preferred=localStorage.getItem('oculivo-org-id')||''
+      const allowed=(memberships.data||[]).map(m=>String(m.organization_id))
+      const org=allowed.includes(preferred)?preferred:allowed[0]
       const sources:[string,string,string][]=[
         ['patients','/patients','Patients'],['appointments','/schedule','Schedule'],['communication_threads','/inbox','Inbox'],
         ['communication_messages','/phone','Phone'],['optical_orders','/optical','Optical'],['clinical_records','/clinical','Clinical'],
@@ -163,9 +166,29 @@ function SearchOverlay({session,open,onClose,lang}:{session:Session;open:boolean
 function Shell({session}:{session:Session}){
   const [open,setOpen]=useState(false)
   const [searchOpen,setSearchOpen]=useState(false)
+  const [orgMenuOpen,setOrgMenuOpen]=useState(false)
+  const [orgs,setOrgs]=useState<OrgOption[]>([])
+  const [selectedOrgId,setSelectedOrgId]=useState(()=>localStorage.getItem('oculivo-org-id')||'')
   const [lang,setLang]=useState<Lang>(()=>(localStorage.getItem('oculivo-lang')==='es'?'es':'en'))
   const location=useLocation()
   useEffect(()=>setOpen(false),[location.pathname])
+  useEffect(()=>{
+    let active=true
+    ;(async()=>{
+      const memberships=await supabase.from('organization_memberships').select('organization_id,role').eq('user_id',session.user.id)
+      if(!active||memberships.error||!memberships.data?.length)return
+      const ids=memberships.data.map(m=>String(m.organization_id))
+      const organizations=await supabase.from('organizations').select('id,name').in('id',ids)
+      if(!active)return
+      const byId=new Map((organizations.data||[]).map(o=>[String(o.id),String(o.name||'Practice')]))
+      const next=memberships.data.map(m=>({id:String(m.organization_id),name:byId.get(String(m.organization_id))||'Practice',role:String(m.role||'member')}))
+      setOrgs(next)
+      const stored=localStorage.getItem('oculivo-org-id')||''
+      const resolved=next.some(o=>o.id===stored)?stored:next[0]?.id||''
+      if(resolved){localStorage.setItem('oculivo-org-id',resolved);setSelectedOrgId(resolved);window.dispatchEvent(new CustomEvent('oculivo-org-change',{detail:resolved}))}
+    })()
+    return()=>{active=false}
+  },[session.user.id])
   useEffect(()=>{localStorage.setItem('oculivo-lang',lang);document.documentElement.lang=lang==='es'?'es':'en'},[lang])
   useEffect(()=>{
     const onKey=(e:KeyboardEvent)=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setSearchOpen(true)}}
@@ -173,15 +196,18 @@ function Shell({session}:{session:Session}){
   },[])
   const name=useMemo(()=>session.user.email?.split('@')[0]||'User',[session])
   const t=labels[lang]
+  const selectedOrg=orgs.find(o=>o.id===selectedOrgId)||orgs[0]
+  function chooseOrg(id:string){localStorage.setItem('oculivo-org-id',id);setSelectedOrgId(id);setOrgMenuOpen(false);window.dispatchEvent(new CustomEvent('oculivo-org-change',{detail:id}))}
+  async function signOut(){await supabase.auth.signOut()}
 
   return <div className="app-shell">
     <aside className={open?'sidebar open':'sidebar'}>
       <div className="sidebar-top"><Brand/><button className="icon-btn mobile-only" onClick={()=>setOpen(false)}><X size={22}/></button></div>
-      <div className="practice-switch"><div className="practice-icon">O</div><div><span>{t.practice}</span><strong>{t.yourPractice}</strong></div><ChevronDown size={14}/></div>
+      <div className="practice-wrap"><button className="practice-switch" onClick={()=>setOrgMenuOpen(v=>!v)} aria-expanded={orgMenuOpen}><div className="practice-icon">O</div><div><span>{t.practice}</span><strong>{selectedOrg?.name||t.yourPractice}</strong></div><ChevronDown size={14}/></button>{orgMenuOpen&&<div className="practice-menu">{orgs.map(org=><button key={org.id} className={org.id===selectedOrgId?'active':''} onClick={()=>chooseOrg(org.id)}><strong>{org.name}</strong><span>{org.role}</span></button>)}</div>}</div>
       <nav>{nav.map(({key,path,icon:Icon})=><NavLink key={path} to={path} end={path==='/' } className={({isActive})=>isActive?'nav-item active':'nav-item'}><Icon size={17}/><span>{t[key]}</span></NavLink>)}</nav>
       <div className="sidebar-spacer"/>
       <NavLink to="/support" className="help-card"><span>?</span><div><strong>{t.needHelp}</strong><small>{t.contactSupport}</small></div></NavLink>
-      <div className="sidebar-foot"><div className="user-chip"><div className="avatar">{name.slice(0,1).toUpperCase()}</div><div><strong>{session.user.email||'Practice owner'}</strong><span>{lang==='es'?'Usuario autenticado':'Authenticated user'}</span></div></div><Settings size={17}/></div>
+      <div className="sidebar-foot"><div className="user-chip"><div className="avatar">{name.slice(0,1).toUpperCase()}</div><div><strong>{session.user.email||'Practice owner'}</strong><span>{selectedOrg?.role|| (lang==='es'?'Usuario autenticado':'Authenticated user')}</span></div></div><button className="logout-button" onClick={()=>void signOut()} aria-label={lang==='es'?'Cerrar sesión':'Sign out'} title={lang==='es'?'Cerrar sesión':'Sign out'}><LogOut size={16}/></button></div>
     </aside>
     <div className="app-main">
       <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><button className="searchbox search-trigger" onClick={()=>setSearchOpen(true)}><Search size={18}/><span>{t.search}</span></button><button className="kbd" onClick={()=>setSearchOpen(true)}>⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div><NavLink to="/phone" className="secondary-action"><Phone size={16}/>{t.call}</NavLink><button className="icon-action" aria-label="Notifications"><Bell size={17}/></button><NavLink to="/patients" className="new-patient"><Plus size={17}/>{t.newPatient}</NavLink></div></header>
