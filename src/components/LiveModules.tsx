@@ -156,7 +156,7 @@ function GenericLivePage({path,title,description,session}:{path:string;title:str
   </section>
 }
 
-function TeamChat({session}:{session:Session}) {
+function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
   const {org,error:orgError,loading:orgLoading} = useOrg(session)
   const [channels,setChannels] = useState<Row[]>([])
   const [channelId,setChannelId] = useState('')
@@ -218,7 +218,7 @@ function TeamChat({session}:{session:Session}) {
   }
 
   return <section className="page">
-    <div className="page-head"><div><span className="date-kicker">LIVE TEAM CHAT</span><h1>Team Chat</h1><p>Practice channels and internal staff conversations.</p></div><button className="refresh-button" onClick={()=>void loadMessages()}><RefreshCw size={15}/>Refresh</button></div>
+    <div className="page-head"><div><span className="date-kicker">{lang==='es'?'CHAT DEL EQUIPO EN VIVO':'LIVE TEAM CHAT'}</span><h1>{lang==='es'?'Chat del equipo':'Team Chat'}</h1><p>{lang==='es'?'Canales del consultorio y conversaciones internas del personal.':'Practice channels and internal staff conversations.'}</p></div><button className="refresh-button" onClick={()=>void loadMessages()}><RefreshCw size={15}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>
     {orgLoading ? <div className="live-loading">Loading team chat…</div> : orgError ? <ErrorBox message={orgError}/> :
     <div className="chat-layout">
       <aside className="chat-channels">
@@ -230,32 +230,38 @@ function TeamChat({session}:{session:Session}) {
         {!channelId ? <Empty message="No team channel yet"/> :
         <>
           <div className="chat-messages">{messages.length ? messages.map((m,i)=><div className={String(m.sender_id)===session.user.id?'chat-message mine':'chat-message'} key={text(m.id)||String(i)}><div><strong>{String(m.sender_id)===session.user.id?'You':'Team member'}</strong><span>{text(m.created_at).replace('T',' ').slice(0,16)}</span></div><p>{text(m.body)}</p></div>) : <Empty message="No messages yet"/>}</div>
-          <form className="chat-compose" onSubmit={sendMessage}><input value={body} onChange={e=>setBody(e.target.value)} placeholder="Message the team…" /><button disabled={busy || !body.trim()}><Send size={16}/>Send</button></form>
+          <form className="chat-compose" onSubmit={sendMessage}><input value={body} onChange={e=>setBody(e.target.value)} placeholder={lang==='es'?'Mensaje al equipo…':'Message the team…'} /><button disabled={busy || !body.trim()}><Send size={16}/>{lang==='es'?'Enviar':'Send'}</button></form>
         </>}
       </section>
     </div>}
   </section>
 }
 
-function ManualPage() {
-  const sections = [
+function ManualPage({lang}:{lang:'en'|'es'}) {
+  const sections = lang==='es' ? [
+    ['Primeros pasos','Inicia sesión, elige tu consultorio, revisa el Resumen y usa la navegación izquierda para moverte por los flujos de pacientes y operaciones.'],
+    ['Agenda','Usa Agenda para citas y coordinación de proveedores. Las reservas del sitio web y las citas creadas por el personal aparecen en el mismo flujo.'],
+    ['Pacientes y clínica','Los registros de pacientes conectan contacto, citas, registros clínicos, documentos, óptica, seguros y facturación.'],
+    ['Comunicaciones','Bandeja, Teléfono y Chat del equipo separan la comunicación con pacientes de la colaboración interna.'],
+    ['Seguridad','Oculivo usa acceso por organización y seguridad a nivel de fila en Supabase para separar los datos de cada consultorio.'],
+  ] : [
     ['Getting started','Sign in, choose your practice, review the Overview, and use the left navigation to move through patient and office workflows.'],
     ['Scheduling','Use Schedule for appointments and provider coordination. Website bookings and staff-created appointments appear in the same operational flow.'],
     ['Patients & clinical','Patient records connect practice contact information with appointments, clinical records, documents, optical, insurance, and billing workflows.'],
     ['Communications','Inbox, Phone, and Team Chat separate patient-facing communication from internal staff collaboration.'],
     ['Security','Oculivo uses organization-scoped access controls and Supabase row-level security to keep practice data separated.'],
   ]
-  return <section className="page"><div className="page-head"><div><span className="date-kicker">OCULIVO MANUAL</span><h1>Manual</h1><p>Quick product guidance for practice staff.</p></div></div><div className="manual-grid">{sections.map(([title,body])=><article className="panel manual-card" key={title}><h2>{title}</h2><p>{body}</p></article>)}</div></section>
+  return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'MANUAL DE OCULIVO':'OCULIVO MANUAL'}</span><h1>Manual</h1><p>{lang==='es'?'Guía rápida del producto para el personal del consultorio.':'Quick product guidance for practice staff.'}</p></div></div><div className="manual-grid">{sections.map(([title,body])=><article className="panel manual-card" key={title}><h2>{title}</h2><p>{body}</p></article>)}</div></section>
 }
 
-export function LiveModulePage({path,title,description,session}:{path:string;title:string;description:string;session:Session}) {
-  if (path === '/team-chat') return <TeamChat session={session}/>
-  if (path === '/manual') return <ManualPage/>
-  if (path === '/reports') return <ReportsPage session={session}/>
+export function LiveModulePage({path,title,description,session,lang}:{path:string;title:string;description:string;session:Session;lang:'en'|'es'}) {
+  if (path === '/team-chat') return <TeamChat session={session} lang={lang}/>
+  if (path === '/manual') return <ManualPage lang={lang}/>
+  if (path === '/reports') return <ReportsPage session={session} lang={lang}/>
   return <GenericLivePage path={path} title={title} description={description} session={session}/>
 }
 
-export function LiveOverview({session}:{session:Session}) {
+export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
   const {org,error:orgError,loading:orgLoading} = useOrg(session)
   const [stats,setStats] = useState({appointments:0,patients:0,conversations:0,timeEntries:0})
   const [appointments,setAppointments] = useState<Row[]>([])
@@ -282,7 +288,7 @@ export function LiveOverview({session}:{session:Session}) {
   useEffect(()=>{void load()},[org?.organizationId])
 
   return <section className="page overview-page">
-    <div className="page-head overview-head"><div><span className="date-kicker">LIVE PRACTICE DATA</span><h1>Overview</h1><p>{org ? `Here’s what’s happening across ${org.organizationName}.` : 'Loading your practice…'}</p></div><button className="refresh-button" onClick={()=>void load()}><RefreshCw size={15}/>Refresh</button></div>
+    <div className="page-head overview-head"><div><span className="date-kicker">{lang==='es'?'DATOS EN VIVO DEL CONSULTORIO':'LIVE PRACTICE DATA'}</span><h1>{lang==='es'?'Resumen':'Overview'}</h1><p>{org ? (lang==='es'?`Esto es lo que está pasando en ${org.organizationName}.`:`Here’s what’s happening across ${org.organizationName}.`) : (lang==='es'?'Cargando tu consultorio…':'Loading your practice…')}</p></div><button className="refresh-button" onClick={()=>void load()}><RefreshCw size={15}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>
     {orgError && <ErrorBox message={orgError}/>}
     {error && <ErrorBox message={error}/>}
     <div className="metric-grid">
@@ -298,7 +304,7 @@ export function LiveOverview({session}:{session:Session}) {
   </section>
 }
 
-function ReportsPage({session}:{session:Session}) {
+function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
   const {org,error:orgError,loading:orgLoading} = useOrg(session)
   const [counts,setCounts] = useState<Record<string,number>>({})
   const [error,setError] = useState('')
@@ -322,7 +328,7 @@ function ReportsPage({session}:{session:Session}) {
     })()
   },[org?.organizationId])
 
-  return <section className="page"><div className="page-head"><div><span className="date-kicker">LIVE REPORTING</span><h1>Reports</h1><p>Current record counts across core Oculivo workflows.</p></div></div>
+  return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'REPORTES EN VIVO':'LIVE REPORTING'}</span><h1>{lang==='es'?'Reportes':'Reports'}</h1><p>{lang==='es'?'Conteos actuales de registros en los flujos principales de Oculivo.':'Current record counts across core Oculivo workflows.'}</p></div></div>
     {orgLoading?<div className="live-loading">Loading reports…</div>:orgError?<ErrorBox message={orgError}/>:error?<ErrorBox message={error}/>:<div className="report-grid">{sources.map(([label])=><article className="panel report-card" key={label}><span>{label}</span><strong>{counts[label]??0}</strong></article>)}</div>}
   </section>
 }
