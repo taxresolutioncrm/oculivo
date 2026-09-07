@@ -12,8 +12,10 @@ Deno.serve(async(req:Request)=>{
  const key=Deno.env.get("OPENAI_API_KEY")||""; if(!key)return json({error:"AI provider is not configured"},503);
  const system="You are Oculivo AI, an assistant inside an eye-care practice CRM. Help with workflow guidance, summaries, scheduling, billing, communications, optical and operational questions. Never claim to change passwords or payroll. Never expose data from another organization. Do not diagnose medical conditions or replace clinician judgment.";
  const history=Array.isArray(b.history)?b.history.slice(-10):[];
- const messages=[{role:"system",content:system},...history.map((m:any)=>({role:m.role==="assistant"?"assistant":"user",content:String(m.content||"").slice(0,4000)})),{role:"user",content:String(b.message||"").slice(0,4000)}];
- const pr=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{Authorization:"Bearer "+key,"Content-Type":"application/json"},body:JSON.stringify({model:Deno.env.get("OCULIVO_AI_MODEL")||"gpt-5.1-mini",messages,temperature:0.2})});
+ const input=[{role:"system",content:system},...history.map((m:any)=>({role:m.role==="assistant"?"assistant":"user",content:String(m.content||"").slice(0,4000)})),{role:"user",content:String(b.message||"").slice(0,4000)}];
+ const pr=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:"Bearer "+key,"Content-Type":"application/json"},body:JSON.stringify({model:Deno.env.get("OCULIVO_AI_MODEL")||"gpt-5.6-luna",input,reasoning:{effort:"low"},max_output_tokens:1800})});
  if(!pr.ok){console.error("AI",pr.status,await pr.text());return json({error:"AI provider request failed"},502)}
- const d=await pr.json(); const answer=d?.choices?.[0]?.message?.content||""; return json({answer});
+ const d=await pr.json();
+ const answer=String(d?.output_text||((d?.output||[]).flatMap((o:any)=>o?.content||[]).find((x:any)=>x?.type==="output_text")?.text)||"").trim();
+ return answer?json({answer}):json({error:"AI provider returned no response"},502);
 });
