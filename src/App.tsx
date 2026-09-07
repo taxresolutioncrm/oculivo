@@ -1,32 +1,70 @@
 import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Bell, CalendarDays, CircleDollarSign, FileText, Glasses, Inbox, LayoutDashboard,
-  LogOut, Menu, MessageSquareText, Phone, Search, Settings, Stethoscope, TicketCheck,
-  Timer, Users, X, BarChart3, BookOpen, Plus, ChevronDown, Sparkles, Clock3
+  Bell, CalendarDays, CircleDollarSign, Glasses, Inbox, LayoutDashboard,
+  Menu, MessageSquareText, Phone, Search, Settings, Stethoscope, TicketCheck,
+  Timer, Users, X, BarChart3, BookOpen, Plus, ChevronDown
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { LiveModulePage, LiveOverview } from './components/LiveModules'
 
-type NavItem = { label:string; path:string; icon:LucideIcon }
+type Lang = 'en' | 'es'
+type NavItem = { key:string; path:string; icon:LucideIcon }
+type SearchHit = { table:string; route:string; title:string; meta:string; row:Record<string,unknown> }
 
 const nav:NavItem[] = [
-  {label:'Overview',path:'/',icon:LayoutDashboard},
-  {label:'Schedule',path:'/schedule',icon:CalendarDays},
-  {label:'Patients',path:'/patients',icon:Users},
-  {label:'Clinical',path:'/clinical',icon:Stethoscope},
-  {label:'Optical',path:'/optical',icon:Glasses},
-  {label:'Inbox',path:'/inbox',icon:Inbox},
-  {label:'Phone',path:'/phone',icon:Phone},
-  {label:'Team Chat',path:'/team-chat',icon:MessageSquareText},
-  {label:'Timeclock',path:'/timeclock',icon:Timer},
-  {label:'Billing',path:'/billing',icon:CircleDollarSign},
-  {label:'Reports',path:'/reports',icon:BarChart3},
-  {label:'Manual',path:'/manual',icon:BookOpen},
-  {label:'Support',path:'/support',icon:TicketCheck},
+  {key:'overview',path:'/',icon:LayoutDashboard},
+  {key:'schedule',path:'/schedule',icon:CalendarDays},
+  {key:'patients',path:'/patients',icon:Users},
+  {key:'clinical',path:'/clinical',icon:Stethoscope},
+  {key:'optical',path:'/optical',icon:Glasses},
+  {key:'inbox',path:'/inbox',icon:Inbox},
+  {key:'phone',path:'/phone',icon:Phone},
+  {key:'teamChat',path:'/team-chat',icon:MessageSquareText},
+  {key:'timeclock',path:'/timeclock',icon:Timer},
+  {key:'billing',path:'/billing',icon:CircleDollarSign},
+  {key:'reports',path:'/reports',icon:BarChart3},
+  {key:'manual',path:'/manual',icon:BookOpen},
+  {key:'support',path:'/support',icon:TicketCheck},
 ]
+
+const labels:Record<Lang,Record<string,string>> = {
+  en:{overview:'Overview',schedule:'Schedule',patients:'Patients',clinical:'Clinical',optical:'Optical',inbox:'Inbox',phone:'Phone',teamChat:'Team Chat',timeclock:'Timeclock',billing:'Billing',reports:'Reports',manual:'Manual',support:'Support',practice:'PRACTICE',yourPractice:'Your practice',needHelp:'Need help?',contactSupport:'Contact RomyLabs support',search:'Search patients, calls, orders, messages...',call:'Call',newPatient:'New patient'},
+  es:{overview:'Resumen',schedule:'Agenda',patients:'Pacientes',clinical:'Clínica',optical:'Óptica',inbox:'Bandeja',phone:'Teléfono',teamChat:'Chat del equipo',timeclock:'Reloj',billing:'Facturación',reports:'Reportes',manual:'Manual',support:'Soporte',practice:'CONSULTORIO',yourPractice:'Tu consultorio',needHelp:'¿Necesitas ayuda?',contactSupport:'Contactar soporte de RomyLabs',search:'Buscar pacientes, llamadas, órdenes, mensajes...',call:'Llamar',newPatient:'Nuevo paciente'}
+}
+
+const moduleCopy:Record<Lang,Record<string,[string,string]>> = {
+  en:{
+    '/schedule':['Schedule','Appointments, provider schedules, booking, availability, and practice coordination.'],
+    '/patients':['Patients','Patient profiles, contact information, intake, history, and practice relationships.'],
+    '/clinical':['Clinical','Clinical records and provider workflows with tenant-secured access.'],
+    '/optical':['Optical','Inventory, optical orders, frames, lenses, and fulfillment workflows.'],
+    '/inbox':['Inbox','Unified email, SMS, phone and patient portal conversations.'],
+    '/phone':['Phone','Calls, voicemails, call history and patient communication workflows.'],
+    '/team-chat':['Team Chat','Internal channels, private conversations and staff coordination.'],
+    '/timeclock':['Timeclock','Employee clock-in, clock-out, time entries and workforce operations.'],
+    '/billing':['Billing','Insurance, invoices, payments, balances and revenue-cycle workflows.'],
+    '/reports':['Reports','Practice operations, patient flow, revenue and team reporting.'],
+    '/manual':['Manual','Oculivo help center, product manual and workflow guidance.'],
+    '/support':['Support','Support tickets routed into the RomyLabs Admin Portal.'],
+  },
+  es:{
+    '/schedule':['Agenda','Citas, horarios de proveedores, reservas, disponibilidad y coordinación del consultorio.'],
+    '/patients':['Pacientes','Perfiles de pacientes, contacto, admisión, historial y relaciones del consultorio.'],
+    '/clinical':['Clínica','Registros clínicos y flujos de proveedores con acceso seguro por consultorio.'],
+    '/optical':['Óptica','Inventario, órdenes ópticas, monturas, lentes y flujos de entrega.'],
+    '/inbox':['Bandeja','Correo, SMS, teléfono y conversaciones del portal del paciente en un solo lugar.'],
+    '/phone':['Teléfono','Llamadas, correo de voz, historial y flujos de comunicación con pacientes.'],
+    '/team-chat':['Chat del equipo','Canales internos, conversaciones privadas y coordinación del personal.'],
+    '/timeclock':['Reloj','Entrada, salida, registros de tiempo y operaciones del personal.'],
+    '/billing':['Facturación','Seguros, facturas, pagos, saldos y ciclo de ingresos.'],
+    '/reports':['Reportes','Operaciones del consultorio, flujo de pacientes, ingresos y equipo.'],
+    '/manual':['Manual','Centro de ayuda de Oculivo, manual del producto y guía de flujos.'],
+    '/support':['Soporte','Tickets de soporte enviados al portal administrativo de RomyLabs.'],
+  }
+}
 
 function Brand(){
   return <div className="brand-lockup"><span className="brand-mark"><i/><i/><i/><i/></span><strong>OCULIVO</strong></div>
@@ -71,50 +109,85 @@ function ResetPassword(){
   return <main className="center-page"><form className="auth-card" onSubmit={submit}><h2>Set new password</h2><label>New password<input type="password" minLength={12} value={password} onChange={e=>setPassword(e.target.value)} required/></label>{message&&<div className="auth-note">{message}</div>}<button className="primary-button">Update password</button></form></main>
 }
 
-const moduleCopy:Record<string,[string,string]> = {
-  '/schedule':['Schedule','Appointments, provider schedules, booking, availability, and practice coordination.'],
-  '/patients':['Patients','Patient profiles, contact information, intake, history, and practice relationships.'],
-  '/clinical':['Clinical','Clinical records and provider workflows with tenant-secured access.'],
-  '/optical':['Optical','Inventory, optical orders, frames, lenses, and fulfillment workflows.'],
-  '/inbox':['Inbox','Unified email, SMS, phone and patient portal conversations.'],
-  '/phone':['Phone','Calls, voicemails, call history and patient communication workflows.'],
-  '/team-chat':['Team Chat','Internal channels, private conversations and staff coordination.'],
-  '/timeclock':['Timeclock','Employee clock-in, clock-out, time entries and workforce operations.'],
-  '/billing':['Billing','Insurance, invoices, payments, balances and revenue-cycle workflows.'],
-  '/reports':['Reports','Practice operations, patient flow, revenue and team reporting.'],
-  '/manual':['Manual','Oculivo help center, product manual and workflow guidance.'],
-  '/support':['Support','Support tickets routed into the RomyLabs Admin Portal.'],
+function safeText(v:unknown){return typeof v==='string'||typeof v==='number'?String(v):''}
+function hitTitle(row:Record<string,unknown>){
+  const first=safeText(row.first_name),last=safeText(row.last_name)
+  if(first||last)return [first,last].filter(Boolean).join(' ')
+  for(const k of ['name','title','subject','patient_name','body','description','status']){const v=safeText(row[k]);if(v)return v.slice(0,90)}
+  return 'Oculivo record'
+}
+function hitMeta(row:Record<string,unknown>){
+  const vals=['email','phone','status','created_at','scheduled_at'].map(k=>safeText(row[k])).filter(Boolean)
+  return vals.slice(0,3).join(' · ')
 }
 
-function ModulePage({title,description}:{title:string;description:string}){
-  return <section className="page"><div className="page-head"><div><span className="date-kicker">OCULIVO WORKSPACE</span><h1>{title}</h1><p>{description}</p></div></div><div className="panel large-panel"><h2>{title}</h2><p>This route is connected to the production shell and ready for the recovered Oculivo module implementation.</p></div></section>
-}
+function SearchOverlay({session,open,onClose,lang}:{session:Session;open:boolean;onClose:()=>void;lang:Lang}){
+  const [query,setQuery]=useState('')
+  const [hits,setHits]=useState<SearchHit[]>([])
+  const [loading,setLoading]=useState(false)
+  const [error,setError]=useState('')
+  const navigate=useNavigate()
 
-function AiWidget(){
-  return <div className="ai-widget"><div className="ai-head"><span className="ai-icon"><Sparkles size={15}/></span><div><strong>Ask Oculivo</strong><span>Practice intelligence</span></div><button>×</button></div><div className="ai-card">Three schedule gaps can be filled today. Want me to draft outreach messages for approval?</div><div className="ai-actions"><button>Show matches</button><button>Not now</button></div><div className="ai-input"><span>Ask about your practice...</span><b>↑</b></div><small>AI suggestions require your approval.</small></div>
+  useEffect(()=>{if(!open){setQuery('');setHits([]);setError('')}},[open])
+  useEffect(()=>{
+    if(!open||query.trim().length<2){setHits([]);return}
+    const handle=setTimeout(async()=>{
+      setLoading(true);setError('')
+      const membership=await supabase.from('organization_memberships').select('organization_id').eq('user_id',session.user.id).limit(1).maybeSingle()
+      if(membership.error||!membership.data?.organization_id){setError(membership.error?.message||'No organization found');setLoading(false);return}
+      const org=String(membership.data.organization_id)
+      const sources:[string,string,string][]=[
+        ['patients','/patients','Patients'],['appointments','/schedule','Schedule'],['communication_threads','/inbox','Inbox'],
+        ['communication_messages','/phone','Phone'],['optical_orders','/optical','Optical'],['clinical_records','/clinical','Clinical'],
+        ['invoices','/billing','Billing'],['support_tickets','/support','Support']
+      ]
+      const results=await Promise.all(sources.map(async([table,route,label])=>{
+        const r=await supabase.from(table).select('*').eq('organization_id',org).limit(60)
+        if(r.error)return {error:r.error.message,hits:[] as SearchHit[]}
+        const q=query.trim().toLowerCase()
+        const found=((r.data||[]) as Record<string,unknown>[]).filter(row=>JSON.stringify(row).toLowerCase().includes(q)).slice(0,8).map(row=>({table,route,title:hitTitle(row),meta:`${label}${hitMeta(row)?' · '+hitMeta(row):''}`,row}))
+        return {error:'',hits:found}
+      }))
+      const bad=results.find(x=>x.error)
+      if(bad?.error)setError(bad.error)
+      setHits(results.flatMap(x=>x.hits).slice(0,30))
+      setLoading(false)
+    },250)
+    return()=>clearTimeout(handle)
+  },[query,open,session.user.id])
+
+  if(!open)return null
+  return <div className="search-overlay" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><div className="search-modal"><div className="search-modal-head"><Search size={18}/><input autoFocus value={query} onChange={e=>setQuery(e.target.value)} placeholder={labels[lang].search}/><button onClick={onClose}><X size={18}/></button></div><div className="search-results">{loading?<div className="search-state">{lang==='es'?'Buscando…':'Searching…'}</div>:error?<div className="search-state error">{error}</div>:query.length<2?<div className="search-state">{lang==='es'?'Escribe al menos 2 caracteres.':'Type at least 2 characters.'}</div>:hits.length?hits.map((h,i)=><button key={h.table+i} onClick={()=>{navigate(h.route);onClose()}}><strong>{h.title}</strong><span>{h.meta}</span></button>):<div className="search-state">{lang==='es'?'No se encontraron resultados.':'No results found.'}</div>}</div></div></div>
 }
 
 function Shell({session}:{session:Session}){
   const [open,setOpen]=useState(false)
+  const [searchOpen,setSearchOpen]=useState(false)
+  const [lang,setLang]=useState<Lang>(()=>(localStorage.getItem('oculivo-lang')==='es'?'es':'en'))
   const location=useLocation()
   useEffect(()=>setOpen(false),[location.pathname])
+  useEffect(()=>{localStorage.setItem('oculivo-lang',lang);document.documentElement.lang=lang==='es'?'es':'en'},[lang])
+  useEffect(()=>{
+    const onKey=(e:KeyboardEvent)=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setSearchOpen(true)}}
+    window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey)
+  },[])
   const name=useMemo(()=>session.user.email?.split('@')[0]||'User',[session])
+  const t=labels[lang]
 
   return <div className="app-shell">
     <aside className={open?'sidebar open':'sidebar'}>
       <div className="sidebar-top"><Brand/><button className="icon-btn mobile-only" onClick={()=>setOpen(false)}><X size={22}/></button></div>
-      <div className="practice-switch"><div className="practice-icon">O</div><div><span>PRACTICE</span><strong>Your practice</strong></div><ChevronDown size={14}/></div>
-      <nav>{nav.map(({label,path,icon:Icon})=><NavLink key={path} to={path} end={path==='/' } className={({isActive})=>isActive?'nav-item active':'nav-item'}><Icon size={17}/><span>{label}</span></NavLink>)}</nav>
+      <div className="practice-switch"><div className="practice-icon">O</div><div><span>{t.practice}</span><strong>{t.yourPractice}</strong></div><ChevronDown size={14}/></div>
+      <nav>{nav.map(({key,path,icon:Icon})=><NavLink key={path} to={path} end={path==='/' } className={({isActive})=>isActive?'nav-item active':'nav-item'}><Icon size={17}/><span>{t[key]}</span></NavLink>)}</nav>
       <div className="sidebar-spacer"/>
-      <div className="help-card"><span>?</span><div><strong>Need help?</strong><small>Contact RomyLabs support</small></div></div>
-      <div className="sidebar-foot"><div className="user-chip"><div className="avatar">{name.slice(0,1).toUpperCase()}</div><div><strong>Practice owner</strong><span>Practice owner</span></div></div><Settings size={17}/></div>
+      <NavLink to="/support" className="help-card"><span>?</span><div><strong>{t.needHelp}</strong><small>{t.contactSupport}</small></div></NavLink>
+      <div className="sidebar-foot"><div className="user-chip"><div className="avatar">{name.slice(0,1).toUpperCase()}</div><div><strong>{session.user.email||'Practice owner'}</strong><span>{lang==='es'?'Usuario autenticado':'Authenticated user'}</span></div></div><Settings size={17}/></div>
     </aside>
     <div className="app-main">
-      <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><div className="searchbox"><Search size={18}/><span>Search patients, calls, orders, messages...</span></div><button className="kbd">⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className="active">EN</button><button>ES</button></div><NavLink to="/phone" className="secondary-action"><Phone size={16}/>Call</NavLink><button className="icon-action"><Bell size={17}/><i/></button><NavLink to="/patients" className="new-patient"><Plus size={17}/>New patient</NavLink></div></header>
-      <Routes><Route path="/" element={<LiveOverview session={session}/>}/>{Object.entries(moduleCopy).map(([path,[title,description]])=><Route key={path} path={path} element={<LiveModulePage path={path} title={title} description={description} session={session}/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>
+      <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><button className="searchbox search-trigger" onClick={()=>setSearchOpen(true)}><Search size={18}/><span>{t.search}</span></button><button className="kbd" onClick={()=>setSearchOpen(true)}>⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div><NavLink to="/phone" className="secondary-action"><Phone size={16}/>{t.call}</NavLink><button className="icon-action" aria-label="Notifications"><Bell size={17}/></button><NavLink to="/patients" className="new-patient"><Plus size={17}/>{t.newPatient}</NavLink></div></header>
+      <Routes><Route path="/" element={<LiveOverview session={session} lang={lang}/>}/>{Object.entries(moduleCopy[lang]).map(([path,[title,description]])=><Route key={path} path={path} element={<LiveModulePage path={path} title={title} description={description} session={session} lang={lang}/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>
     </div>
-    <AiWidget/>
-    <button className="ai-fab"><Sparkles size={19}/></button>
+    <SearchOverlay session={session} open={searchOpen} onClose={()=>setSearchOpen(false)} lang={lang}/>
     {open&&<div className="overlay" onClick={()=>setOpen(false)}/>}
   </div>
 }
