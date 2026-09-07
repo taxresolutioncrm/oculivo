@@ -318,7 +318,7 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
       supabase.from('patients').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
       supabase.from('communication_threads').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
       supabase.from('time_entries').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
-      supabase.from('appointments').select('*').eq('organization_id',org.organizationId).limit(8),
+      supabase.from('appointments').select('*').eq('organization_id',org.organizationId).order('starts_at',{ascending:true}).limit(8),
     ])
     const firstError = a.error || p.error || c.error || t.error || arows.error
     if (firstError) setError(firstError.message)
@@ -371,6 +371,6 @@ function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
   },[org?.organizationId])
 
   return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'REPORTES EN VIVO':'LIVE REPORTING'}</span><h1>{lang==='es'?'Reportes':'Reports'}</h1><p>{lang==='es'?'Conteos actuales de registros en los flujos principales de Oculivo.':'Current record counts across core Oculivo workflows.'}</p></div></div>
-    {orgLoading?<div className="live-loading">Loading reports…</div>:orgError?<ErrorBox message={orgError} lang={lang}/>:error?<ErrorBox message={error} lang={lang}/>:<div className="report-grid">{sources.map(([label])=><article className="panel report-card" key={label}><span>{label}</span><strong>{counts[label]??0}</strong></article>)}</div>}
+    {orgLoading?<div className="live-loading">{lang==='es'?'Cargando reportes…':'Loading reports…'}</div>:orgError?<ErrorBox message={orgError} lang={lang}/>:error?<ErrorBox message={error} lang={lang}/>:<div className="report-grid">{sources.map(([label])=><article className="panel report-card" key={label}><span>{label}</span><strong>{counts[label]??0}</strong></article>)}</div>}
   </section>
 }
