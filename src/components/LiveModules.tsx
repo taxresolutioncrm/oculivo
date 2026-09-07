@@ -77,8 +77,9 @@ function useOrg(session: Session) {
       setError('')
       const memberships = await supabase
         .from('organization_memberships')
-        .select('organization_id,role')
+        .select('organization_id,role,is_active')
         .eq('user_id', session.user.id)
+        .eq('is_active', true)
 
       if (!active) return
       if (memberships.error || !memberships.data?.length) {
@@ -107,6 +108,7 @@ function useOrg(session: Session) {
         return
       }
 
+      setError('')
       setOrg({
         organizationId,
         role: text(selected.role) || 'member',
