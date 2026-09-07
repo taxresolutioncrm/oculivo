@@ -1,7 +1,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { Mail, MessageSquareText, Mic, Phone, PhoneOff, RefreshCw, Send } from 'lucide-react'
+import { MessageSquareText, Mic, Phone, PhoneOff, RefreshCw, Send } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 type Lang='en'|'es'
