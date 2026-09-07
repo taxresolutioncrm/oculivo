@@ -13,7 +13,7 @@ import AssistantDrawer from './components/AssistantDrawer'
 
 type Lang = 'en' | 'es'
 type NavItem = { key:string; path:string; icon:LucideIcon }
-type SearchHit = { table:string; route:string; title:string; meta:string; row:Record<string,unknown> }
+type SearchHit = { table:string; route:string; title:string; meta:string }
 type OrgOption = { id:string; name:string; role:string }
 
 const nav:NavItem[] = [
@@ -138,7 +138,7 @@ function SearchOverlay({session,open,onClose,lang}:{session:Session;open:boolean
     if(!open||query.trim().length<2){setHits([]);return}
     const handle=setTimeout(async()=>{
       setLoading(true);setError('')
-      const memberships=await supabase.from('organization_memberships').select('organization_id').eq('user_id',session.user.id)
+      const memberships=await supabase.from('organization_memberships').select('organization_id,is_active').eq('user_id',session.user.id).eq('is_active',true)
       if(memberships.error||!memberships.data?.length){setError(memberships.error?.message||'No organization found');setLoading(false);return}
       const preferred=localStorage.getItem('oculivo-org-id')||''
       const allowed=(memberships.data||[]).map(m=>String(m.organization_id))
@@ -152,7 +152,7 @@ function SearchOverlay({session,open,onClose,lang}:{session:Session;open:boolean
         const r=await supabase.from(table).select('*').eq('organization_id',org).limit(60)
         if(r.error)return {error:r.error.message,hits:[] as SearchHit[]}
         const q=query.trim().toLowerCase()
-        const found=((r.data||[]) as Record<string,unknown>[]).filter(row=>JSON.stringify(row).toLowerCase().includes(q)).slice(0,8).map(row=>({table,route,title:hitTitle(row),meta:`${label}${hitMeta(row)?' · '+hitMeta(row):''}`,row}))
+        const found=((r.data||[]) as Record<string,unknown>[]).filter(row=>JSON.stringify(row).toLowerCase().includes(q)).slice(0,8).map(row=>({table,route,title:hitTitle(row),meta:`${label}${hitMeta(row)?' · '+hitMeta(row):''}`}))
         return {error:'',hits:found}
       }))
       const bad=results.find(x=>x.error)
@@ -179,7 +179,7 @@ function Shell({session}:{session:Session}){
   useEffect(()=>{
     let active=true
     ;(async()=>{
-      const memberships=await supabase.from('organization_memberships').select('organization_id,role').eq('user_id',session.user.id)
+      const memberships=await supabase.from('organization_memberships').select('organization_id,role,is_active').eq('user_id',session.user.id).eq('is_active',true)
       if(!active||memberships.error||!memberships.data?.length)return
       const ids=memberships.data.map(m=>String(m.organization_id))
       const organizations=await supabase.from('organizations').select('id,name').in('id',ids)
