@@ -12,6 +12,8 @@ Deno.serve(async(req:Request)=>{
  const body=(b.body||"").trim(); if(!b.thread_id||!body)return json({error:"thread_id and body are required"},400);
  const {data:thread}=await userClient.from("communication_threads").select("id,organization_id,channel,phone_number").eq("id",b.thread_id).single();
  if(!thread||thread.channel!=="sms")return json({error:"SMS thread not found or not authorized"},403);
+ const {data:membership}=await userClient.from("organization_memberships").select("role,is_active").eq("organization_id",thread.organization_id).eq("user_id",user.id).eq("is_active",true).maybeSingle();
+ if(!membership||membership.role==="read_only")return json({error:"Communication permission required"},403);
  const to=(thread.phone_number||"").trim(); const from=(Deno.env.get("OCULIVO_SMS_FROM_NUMBER")||"").trim();
  if(!e164.test(to)||!e164.test(from))return json({error:"SMS phone numbers are not configured in E.164 format"},409);
  const project=Deno.env.get("SIGNALWIRE_PROJECT_ID")||"", token=Deno.env.get("SIGNALWIRE_AUTH_TOKEN")||"", space=(Deno.env.get("SIGNALWIRE_SPACE_URL")||"").replace(/^https?:\/\//,"").replace(/\/$/,"");
