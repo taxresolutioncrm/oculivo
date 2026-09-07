@@ -7,6 +7,12 @@ import { BillingOps, ClinicalOps, DocumentsOps, OpticalOps, PatientsOps, Schedul
 import { InboxComms, PhoneOps } from './CommunicationsModules'
 
 type Row = Record<string, unknown>
+function localized(v:unknown,lang:'en'|'es'){
+ const raw=text(v),k=raw.toLowerCase().replace(/[ -]+/g,'_')
+ if(lang!=='es')return raw
+ const m:Record<string,string>={active:'Activo',archived:'Archivado',inactive:'Inactivo',draft:'Borrador',signed:'Firmado',pending:'Pendiente',scheduled:'Programada',confirmed:'Confirmada',completed:'Completada',cancelled:'Cancelada',canceled:'Cancelada',paid:'Pagada',unpaid:'Sin pagar',partial:'Parcial',open:'Abierto',closed:'Cerrado',email:'Correo',sms:'SMS',phone:'Teléfono',general:'General'}
+ return m[k]||raw
+}
 
 type OrgContext = {
   organizationId: string
@@ -84,7 +90,7 @@ function useOrg(session: Session) {
       if (!active) return
       if (memberships.error || !memberships.data?.length) {
         setOrg(null)
-        setError(memberships.error?.message || 'No active Oculivo organization membership was found for this account.')
+        setError(memberships.error?.message || (document.documentElement.lang==='es'?'No se encontró una membresía activa de Oculivo para esta cuenta.':'No active Oculivo organization membership was found for this account.'))
         setLoading(false)
         return
       }
@@ -112,7 +118,7 @@ function useOrg(session: Session) {
       setOrg({
         organizationId,
         role: text(selected.role) || 'member',
-        organizationName: text(organization.data?.name) || 'Your practice',
+        organizationName: text(organization.data?.name) || (document.documentElement.lang==='es'?'Tu consultorio':'Your practice'),
       })
       setLoading(false)
     })()
@@ -139,7 +145,7 @@ function Records({rows,lang='en'}:{rows:Row[];lang?:'en'|'es'}) {
         .filter(([key,value]) => !['id','organization_id','patient_id','provider_id','user_id','sender_id','channel_id'].includes(key) && text(value))
         .slice(0,6)
       return <article className="record-card" key={id}>
-        <div className="record-card-head"><div><strong>{rowTitle(row)}</strong><span>{rowMeta(row)}</span></div>{text(row.status) && <span className="status-badge">{text(row.status)}</span>}</div>
+        <div className="record-card-head"><div><strong>{rowTitle(row)}</strong><span>{rowMeta(row)}</span></div>{text(row.status) && <span className="status-badge">{localized(row.status,lang)}</span>}</div>
         <div className="record-fields">{visible.map(([key,value]) => <div key={key}><span>{prettyKey(key)}</span><b>{text(value).slice(0,120)}</b></div>)}</div>
       </article>
     })}
@@ -220,7 +226,7 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
     const result = await supabase.from('team_channels').insert({
       organization_id: org.organizationId,
       name: clean,
-      description: clean==='general' ? 'Practice-wide team chat' : 'Practice team channel',
+      description: clean==='general' ? (document.documentElement.lang==='es'?'Chat general del consultorio':'Practice-wide team chat') : (document.documentElement.lang==='es'?'Canal del equipo del consultorio':'Practice team channel'),
       is_private: false,
       created_by: session.user.id,
     }).select('*').single()
@@ -255,7 +261,7 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
       <aside className="chat-channels">
         <div className="chat-channel-title"><strong>{lang==='es'?'Canales':'Channels'}</strong>{['owner','admin','manager'].includes(org?.role||'')&&!channels.length&&<button onClick={()=>void createChannel('general')} disabled={busy}><Plus size={14}/>General</button>}</div>
         {['owner','admin','manager'].includes(org?.role||'')&&<form className="chat-channel-create" onSubmit={e=>{e.preventDefault();void createChannel(newChannel)}}><input value={newChannel} onChange={e=>setNewChannel(e.target.value)} placeholder={lang==='es'?'Nuevo canal':'New channel'}/><button disabled={busy||!newChannel.trim()}><Plus size={13}/></button></form>}
-        {channels.map(c=><button key={String(c.id)} className={channelId===String(c.id)?'active':''} onClick={()=>setChannelId(String(c.id))}># {text(c.name)||'channel'}{c.is_private===true?' 🔒':''}</button>)}
+        {channels.map(c=><button key={String(c.id)} className={channelId===String(c.id)?'active':''} onClick={()=>setChannelId(String(c.id))}># {text(c.name)||(lang==='es'?'canal':'channel')}{c.is_private===true?' 🔒':''}</button>)}
       </aside>
       <section className="panel chat-main">
         {error && <ErrorBox message={error} lang={lang}/>}
