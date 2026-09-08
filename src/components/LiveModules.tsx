@@ -342,7 +342,7 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
   const fmtTime=(v:any)=>v?new Date(v).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'—'
 
   return <section className="page overview-page">
-    <div className="page-head overview-head"><div><span className="date-kicker">{lang==='es'?'DATOS EN VIVO DEL CONSULTORIO':'LIVE PRACTICE DATA'}</span><h1>{lang==='es'?'Resumen':'Overview'}</h1><p>{org ? (lang==='es'?\`Esto es lo que está pasando en \${org.organizationName}.\`:\`Here’s what’s happening across \${org.organizationName}.\`) : (lang==='es'?'Cargando tu consultorio…':'Loading your practice…')}</p></div><button className="refresh-button" onClick={()=>void load()}><RefreshCw size={15}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>
+    <div className="page-head overview-head"><div><span className="date-kicker">{lang==='es'?'DATOS EN VIVO DEL CONSULTORIO':'LIVE PRACTICE DATA'}</span><h1>{lang==='es'?'Resumen':'Overview'}</h1><p>{org ? (lang==='es'?`Esto es lo que está pasando en ${org.organizationName}.`:`Here’s what’s happening across ${org.organizationName}.`) : (lang==='es'?'Cargando tu consultorio…':'Loading your practice…')}</p></div><button className="refresh-button" onClick={()=>void load()}><RefreshCw size={15}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>
     {orgError && <ErrorBox message={orgError} lang={lang}/>}
     {error && <ErrorBox message={error} lang={lang}/>}
     <div className="metric-grid">
