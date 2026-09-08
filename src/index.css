@@ -283,3 +283,7 @@ body{background:#f5f6fb;color:var(--text)}
 @media(max-width:760px){
   .oculivo-logo-image img,.sidebar-top .oculivo-logo-image img{width:170px}
 }
+
+.sidebar-top{background:#070717!important}
+.oculivo-logo-image{background:#070717}
+.auth-brand .oculivo-logo-image,.brand-mobile .oculivo-logo-image{background:#070717}
