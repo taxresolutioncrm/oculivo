@@ -260,7 +260,7 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
     <div className="chat-layout">
       <aside className="chat-channels">
         <div className="chat-channel-title"><strong>{lang==='es'?'Canales':'Channels'}</strong>{['owner','admin'].includes(org?.role||'')&&!channels.length&&<button onClick={()=>void createChannel('general')} disabled={busy}><Plus size={14}/>General</button>}</div>
-        {['owner','admin'].includes(org?.role||'')&&<form className="chat-channel-create" onSubmit={e=>{e.preventDefault();void createChannel(newChannel)}}><input value={newChannel} onChange={e=>setNewChannel(e.target.value)} placeholder={lang==='es'?'Nuevo canal':'New channel'}/><button disabled={busy||!newChannel.trim()}><Plus size={13}/></button></form>}
+        {['owner','admin'].includes(org?.role||'')&&<form className="chat-channel-create" onSubmit={e=>{e.preventDefault();void createChannel(newChannel)}}><input value={newChannel} onChange={e=>setNewChannel(e.target.value)} placeholder={lang==='es'?'Nuevo canal':'New channel'}/><button type="submit" disabled={busy||!newChannel.trim()}><Plus size={13}/></button></form>}
         {channels.map(c=><button key={String(c.id)} className={channelId===String(c.id)?'active':''} onClick={()=>setChannelId(String(c.id))}># {text(c.name)||(lang==='es'?'canal':'channel')}{c.is_private===true?' 🔒':''}</button>)}
       </aside>
       <section className="panel chat-main">
@@ -268,7 +268,7 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
         {!channelId ? <Empty message={lang==='es'?'Aún no hay canal del equipo':'No team channel yet'} lang={lang}/> :
         <>
           <div className="chat-messages">{messages.length ? messages.map((m,i)=><div className={String(m.sender_id)===session.user.id?'chat-message mine':'chat-message'} key={text(m.id)||String(i)}><div><strong>{String(m.sender_id)===session.user.id?(lang==='es'?'Tú':'You'):(lang==='es'?'Miembro del equipo':'Team member')}</strong><span>{text(m.created_at).replace('T',' ').slice(0,16)}</span></div><p>{text(m.body)}</p></div>) : <Empty message={lang==='es'?'Aún no hay mensajes':'No messages yet'} lang={lang}/>}</div>
-          {org?.role==='read_only'?<div className="inbox-readonly-note">{lang==='es'?'Tu rol tiene acceso de solo lectura.':'Your role has read-only access.'}</div>:<form className="chat-compose" onSubmit={sendMessage}><input value={body} onChange={e=>setBody(e.target.value)} placeholder={lang==='es'?'Mensaje al equipo…':'Message the team…'} /><button disabled={busy || !body.trim()}><Send size={16}/>{lang==='es'?'Enviar':'Send'}</button></form>}
+          {org?.role==='read_only'?<div className="inbox-readonly-note">{lang==='es'?'Tu rol tiene acceso de solo lectura.':'Your role has read-only access.'}</div>:<form className="chat-compose" onSubmit={sendMessage}><input value={body} onChange={e=>setBody(e.target.value)} placeholder={lang==='es'?'Mensaje al equipo…':'Message the team…'} /><button type="submit" disabled={busy || !body.trim()}><Send size={16}/>{lang==='es'?'Enviar':'Send'}</button></form>}
         </>}
       </section>
     </div>}
