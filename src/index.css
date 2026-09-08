@@ -253,3 +253,37 @@ body{background:#f5f6fb;color:var(--text)}
   .overview-appointment{grid-template-columns:90px minmax(0,1fr);gap:10px}
   .overview-appointment>.status-badge{grid-column:2;justify-self:start}
 }
+
+
+/* Exact website logo asset + reachable sidebar closeout */
+.oculivo-logo-image{display:flex;align-items:center;min-width:0}
+.oculivo-logo-image img{display:block;width:187px;height:auto;max-width:100%;object-fit:contain}
+.sidebar-top .oculivo-logo-image img{width:184px}
+.auth-brand .oculivo-logo-image img{width:260px}
+.brand-mobile .oculivo-logo-image img{width:220px}
+
+/* keep every primary section reachable without burying lower tabs */
+.sidebar-nav-scroll{padding:4px 10px 6px!important;scrollbar-gutter:stable;overflow-y:auto!important}
+.nav-section{gap:2px!important;margin-bottom:5px!important}
+.nav-section-label{padding:5px 9px 2px!important;font-size:7px!important;line-height:1.1}
+.nav-item{min-height:33px!important;padding:6px 9px!important;font-size:12px!important;line-height:1.05!important;border-radius:8px!important}
+.nav-item svg{width:15px;height:15px}
+.sidebar-ai{margin:5px 10px!important;padding:8px 10px!important;min-height:42px!important}
+.help-card{margin:5px 10px!important;padding:8px 10px!important;min-height:42px!important}
+.sidebar-foot{padding:7px 10px!important;min-height:48px!important}
+.practice-wrap{flex:0 0 auto}
+.sidebar-top{flex:0 0 auto}
+@media(max-height:820px){
+  .nav-item{min-height:31px!important;padding:5px 8px!important}
+  .nav-section{margin-bottom:3px!important}
+  .nav-section-label{padding-top:3px!important}
+  .sidebar-ai small,.help-card small{display:none}
+  .sidebar-ai,.help-card{min-height:36px!important;padding:6px 9px!important}
+}
+@media(max-width:760px){
+  .oculivo-logo-image img,.sidebar-top .oculivo-logo-image img{width:170px}
+}
+
+.sidebar-top{background:#070717!important}
+.oculivo-logo-image{background:#070717}
+.auth-brand .oculivo-logo-image,.brand-mobile .oculivo-logo-image{background:#070717}

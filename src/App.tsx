@@ -79,10 +79,7 @@ const moduleCopy:Record<Lang,Record<string,[string,string]>> = {
 }
 
 function Brand(){
-  return <div className="oculivo-logo-exact" aria-label="Oculivo">
-    <svg viewBox="0 0 64 44" aria-hidden="true"><path d="M3 22C11 7 25 1 32 1c11 0 22 7 29 21-8 14-20 21-29 21C19 43 10 36 3 22Z" fill="#6b22ff"/><path d="M14 22C20 10 27 7 34 7c9 0 17 6 23 15-6 10-14 15-23 15-9 0-15-5-20-15Z" fill="#04b9ff"/><circle cx="33" cy="22" r="10" fill="#11113b"/><circle cx="33" cy="22" r="5.4" fill="#8a58ff"/><circle cx="36" cy="18" r="2.2" fill="#d7f6ff"/></svg>
-    <span className="oculivo-word-exact">OCUL<b>IVO</b></span>
-  </div>
+  return <div className="oculivo-logo-image" aria-label="Oculivo"><img src="/oculivo-website-logo.png" alt="Oculivo"/></div>
 }
 
 function Login(){
@@ -239,7 +236,7 @@ function Shell({session}:{session:Session}){
     <aside className={open?'sidebar open':'sidebar'}>
       <div className="sidebar-top"><Brand/><button className="icon-btn mobile-only" onClick={()=>setOpen(false)}><X size={22}/></button></div>
       <div className="practice-wrap"><button className="practice-switch" onClick={()=>setOrgMenuOpen(v=>!v)} aria-expanded={orgMenuOpen}><div className="practice-icon">O</div><div><span>{t.practice}</span><strong>{selectedOrg?.name||t.yourPractice}</strong></div><ChevronDown size={14}/></button>{orgMenuOpen&&<div className="practice-menu">{orgs.map(org=><button key={org.id} className={org.id===selectedOrgId?'active':''} onClick={()=>chooseOrg(org.id)}><strong>{org.name}</strong><span>{org.role}</span></button>)}</div>}</div>
-      <nav className="sidebar-nav-scroll" aria-label={lang==='es'?'Navegación principal':'Primary navigation'}>{navGroups.map(group=><div className="nav-section" key={group.key}><div className="nav-section-label">{lang==='es'?group.es:group.en}</div>{nav.filter(item=>item.group===group.key).map(({key,path,icon:Icon})=><button type="button" key={path} className={location.pathname===path?'nav-item active':'nav-item'} aria-current={location.pathname===path?'page':undefined} onClick={()=>navigate(path)}><Icon size={17}/><span>{t[key]}</span></button>)}</div>)}</nav>
+      <nav className="sidebar-nav-scroll" aria-label={lang==='es'?'Navegación principal':'Primary navigation'}>{navGroups.map(group=><div className="nav-section" key={group.key}><div className="nav-section-label">{lang==='es'?group.es:group.en}</div>{nav.filter(item=>item.group===group.key).map(({key,path,icon:Icon})=><a href={path} key={path} className={location.pathname===path?'nav-item active':'nav-item'} aria-current={location.pathname===path?'page':undefined} onClick={e=>{if(!e.metaKey&&!e.ctrlKey&&!e.shiftKey&&e.button===0){e.preventDefault();navigate(path);setOpen(false)}}}><Icon size={17}/><span>{t[key]}</span></a>)}</div>)}</nav>
       <div className="sidebar-spacer"/>
       <button className="sidebar-ai" onClick={()=>setAssistantOpen(true)}><Sparkles size={16}/><div><strong>{lang==='es'?'Preguntar a Oculivo':'Ask Oculivo'}</strong><small>{lang==='es'?'Asistente de IA':'AI practice assistant'}</small></div></button>
       <NavLink to="/support" className="help-card"><span>?</span><div><strong>{t.needHelp}</strong><small>{t.contactSupport}</small></div></NavLink>
