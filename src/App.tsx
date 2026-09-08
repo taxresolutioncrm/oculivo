@@ -79,7 +79,10 @@ const moduleCopy:Record<Lang,Record<string,[string,string]>> = {
 }
 
 function Brand(){
-  return <div className="brand-lockup brand-wordmark"><img src="/oculivo-wordmark.svg" alt="Oculivo"/></div>
+  return <div className="oculivo-logo-exact" aria-label="Oculivo">
+    <svg viewBox="0 0 64 44" aria-hidden="true"><path d="M3 22C11 7 25 1 32 1c11 0 22 7 29 21-8 14-20 21-29 21C19 43 10 36 3 22Z" fill="#6b22ff"/><path d="M14 22C20 10 27 7 34 7c9 0 17 6 23 15-6 10-14 15-23 15-9 0-15-5-20-15Z" fill="#04b9ff"/><circle cx="33" cy="22" r="10" fill="#11113b"/><circle cx="33" cy="22" r="5.4" fill="#8a58ff"/><circle cx="36" cy="18" r="2.2" fill="#d7f6ff"/></svg>
+    <span className="oculivo-word-exact">OCUL<b>IVO</b></span>
+  </div>
 }
 
 function Login(){
