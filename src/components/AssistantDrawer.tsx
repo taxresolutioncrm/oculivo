@@ -7,11 +7,10 @@ import { supabase } from '../lib/supabase'
 type Lang='en'|'es'
 type Msg={role:'user'|'assistant';content:string}
 
-export default function AssistantDrawer({session,lang}:{session:Session;lang:Lang}){
-  const [open,setOpen]=useState(false),[messages,setMessages]=useState<Msg[]>([]),[text,setText]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
+export default function AssistantDrawer({session,lang,open,onClose}:{session:Session;lang:Lang;open:boolean;onClose:()=>void}){
+  const [messages,setMessages]=useState<Msg[]>([]),[text,setText]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
   const end=useRef<HTMLDivElement|null>(null)
   useEffect(()=>{end.current?.scrollIntoView({behavior:'smooth'})},[messages,busy])
-  useEffect(()=>{const onOpen=()=>setOpen(true);window.addEventListener('oculivo-ai-open',onOpen);return()=>window.removeEventListener('oculivo-ai-open',onOpen)},[])
 
   async function send(e:React.FormEvent){
     e.preventDefault()
@@ -39,7 +38,7 @@ export default function AssistantDrawer({session,lang}:{session:Session;lang:Lan
 
   return <>
     {open&&<aside className="ai-drawer">
-      <header><div className="ai-drawer-icon"><Bot size={18}/></div><div><strong>Oculivo AI</strong><span>{lang==='es'?'Asistente del consultorio':'Practice assistant'}</span></div><button onClick={()=>setOpen(false)}><X size={18}/></button></header>
+      <header><div className="ai-drawer-icon"><Bot size={18}/></div><div><strong>Oculivo AI</strong><span>{lang==='es'?'Asistente del consultorio':'Practice assistant'}</span></div><button onClick={onClose}><X size={18}/></button></header>
       <div className="ai-safety">{lang==='es'?'Puede ayudar con flujos del consultorio y resumir contexto. No cambia contraseñas ni ejecuta nómina.':'Can help with practice workflows and summarize context. It cannot change passwords or run payroll.'}</div>
       <div className="ai-thread">
         {!messages.length&&<div className="ai-empty"><Sparkles size={22}/><strong>{lang==='es'?'¿En qué puedo ayudarte?':'How can I help?'}</strong><p>{lang==='es'?'Pregunta sobre pacientes, agenda, facturación, comunicaciones o flujos de Oculivo.':'Ask about patients, scheduling, billing, communications, or Oculivo workflows.'}</p></div>}
