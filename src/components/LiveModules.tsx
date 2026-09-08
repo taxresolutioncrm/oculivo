@@ -217,9 +217,10 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
   useEffect(()=>{void loadMessages(channelId)},[channelId,org?.organizationId])
 
   async function createChannel(name='general') {
-    if (!org || !['owner','admin'].includes(org?.role||'')) return
+    if(!org){setError(lang==='es'?'No se encontró un consultorio activo.':'No active practice found.');return}
+    if(!['owner','admin'].includes(org?.role||'')){setError(lang==='es'?'Solo propietario o administrador puede crear canales.':'Only owners or admins can create channels.');return}
     const clean=name.trim().toLowerCase().replace(/[^a-z0-9-_ ]+/g,'').replace(/\s+/g,'-').slice(0,40)
-    if(!clean)return
+    if(!clean){setError(lang==='es'?'Escribe un nombre de canal válido.':'Enter a valid channel name.');return}
     setBusy(true); setError('')
     const existing=channels.find(c=>text(c.name).toLowerCase()===clean)
     if(existing){setChannelId(String(existing.id));setNewChannel('');setBusy(false);return}
@@ -241,7 +242,10 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
 
   async function sendMessage(e:React.FormEvent) {
     e.preventDefault()
-    if (!org || !channelId || !body.trim() || org?.role==='read_only') return
+    if(!org){setError(lang==='es'?'No se encontró un consultorio activo.':'No active practice found.');return}
+    if(!channelId){setError(lang==='es'?'Selecciona un canal antes de enviar.':'Select a channel before sending.');return}
+    if(org?.role==='read_only'){setError(lang==='es'?'Tu rol tiene acceso de solo lectura.':'Your role has read-only access.');return}
+    if(!body.trim()||busy)return
     setBusy(true); setError('')
     const result = await supabase.from('team_messages').insert({
       organization_id: org.organizationId,
