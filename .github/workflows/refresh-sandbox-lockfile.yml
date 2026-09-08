@@ -1,5 +1,5 @@
 name: Refresh Sandbox Lockfile
-# rerun-router-vite-upgrade
+# rerun-vite8-plugin6
 on:
   push:
     paths: ['.github/workflows/refresh-sandbox-lockfile.yml']
