@@ -1,4 +1,5 @@
 name: Launch Hardening Audit
+# rerun-after-security-upgrades
 on:
   push:
     branches: [true-final-sandbox-closeout]
