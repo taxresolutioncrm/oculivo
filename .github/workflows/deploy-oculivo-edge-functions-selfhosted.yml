@@ -1,4 +1,4 @@
-name: Deploy Oculivo Edge Functions Self Hosted
+name: Deploy Oculivo Edge Functions
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
       PROJECT_REF: czejdbdwaumbdepiswcu
