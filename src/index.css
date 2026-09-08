@@ -287,3 +287,103 @@ body{background:#f5f6fb;color:var(--text)}
 .sidebar-top{background:#070717!important}
 .oculivo-logo-image{background:#070717}
 .auth-brand .oculivo-logo-image,.brand-mobile .oculivo-logo-image{background:#070717}
+
+
+/* Final readability + lower-nav closeout */
+:root{--crm-body-font:14px}
+body{font-size:var(--crm-body-font)}
+.sidebar{width:236px}
+.app-main{margin-left:236px}
+.sidebar-top{height:60px}
+.sidebar-nav-scroll{padding:6px 10px 10px!important}
+.nav-section{gap:3px!important;margin-bottom:7px!important}
+.nav-section-label{padding:6px 9px 3px!important;font-size:8.5px!important;letter-spacing:.14em!important}
+.nav-item{min-height:38px!important;padding:7px 10px!important;font-size:14px!important;font-weight:700!important;line-height:1.15!important}
+.nav-item svg{width:18px!important;height:18px!important}
+.practice-switch{margin:10px 10px 8px!important}
+.practice-switch span{font-size:8px!important}
+.practice-switch strong{font-size:12px!important}
+.sidebar-ai,.help-card{font-family:inherit;text-decoration:none;text-align:left;width:calc(100% - 20px)}
+.sidebar-ai strong,.help-card strong{font-size:12px!important}
+.sidebar-ai small,.help-card small{font-size:9px!important}
+.sidebar-foot strong{font-size:11px!important}
+.sidebar-foot span{font-size:9px!important}
+
+.page{padding:28px 30px 40px}
+.page h1{font-size:31px}
+.page-head p{font-size:14px}
+.date-kicker{font-size:9px}
+.metric-card>div span{font-size:13px}
+.metric-card strong{font-size:30px}
+.metric-card p{font-size:11px}
+.panel-title-row h2{font-size:14px}
+.panel-title-row p{font-size:11px}
+.panel-title-row a,.tiny-count{font-size:10px}
+.table-head{font-size:10px}
+.empty-row{font-size:12px}
+
+.wf-head h2{font-size:22px!important}
+.wf-head p{font-size:12px!important}
+.wf-card h3,.wf-row h3{font-size:15px!important}
+.wf-card p,.wf-row p{font-size:11.5px!important;line-height:1.5}
+.wf-card footer button,.wf-row>button{font-size:10.5px!important;padding:7px 10px!important}
+.wf-date b{font-size:11.5px!important}
+.wf-date span{font-size:10px!important}
+.wf-field>span{font-size:11.5px!important}
+.wf-field input,.wf-field select,.wf-field textarea{font-size:13px!important;padding:11px 12px!important}
+.wf-alert{font-size:11.5px!important}
+.wf-tabs button{font-size:12px!important;padding:8px 14px!important}
+.status-badge,.ready-pill{font-size:10.5px!important}
+.clinical-mini span{font-size:9.5px!important}
+.clinical-mini b{font-size:11.5px!important}
+
+.patient-card-name h3{font-size:15px!important}
+.patient-card-name span{font-size:10.5px!important}
+.patient-card-facts span{font-size:10.5px!important}
+.patient-open-label{font-size:10.5px!important}
+.patient-info-grid span,.patient-notes-panel>span,.patient-activity-head span{font-size:9px!important}
+.patient-info-grid strong{font-size:12.5px!important}
+.patient-contact-panel span{font-size:9.5px!important}
+.patient-contact-panel strong{font-size:11.5px!important}
+.patient-notes-panel p{font-size:11.5px!important}
+.patient-linked-grid span{font-size:9px!important}
+.patient-linked-grid strong{font-size:17px!important}
+.patient-activity-item span{font-size:8.5px!important}
+.patient-activity-item strong{font-size:11.5px!important}
+.patient-activity-item small{font-size:9.5px!important}
+
+.inbox-thread-list strong{font-size:12.5px!important}
+.inbox-thread-list span{font-size:9.5px!important}
+.inbox-thread h3{font-size:14px!important}
+.inbox-thread header span{font-size:9.5px!important}
+.message-bubble strong{font-size:10.5px!important}
+.message-bubble span{font-size:8.5px!important}
+.message-bubble p{font-size:11.5px!important}
+.inbox-empty strong{font-size:13px!important}
+.inbox-empty p{font-size:11px!important}
+
+.secondary-action,.new-patient{font-size:11.5px!important}
+.searchbox{font-size:13px!important}
+.context-strip>div:first-child span{font-size:9px!important}
+.context-strip>div:first-child strong{font-size:14px!important}
+.context-strip-meta{font-size:10px!important}
+
+/* bottom nav must never be covered by AI/help/footer layers */
+.sidebar-nav-scroll{position:relative;z-index:5;flex:1 1 auto!important;min-height:0!important;padding-bottom:14px!important}
+.sidebar-ai,.help-card,.sidebar-foot{position:relative!important;z-index:1!important;flex:0 0 auto!important}
+.sidebar-spacer{display:none!important}
+
+@media(max-height:850px){
+  .sidebar{width:236px}
+  .app-main{margin-left:236px}
+  .nav-item{min-height:35px!important;padding:6px 9px!important;font-size:13.5px!important}
+  .nav-section{margin-bottom:4px!important}
+  .nav-section-label{padding-top:3px!important}
+  .sidebar-ai,.help-card{padding:7px 9px!important;min-height:38px!important}
+  .sidebar-ai small,.help-card small{display:none}
+}
+@media(max-width:760px){
+  .sidebar{width:min(88vw,310px)}
+  .app-main{margin-left:0}
+  .nav-item{min-height:42px!important;font-size:15px!important}
+}
