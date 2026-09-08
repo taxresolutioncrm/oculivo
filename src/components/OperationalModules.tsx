@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { Plus, Save, Trash2, X, Clock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -55,8 +56,9 @@ function Head({title,sub,button,onClick,disabled=false}:{title:string;sub:string
 function PatientSelect({value,setValue,rows,lang='en'}:{value:string;setValue:(v:string)=>void;rows:Row[];lang?:Lang}){return <select required value={value} onChange={e=>setValue(e.target.value)}><option value="">{lang==='es'?'Seleccionar paciente':'Select patient'}</option>{rows.map(p=><option key={p.id} value={p.id}>{s(p.first_name)+' '+s(p.last_name)}</option>)}</select>}
 
 export function PatientsOps({session,lang}:{session:Session;lang:Lang}){
+ const location=useLocation()
  const {org,error:oe}=useOrg(session),d=useRows('patients',org?.organizationId),[open,setOpen]=useState(false),[edit,setEdit]=useState<Row|null>(null),[f,setF]=useState<Row>({}),[msg,setMsg]=useState('')
- useEffect(()=>{const params=new URLSearchParams(window.location.search);if(params.get('new')==='1'){start();params.delete('new');const next=window.location.pathname+(params.toString()?'?'+params.toString():'');window.history.replaceState({},'',next)}},[])
+ useEffect(()=>{const params=new URLSearchParams(location.search);if(params.get('new')==='1'){start();params.delete('new');const next=location.pathname+(params.toString()?'?'+params.toString():'');window.history.replaceState({},'',next)}},[location.search])
  function start(r?:Row){setEdit(r||null);setF(r?{...r}:{first_name:'',last_name:'',preferred_name:'',date_of_birth:'',email:'',phone:'',preferred_language:'en',notes:''});setMsg('');setOpen(true)}
  async function save(e:any){e.preventDefault();if(!org||!patientWriter(org.role))return;const p={first_name:s(f.first_name).trim(),last_name:s(f.last_name).trim(),preferred_name:s(f.preferred_name)||null,date_of_birth:s(f.date_of_birth)||null,email:s(f.email)||null,phone:s(f.phone)||null,preferred_language:s(f.preferred_language)||'en',notes:s(f.notes)||null};const r=edit?await supabase.from('patients').update(p).eq('id',edit.id).eq('organization_id',org.organizationId):await supabase.from('patients').insert({organization_id:org.organizationId,...p});if(r.error)setMsg(r.error.message);else{setOpen(false);await d.load()}}
  async function archive(r:Row){if(!org||!patientWriter(org.role)||!confirm(lang==='es'?'¿Archivar este paciente?':'Archive this patient?'))return;const q=await supabase.from('patients').update({status:'archived'}).eq('id',r.id).eq('organization_id',org.organizationId);if(q.error)setMsg(q.error.message);else await d.load()}
