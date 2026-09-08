@@ -147,22 +147,30 @@ function SearchOverlay({session,open,onClose,lang}:{session:Session;open:boolean
       const preferred=localStorage.getItem('oculivo-org-id')||''
       const allowed=(memberships.data||[]).map(m=>String(m.organization_id))
       const org=allowed.includes(preferred)?preferred:allowed[0]
-      const sources:{table:string;route:string;label:string;columns:string}[]=[
-        {table:'patients',route:'/patients',label:lang==='es'?'Pacientes':'Patients',columns:'id,first_name,last_name,email,phone,status'},
-        {table:'appointments',route:'/schedule',label:lang==='es'?'Agenda':'Schedule',columns:'id,appointment_type,starts_at,status,room'},
-        {table:'communication_threads',route:'/inbox',label:lang==='es'?'Bandeja':'Inbox',columns:'id,subject,phone_number,email_address,channel,status,last_message_at'},
-        {table:'optical_orders',route:'/optical',label:lang==='es'?'Óptica':'Optical',columns:'id,order_number,order_type,status'},
-        {table:'invoices',route:'/billing',label:lang==='es'?'Facturación':'Billing',columns:'id,invoice_number,status,patient_amount,amount_paid,created_at'},
-        {table:'documents',route:'/documents',label:lang==='es'?'Documentos':'Documents',columns:'id,file_name,document_type,created_at'},
-        {table:'support_tickets',route:'/support',label:lang==='es'?'Soporte':'Support',columns:'id,subject,category,priority,status,created_at'}
+      const q=query.trim().toLowerCase()
+      const [patients,appointments,threads,optical,invoices,documents,support]=await Promise.all([
+        supabase.from('patients').select('id,first_name,last_name,email,phone,status').eq('organization_id',org).limit(60),
+        supabase.from('appointments').select('id,appointment_type,starts_at,status,room').eq('organization_id',org).limit(60),
+        supabase.from('communication_threads').select('id,subject,phone_number,email_address,channel,status,last_message_at').eq('organization_id',org).limit(60),
+        supabase.from('optical_orders').select('id,order_number,order_type,status').eq('organization_id',org).limit(60),
+        supabase.from('invoices').select('id,invoice_number,status,patient_amount,amount_paid,created_at').eq('organization_id',org).limit(60),
+        supabase.from('documents').select('id,file_name,document_type,created_at').eq('organization_id',org).limit(60),
+        supabase.from('support_tickets').select('id,subject,category,priority,status,created_at').eq('organization_id',org).limit(60)
+      ])
+      const packs=[
+        {table:'patients',route:'/patients',label:lang==='es'?'Pacientes':'Patients',result:patients},
+        {table:'appointments',route:'/schedule',label:lang==='es'?'Agenda':'Schedule',result:appointments},
+        {table:'communication_threads',route:'/inbox',label:lang==='es'?'Bandeja':'Inbox',result:threads},
+        {table:'optical_orders',route:'/optical',label:lang==='es'?'Óptica':'Optical',result:optical},
+        {table:'invoices',route:'/billing',label:lang==='es'?'Facturación':'Billing',result:invoices},
+        {table:'documents',route:'/documents',label:lang==='es'?'Documentos':'Documents',result:documents},
+        {table:'support_tickets',route:'/support',label:lang==='es'?'Soporte':'Support',result:support}
       ]
-      const results=await Promise.all(sources.map(async({table,route,label,columns})=>{
-        const r=await supabase.from(table).select(columns).eq('organization_id',org).limit(60)
-        if(r.error)return {error:r.error.message,hits:[] as SearchHit[]}
-        const q=query.trim().toLowerCase()
-        const found=((r.data||[]) as Record<string,unknown>[]).filter(row=>JSON.stringify(row).toLowerCase().includes(q)).slice(0,8).map(row=>({table,route,title:hitTitle(row),meta:label+(hitMeta(row)?' · '+hitMeta(row):'')}))
+      const results=packs.map(({table,route,label,result})=>{
+        if(result.error)return {error:result.error.message,hits:[] as SearchHit[]}
+        const found=((result.data||[]) as Record<string,unknown>[]).filter(row=>JSON.stringify(row).toLowerCase().includes(q)).slice(0,8).map(row=>({table,route,title:hitTitle(row),meta:label+(hitMeta(row)?' · '+hitMeta(row):'')}))
         return {error:'',hits:found}
-      }))
+      })
       const bad=results.find(x=>x.error)
       if(bad?.error)setError(lang==='es'?'No se pudo completar la búsqueda.':'Search could not be completed.')
       setHits(results.flatMap(x=>x.hits).slice(0,30))
