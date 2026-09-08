@@ -141,12 +141,7 @@ body{background:#f5f6fb;color:var(--text)}
 
 
 /* Approved Oculivo wordmark + patient profile polish */
-.brand-wordmark{display:flex!important;align-items:center!important;min-width:0}
-.brand-wordmark img{display:block;width:188px;max-width:100%;height:auto;object-fit:contain}
-.sidebar .brand-wordmark img{width:174px}
 .sidebar-top{min-height:72px;padding:13px 16px!important}
-.auth-brand .brand-wordmark img{width:238px}
-.brand-mobile .brand-wordmark img{width:205px}
 
 .patient-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
 .patient-card{cursor:pointer;position:relative;overflow:hidden;padding:0!important;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
@@ -212,18 +207,9 @@ body{background:#f5f6fb;color:var(--text)}
 .patient-activity-empty{padding:34px 20px;text-align:center;color:#8b90a4;font-size:9px}
 
 @media(max-width:1100px){.patient-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.patient-profile-body{grid-template-columns:1fr}.patient-linked-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.patient-activity-list{max-height:360px}}
-@media(max-width:760px){.sidebar .brand-wordmark img{width:162px}.patient-grid{grid-template-columns:1fr!important}.patient-detail-overlay{padding:8px!important}.patient-profile-modal{width:100%;max-height:96vh;border-radius:16px}.patient-profile-header{align-items:flex-start;padding:15px}.patient-profile-identity{align-items:flex-start}.patient-profile-identity h2{font-size:19px}.patient-avatar.large{width:52px;height:52px;border-radius:15px}.patient-profile-actions .wf-primary{width:auto!important;font-size:0!important;padding:0 11px!important}.patient-profile-actions .wf-primary svg{margin:0}.patient-profile-body{padding:10px}.patient-info-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.patient-contact-panel{grid-template-columns:1fr}.patient-linked-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.patient-grid{grid-template-columns:1fr!important}.patient-detail-overlay{padding:8px!important}.patient-profile-modal{width:100%;max-height:96vh;border-radius:16px}.patient-profile-header{align-items:flex-start;padding:15px}.patient-profile-identity{align-items:flex-start}.patient-profile-identity h2{font-size:19px}.patient-avatar.large{width:52px;height:52px;border-radius:15px}.patient-profile-actions .wf-primary{width:auto!important;font-size:0!important;padding:0 11px!important}.patient-profile-actions .wf-primary svg{margin:0}.patient-profile-body{padding:10px}.patient-info-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.patient-contact-panel{grid-template-columns:1fr}.patient-linked-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* Final Oculivo UI/functionality closeout */
-.oculivo-logo-exact{display:flex;align-items:center;gap:7px;font-weight:900;font-size:22px;letter-spacing:-.02em;white-space:nowrap}
-.oculivo-logo-exact svg{width:49px;height:34px;flex:0 0 auto}
-.oculivo-word-exact{color:#4e26ff;line-height:1}
-.oculivo-word-exact b{color:#1e84ff}
-.sidebar-top .oculivo-logo-exact{transform:scale(1.06);transform-origin:left center}
-.auth-brand .oculivo-logo-exact{font-size:30px;gap:10px}
-.auth-brand .oculivo-logo-exact svg{width:66px;height:45px}
-.brand-mobile .oculivo-logo-exact{font-size:26px}
-.brand-mobile .oculivo-logo-exact svg{width:58px;height:40px}
 
 .sidebar-nav-scroll{scrollbar-gutter:stable;position:relative;z-index:2}
 .nav-item{width:100%;border:1px solid transparent;background:transparent;text-align:left;cursor:pointer;font-family:inherit}
@@ -248,19 +234,14 @@ body{background:#f5f6fb;color:var(--text)}
 .overview-appointment-patient span{display:block;margin-top:4px;font-size:9px;color:#747a90;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 @media(max-width:760px){
-  .sidebar-top .oculivo-logo-exact{transform:none;font-size:20px}
-  .sidebar-top .oculivo-logo-exact svg{width:44px;height:31px}
+  
+  
   .overview-appointment{grid-template-columns:90px minmax(0,1fr);gap:10px}
   .overview-appointment>.status-badge{grid-column:2;justify-self:start}
 }
 
 
 /* Exact website logo asset + reachable sidebar closeout */
-.oculivo-logo-image{display:flex;align-items:center;min-width:0}
-.oculivo-logo-image img{display:block;width:187px;height:auto;max-width:100%;object-fit:contain}
-.sidebar-top .oculivo-logo-image img{width:184px}
-.auth-brand .oculivo-logo-image img{width:260px}
-.brand-mobile .oculivo-logo-image img{width:220px}
 
 /* keep every primary section reachable without burying lower tabs */
 .sidebar-nav-scroll{padding:4px 10px 6px!important;scrollbar-gutter:stable;overflow-y:auto!important}
@@ -281,13 +262,11 @@ body{background:#f5f6fb;color:var(--text)}
   .sidebar-ai,.help-card{min-height:36px!important;padding:6px 9px!important}
 }
 @media(max-width:760px){
-  .oculivo-logo-image img,.sidebar-top .oculivo-logo-image img{width:170px}
+  
 }
 
 .sidebar-top{background:#070717!important}
-.oculivo-logo-image{background:#070717}
-.auth-brand .oculivo-logo-image,.brand-mobile .oculivo-logo-image{background:#070717}
-
+.auth-brand .oculivo-logo-image,.brand-mobile 
 
 /* Final readability + lower-nav closeout */
 :root{--crm-body-font:14px}
@@ -444,4 +423,3 @@ body{font-size:var(--crm-body-font)}
 .auth-brand .oculivo-logo svg{width:49px!important;height:34px!important}
 .brand-mobile .oculivo-logo{font-size:22px!important;gap:7px!important}
 .brand-mobile .oculivo-logo svg{width:49px!important;height:34px!important}
-.oculivo-logo-image,.oculivo-logo-exact,.brand-wordmark{display:none!important}
