@@ -2,17 +2,18 @@ import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell, CalendarDays, CircleDollarSign, Glasses, Inbox, LayoutDashboard,
-  Menu, MessageSquareText, Phone, Search, Settings, Stethoscope, TicketCheck,
-  Timer, Users, X, BarChart3, BookOpen, Plus, ChevronDown, LogOut, Files
+  Menu, MessageSquareText, Phone, Search, Stethoscope, TicketCheck,
+  Timer, Users, X, BarChart3, BookOpen, Plus, ChevronDown, LogOut, Files, Sparkles
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { LiveModulePage, LiveOverview } from './components/LiveModules'
+import AssistantDrawer from './components/AssistantDrawer'
 
 type Lang = 'en' | 'es'
 type NavItem = { key:string; path:string; icon:LucideIcon }
-type SearchHit = { table:string; route:string; title:string; meta:string; row:Record<string,unknown> }
+type SearchHit = { table:string; route:string; title:string; meta:string }
 type OrgOption = { id:string; name:string; role:string }
 
 const nav:NavItem[] = [
@@ -75,11 +76,13 @@ function Brand(){
 }
 
 function Login(){
+  const [lang,setLang]=useState<Lang>(()=>(localStorage.getItem('oculivo-lang')==='es'?'es':'en'))
   const [email,setEmail]=useState('')
   const [password,setPassword]=useState('')
   const [error,setError]=useState('')
   const [loading,setLoading]=useState(false)
   const navigate=useNavigate()
+  useEffect(()=>{localStorage.setItem('oculivo-lang',lang);document.documentElement.lang=lang},[lang])
 
   async function signIn(e:React.FormEvent){
     e.preventDefault(); setError(''); setLoading(true)
@@ -90,27 +93,29 @@ function Login(){
   }
 
   async function reset(){
-    if(!email){setError('Enter your email address first.');return}
+    if(!email){setError(lang==='es'?'Primero ingresa tu correo electrónico.':'Enter your email address first.');return}
     setError('')
     const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:'https://app.oculivo.com/reset-password'})
-    setError(error ? error.message : 'Password reset email sent.')
+    setError(error ? error.message : (lang==='es'?'Correo de restablecimiento enviado.':'Password reset email sent.'))
   }
 
   return <main className="auth-page">
-    <section className="auth-brand"><div className="auth-brand-inner"><Brand/><span className="eyebrow">RomyLabs Core Connect</span><h1>Modern eye care operations, connected.</h1><p>Scheduling, patients, clinical workflows, optical, billing, communications, documents, and staff operations in one workspace.</p></div></section>
-    <section className="auth-form-wrap"><form className="auth-card" onSubmit={signIn}><div className="brand-mobile"><Brand/></div><h2>Welcome back</h2><p>Sign in to your Oculivo workspace.</p><label>Email<input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Password<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label>{error&&<div className="auth-note">{error}</div>}<button className="primary-button" disabled={loading}>{loading?'Signing in…':'Sign in'}</button><button className="link-button" type="button" onClick={reset}>Forgot password?</button></form></section>
+    <section className="auth-brand"><div className="auth-brand-inner"><Brand/><span className="eyebrow">RomyLabs Core Connect</span><h1>{lang==='es'?'Operaciones modernas para el cuidado de la vista, conectadas.':'Modern eye care operations, connected.'}</h1><p>{lang==='es'?'Agenda, pacientes, flujos clínicos, óptica, facturación, comunicaciones, documentos y operaciones del personal en un solo espacio.':'Scheduling, patients, clinical workflows, optical, billing, communications, documents, and staff operations in one workspace.'}</p></div></section>
+    <section className="auth-form-wrap"><form className="auth-card" onSubmit={signIn}><div className="auth-login-lang"><button type="button" className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button type="button" className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div><div className="brand-mobile"><Brand/></div><h2>{lang==='es'?'Bienvenido de nuevo':'Welcome back'}</h2><p>{lang==='es'?'Inicia sesión en tu espacio de Oculivo.':'Sign in to your Oculivo workspace.'}</p><label>{lang==='es'?'Correo electrónico':'Email'}<input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>{lang==='es'?'Contraseña':'Password'}<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label>{error&&<div className="auth-note">{error}</div>}<button className="primary-button" disabled={loading}>{loading?(lang==='es'?'Iniciando sesión…':'Signing in…'):(lang==='es'?'Iniciar sesión':'Sign in')}</button><button className="link-button" type="button" onClick={reset}>{lang==='es'?'¿Olvidaste tu contraseña?':'Forgot password?'}</button></form></section>
   </main>
 }
 
 function ResetPassword(){
+  const [lang,setLang]=useState<Lang>(()=>(localStorage.getItem('oculivo-lang')==='es'?'es':'en'))
   const [password,setPassword]=useState('')
   const [message,setMessage]=useState('')
+  useEffect(()=>{localStorage.setItem('oculivo-lang',lang);document.documentElement.lang=lang},[lang])
   async function submit(e:React.FormEvent){
     e.preventDefault()
     const {error}=await supabase.auth.updateUser({password})
-    setMessage(error?error.message:'Password updated. You can return to Oculivo.')
+    setMessage(error?error.message:(lang==='es'?'Contraseña actualizada. Ya puedes volver a Oculivo.':'Password updated. You can return to Oculivo.'))
   }
-  return <main className="center-page"><form className="auth-card" onSubmit={submit}><h2>Set new password</h2><label>New password<input type="password" minLength={12} value={password} onChange={e=>setPassword(e.target.value)} required/></label>{message&&<div className="auth-note">{message}</div>}<button className="primary-button">Update password</button></form></main>
+  return <main className="center-page"><form className="auth-card" onSubmit={submit}><div className="auth-login-lang"><button type="button" className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button type="button" className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div><h2>{lang==='es'?'Establecer nueva contraseña':'Set new password'}</h2><label>{lang==='es'?'Nueva contraseña':'New password'}<input type="password" minLength={12} autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label>{message&&<div className="auth-note">{message}</div>}<button className="primary-button">{lang==='es'?'Actualizar contraseña':'Update password'}</button></form></main>
 }
 
 function safeText(v:unknown){return typeof v==='string'||typeof v==='number'?String(v):''}
@@ -137,25 +142,37 @@ function SearchOverlay({session,open,onClose,lang}:{session:Session;open:boolean
     if(!open||query.trim().length<2){setHits([]);return}
     const handle=setTimeout(async()=>{
       setLoading(true);setError('')
-      const memberships=await supabase.from('organization_memberships').select('organization_id').eq('user_id',session.user.id)
-      if(memberships.error||!memberships.data?.length){setError(memberships.error?.message||'No organization found');setLoading(false);return}
+      const memberships=await supabase.from('organization_memberships').select('organization_id,is_active').eq('user_id',session.user.id).eq('is_active',true)
+      if(memberships.error||!memberships.data?.length){setError(memberships.error?.message||(lang==='es'?'No se encontró un consultorio activo.':'No active practice found.'));setLoading(false);return}
       const preferred=localStorage.getItem('oculivo-org-id')||''
       const allowed=(memberships.data||[]).map(m=>String(m.organization_id))
       const org=allowed.includes(preferred)?preferred:allowed[0]
-      const sources:[string,string,string][]=[
-        ['patients','/patients','Patients'],['appointments','/schedule','Schedule'],['communication_threads','/inbox','Inbox'],
-        ['communication_messages','/phone','Phone'],['optical_orders','/optical','Optical'],['clinical_records','/clinical','Clinical'],
-        ['invoices','/billing','Billing'],['documents','/documents','Documents'],['support_tickets','/support','Support']
+      const q=query.trim().toLowerCase()
+      const [patients,appointments,threads,optical,invoices,documents,support]=await Promise.all([
+        supabase.from('patients').select('id,first_name,last_name,email,phone,status').eq('organization_id',org).limit(60),
+        supabase.from('appointments').select('id,appointment_type,starts_at,status,room').eq('organization_id',org).limit(60),
+        supabase.from('communication_threads').select('id,subject,phone_number,email_address,channel,status,last_message_at').eq('organization_id',org).limit(60),
+        supabase.from('optical_orders').select('id,order_number,order_type,status').eq('organization_id',org).limit(60),
+        supabase.from('invoices').select('id,invoice_number,status,patient_amount,amount_paid,created_at').eq('organization_id',org).limit(60),
+        supabase.from('documents').select('id,file_name,document_type,created_at').eq('organization_id',org).limit(60),
+        supabase.from('support_tickets').select('id,subject,category,priority,status,created_at').eq('organization_id',org).limit(60)
+      ])
+      const packs=[
+        {table:'patients',route:'/patients',label:lang==='es'?'Pacientes':'Patients',result:patients},
+        {table:'appointments',route:'/schedule',label:lang==='es'?'Agenda':'Schedule',result:appointments},
+        {table:'communication_threads',route:'/inbox',label:lang==='es'?'Bandeja':'Inbox',result:threads},
+        {table:'optical_orders',route:'/optical',label:lang==='es'?'Óptica':'Optical',result:optical},
+        {table:'invoices',route:'/billing',label:lang==='es'?'Facturación':'Billing',result:invoices},
+        {table:'documents',route:'/documents',label:lang==='es'?'Documentos':'Documents',result:documents},
+        {table:'support_tickets',route:'/support',label:lang==='es'?'Soporte':'Support',result:support}
       ]
-      const results=await Promise.all(sources.map(async([table,route,label])=>{
-        const r=await supabase.from(table).select('*').eq('organization_id',org).limit(60)
-        if(r.error)return {error:r.error.message,hits:[] as SearchHit[]}
-        const q=query.trim().toLowerCase()
-        const found=((r.data||[]) as Record<string,unknown>[]).filter(row=>JSON.stringify(row).toLowerCase().includes(q)).slice(0,8).map(row=>({table,route,title:hitTitle(row),meta:`${label}${hitMeta(row)?' · '+hitMeta(row):''}`,row}))
+      const results=packs.map(({table,route,label,result})=>{
+        if(result.error)return {error:result.error.message,hits:[] as SearchHit[]}
+        const found=((result.data||[]) as Record<string,unknown>[]).filter(row=>JSON.stringify(row).toLowerCase().includes(q)).slice(0,8).map(row=>({table,route,title:hitTitle(row),meta:label+(hitMeta(row)?' · '+hitMeta(row):'')}))
         return {error:'',hits:found}
-      }))
+      })
       const bad=results.find(x=>x.error)
-      if(bad?.error)setError(bad.error)
+      if(bad?.error)setError(lang==='es'?'No se pudo completar la búsqueda.':'Search could not be completed.')
       setHits(results.flatMap(x=>x.hits).slice(0,30))
       setLoading(false)
     },250)
@@ -174,11 +191,12 @@ function Shell({session}:{session:Session}){
   const [selectedOrgId,setSelectedOrgId]=useState(()=>localStorage.getItem('oculivo-org-id')||'')
   const [lang,setLang]=useState<Lang>(()=>(localStorage.getItem('oculivo-lang')==='es'?'es':'en'))
   const location=useLocation()
+  const navigate=useNavigate()
   useEffect(()=>setOpen(false),[location.pathname])
   useEffect(()=>{
     let active=true
     ;(async()=>{
-      const memberships=await supabase.from('organization_memberships').select('organization_id,role').eq('user_id',session.user.id)
+      const memberships=await supabase.from('organization_memberships').select('organization_id,role,is_active').eq('user_id',session.user.id).eq('is_active',true)
       if(!active||memberships.error||!memberships.data?.length)return
       const ids=memberships.data.map(m=>String(m.organization_id))
       const organizations=await supabase.from('organizations').select('id,name').in('id',ids)
@@ -201,6 +219,7 @@ function Shell({session}:{session:Session}){
   const t=labels[lang]
   const selectedOrg=orgs.find(o=>o.id===selectedOrgId)||orgs[0]
   function chooseOrg(id:string){localStorage.setItem('oculivo-org-id',id);setSelectedOrgId(id);setOrgMenuOpen(false);window.dispatchEvent(new CustomEvent('oculivo-org-change',{detail:id}))}
+  function openNewPatient(){if(location.pathname==='/patients'){window.dispatchEvent(new Event('oculivo-new-patient'));return}sessionStorage.setItem('oculivo-open-new-patient','1');navigate('/patients')}
   async function signOut(){await supabase.auth.signOut()}
 
   return <div className="app-shell">
@@ -209,14 +228,16 @@ function Shell({session}:{session:Session}){
       <div className="practice-wrap"><button className="practice-switch" onClick={()=>setOrgMenuOpen(v=>!v)} aria-expanded={orgMenuOpen}><div className="practice-icon">O</div><div><span>{t.practice}</span><strong>{selectedOrg?.name||t.yourPractice}</strong></div><ChevronDown size={14}/></button>{orgMenuOpen&&<div className="practice-menu">{orgs.map(org=><button key={org.id} className={org.id===selectedOrgId?'active':''} onClick={()=>chooseOrg(org.id)}><strong>{org.name}</strong><span>{org.role}</span></button>)}</div>}</div>
       <nav>{nav.map(({key,path,icon:Icon})=><NavLink key={path} to={path} end={path==='/' } className={({isActive})=>isActive?'nav-item active':'nav-item'}><Icon size={17}/><span>{t[key]}</span></NavLink>)}</nav>
       <div className="sidebar-spacer"/>
+      <button className="sidebar-ai" onClick={()=>window.dispatchEvent(new Event('oculivo-ai-open'))}><Sparkles size={16}/><div><strong>{lang==='es'?'Preguntar a Oculivo':'Ask Oculivo'}</strong><small>{lang==='es'?'Asistente de IA':'AI practice assistant'}</small></div></button>
       <NavLink to="/support" className="help-card"><span>?</span><div><strong>{t.needHelp}</strong><small>{t.contactSupport}</small></div></NavLink>
       <div className="sidebar-foot"><div className="user-chip"><div className="avatar">{name.slice(0,1).toUpperCase()}</div><div><strong>{session.user.email||'Practice owner'}</strong><span>{selectedOrg?.role|| (lang==='es'?'Usuario autenticado':'Authenticated user')}</span></div></div><button className="logout-button" onClick={()=>void signOut()} aria-label={lang==='es'?'Cerrar sesión':'Sign out'} title={lang==='es'?'Cerrar sesión':'Sign out'}><LogOut size={16}/></button></div>
     </aside>
     <div className="app-main">
-      <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><button className="searchbox search-trigger" onClick={()=>setSearchOpen(true)}><Search size={18}/><span>{t.search}</span></button><button className="kbd" onClick={()=>setSearchOpen(true)}>⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div><NavLink to="/phone" className="secondary-action"><Phone size={16}/>{t.call}</NavLink><NavLink to="/inbox" className="icon-action" aria-label="Notifications" title={lang==='es'?'Abrir bandeja':'Open inbox'}><Bell size={17}/></NavLink><NavLink to="/patients" className="new-patient"><Plus size={17}/>{t.newPatient}</NavLink></div></header>
+      <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><button className="searchbox search-trigger" onClick={()=>setSearchOpen(true)}><Search size={18}/><span>{t.search}</span></button><button className="kbd" onClick={()=>setSearchOpen(true)}>⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div><NavLink to="/phone" className="secondary-action"><Phone size={16}/>{t.call}</NavLink><NavLink to="/inbox" className="icon-action" aria-label={lang==='es'?'Abrir bandeja':'Open inbox'} title={lang==='es'?'Abrir bandeja':'Open inbox'}><Bell size={17}/></NavLink><button type="button" className="new-patient" onClick={openNewPatient}><Plus size={17}/>{t.newPatient}</button></div></header>
       <Routes><Route path="/" element={<LiveOverview session={session} lang={lang}/>}/>{Object.entries(moduleCopy[lang]).map(([path,[title,description]])=><Route key={path} path={path} element={<LiveModulePage path={path} title={title} description={description} session={session} lang={lang}/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>
     </div>
     <SearchOverlay session={session} open={searchOpen} onClose={()=>setSearchOpen(false)} lang={lang}/>
+    <AssistantDrawer session={session} lang={lang}/>
     {open&&<div className="overlay" onClick={()=>setOpen(false)}/>}
   </div>
 }
@@ -228,6 +249,6 @@ export default function App(){
     const {data}=supabase.auth.onAuthStateChange((_event,next)=>setSession(next))
     return ()=>data.subscription.unsubscribe()
   },[])
-  if(session===undefined)return <main className="center-page"><div className="loader">Loading Oculivo…</div></main>
+  if(session===undefined)return <main className="center-page"><div className="loader">Oculivo…</div></main>
   return <Routes><Route path="/login" element={session?<Navigate to="/" replace/>:<Login/>}/><Route path="/reset-password" element={<ResetPassword/>}/><Route path="/*" element={session?<Shell session={session}/>:<Navigate to="/login" replace/>}/></Routes>
 }

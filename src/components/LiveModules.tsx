@@ -3,9 +3,16 @@ import { Link } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { CalendarDays, MessageSquareText, Plus, RefreshCw, Send, Users } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { BillingOps, ClinicalOps, DocumentsOps, InboxOps, OpticalOps, PatientsOps, ScheduleOps, SupportOps, TimeclockOps } from './OperationalModules'
+import { BillingOps, ClinicalOps, DocumentsOps, OpticalOps, PatientsOps, ScheduleOps, SupportOps, TimeclockOps } from './OperationalModules'
+import { InboxComms, PhoneOps } from './CommunicationsModules'
 
 type Row = Record<string, unknown>
+function localized(v:unknown,lang:'en'|'es'){
+ const raw=text(v),k=raw.toLowerCase().replace(/[ -]+/g,'_')
+ if(lang!=='es')return raw
+ const m:Record<string,string>={active:'Activo',archived:'Archivado',inactive:'Inactivo',draft:'Borrador',signed:'Firmado',pending:'Pendiente',scheduled:'Programada',confirmed:'Confirmada',completed:'Completada',cancelled:'Cancelada',canceled:'Cancelada',paid:'Pagada',unpaid:'Sin pagar',partial:'Parcial',open:'Abierto',closed:'Cerrado',email:'Correo',sms:'SMS',phone:'Teléfono',general:'General'}
+ return m[k]||raw
+}
 
 type OrgContext = {
   organizationId: string
@@ -76,13 +83,14 @@ function useOrg(session: Session) {
       setError('')
       const memberships = await supabase
         .from('organization_memberships')
-        .select('organization_id,role')
+        .select('organization_id,role,is_active')
         .eq('user_id', session.user.id)
+        .eq('is_active', true)
 
       if (!active) return
       if (memberships.error || !memberships.data?.length) {
         setOrg(null)
-        setError(memberships.error?.message || 'No active Oculivo organization membership was found for this account.')
+        setError(memberships.error?.message || (document.documentElement.lang==='es'?'No se encontró una membresía activa de Oculivo para esta cuenta.':'No active Oculivo organization membership was found for this account.'))
         setLoading(false)
         return
       }
@@ -106,10 +114,11 @@ function useOrg(session: Session) {
         return
       }
 
+      setError('')
       setOrg({
         organizationId,
         role: text(selected.role) || 'member',
-        organizationName: text(organization.data?.name) || 'Your practice',
+        organizationName: text(organization.data?.name) || (document.documentElement.lang==='es'?'Tu consultorio':'Your practice'),
       })
       setLoading(false)
     })()
@@ -136,7 +145,7 @@ function Records({rows,lang='en'}:{rows:Row[];lang?:'en'|'es'}) {
         .filter(([key,value]) => !['id','organization_id','patient_id','provider_id','user_id','sender_id','channel_id'].includes(key) && text(value))
         .slice(0,6)
       return <article className="record-card" key={id}>
-        <div className="record-card-head"><div><strong>{rowTitle(row)}</strong><span>{rowMeta(row)}</span></div>{text(row.status) && <span className="status-badge">{text(row.status)}</span>}</div>
+        <div className="record-card-head"><div><strong>{rowTitle(row)}</strong><span>{rowMeta(row)}</span></div>{text(row.status) && <span className="status-badge">{localized(row.status,lang)}</span>}</div>
         <div className="record-fields">{visible.map(([key,value]) => <div key={key}><span>{prettyKey(key)}</span><b>{text(value).slice(0,120)}</b></div>)}</div>
       </article>
     })}
@@ -186,10 +195,11 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
   const [body,setBody] = useState('')
   const [error,setError] = useState('')
   const [busy,setBusy] = useState(false)
+  const [newChannel,setNewChannel] = useState('')
 
   async function loadChannels() {
     if (!org) return
-    const result = await supabase.from('team_channels').select('*').eq('organization_id',org.organizationId)
+    const result = await supabase.from('team_channels').select('*').eq('organization_id',org.organizationId).order('created_at',{ascending:true})
     if (result.error) { setError(result.error.message); return }
     const next = (result.data || []) as Row[]
     setChannels(next)
@@ -198,7 +208,7 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
 
   async function loadMessages(id=channelId) {
     if (!org || !id) { setMessages([]); return }
-    const result = await supabase.from('team_messages').select('*').eq('organization_id',org.organizationId).eq('channel_id',id).limit(100)
+    const result = await supabase.from('team_messages').select('*').eq('organization_id',org.organizationId).eq('channel_id',id).order('created_at',{ascending:true}).limit(200)
     if (result.error) setError(result.error.message)
     else setMessages((result.data || []) as Row[])
   }
@@ -206,13 +216,17 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
   useEffect(()=>{setChannelId('');setMessages([]);void loadChannels()},[org?.organizationId])
   useEffect(()=>{void loadMessages(channelId)},[channelId,org?.organizationId])
 
-  async function createGeneral() {
-    if (!org) return
+  async function createChannel(name='general') {
+    if (!org || !['owner','admin'].includes(org?.role||'')) return
+    const clean=name.trim().toLowerCase().replace(/[^a-z0-9-_ ]+/g,'').replace(/\s+/g,'-').slice(0,40)
+    if(!clean)return
     setBusy(true); setError('')
+    const existing=channels.find(c=>text(c.name).toLowerCase()===clean)
+    if(existing){setChannelId(String(existing.id));setNewChannel('');setBusy(false);return}
     const result = await supabase.from('team_channels').insert({
       organization_id: org.organizationId,
-      name: 'general',
-      description: 'Practice-wide team chat',
+      name: clean,
+      description: clean==='general' ? (document.documentElement.lang==='es'?'Chat general del consultorio':'Practice-wide team chat') : (document.documentElement.lang==='es'?'Canal del equipo del consultorio':'Practice team channel'),
       is_private: false,
       created_by: session.user.id,
     }).select('*').single()
@@ -220,13 +234,14 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
     else {
       await loadChannels()
       if (result.data?.id) setChannelId(String(result.data.id))
+      setNewChannel('')
     }
     setBusy(false)
   }
 
   async function sendMessage(e:React.FormEvent) {
     e.preventDefault()
-    if (!org || !channelId || !body.trim()) return
+    if (!org || !channelId || !body.trim() || org?.role==='read_only') return
     setBusy(true); setError('')
     const result = await supabase.from('team_messages').insert({
       organization_id: org.organizationId,
@@ -241,18 +256,19 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
 
   return <section className="page">
     <div className="page-head"><div><span className="date-kicker">{lang==='es'?'CHAT DEL EQUIPO EN VIVO':'LIVE TEAM CHAT'}</span><h1>{lang==='es'?'Chat del equipo':'Team Chat'}</h1><p>{lang==='es'?'Canales del consultorio y conversaciones internas del personal.':'Practice channels and internal staff conversations.'}</p></div><button className="refresh-button" onClick={()=>void loadMessages()}><RefreshCw size={15}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>
-    {orgLoading ? <div className="live-loading">Loading team chat…</div> : orgError ? <ErrorBox message={orgError} lang={lang}/> :
+    {orgLoading ? <div className="live-loading">{lang==='es'?'Cargando chat del equipo…':'Loading team chat…'}</div> : orgError ? <ErrorBox message={orgError} lang={lang}/> :
     <div className="chat-layout">
       <aside className="chat-channels">
-        <div className="chat-channel-title"><strong>Channels</strong>{!channels.length && <button onClick={()=>void createGeneral()} disabled={busy}><Plus size={14}/>General</button>}</div>
-        {channels.map(c=><button key={String(c.id)} className={channelId===String(c.id)?'active':''} onClick={()=>setChannelId(String(c.id))}># {text(c.name)||'channel'}{c.is_private===true?' 🔒':''}</button>)}
+        <div className="chat-channel-title"><strong>{lang==='es'?'Canales':'Channels'}</strong>{['owner','admin'].includes(org?.role||'')&&!channels.length&&<button onClick={()=>void createChannel('general')} disabled={busy}><Plus size={14}/>General</button>}</div>
+        {['owner','admin'].includes(org?.role||'')&&<form className="chat-channel-create" onSubmit={e=>{e.preventDefault();void createChannel(newChannel)}}><input value={newChannel} onChange={e=>setNewChannel(e.target.value)} placeholder={lang==='es'?'Nuevo canal':'New channel'}/><button disabled={busy||!newChannel.trim()}><Plus size={13}/></button></form>}
+        {channels.map(c=><button key={String(c.id)} className={channelId===String(c.id)?'active':''} onClick={()=>setChannelId(String(c.id))}># {text(c.name)||(lang==='es'?'canal':'channel')}{c.is_private===true?' 🔒':''}</button>)}
       </aside>
       <section className="panel chat-main">
         {error && <ErrorBox message={error} lang={lang}/>}
         {!channelId ? <Empty message={lang==='es'?'Aún no hay canal del equipo':'No team channel yet'} lang={lang}/> :
         <>
-          <div className="chat-messages">{messages.length ? messages.map((m,i)=><div className={String(m.sender_id)===session.user.id?'chat-message mine':'chat-message'} key={text(m.id)||String(i)}><div><strong>{String(m.sender_id)===session.user.id?'You':'Team member'}</strong><span>{text(m.created_at).replace('T',' ').slice(0,16)}</span></div><p>{text(m.body)}</p></div>) : <Empty message={lang==='es'?'Aún no hay mensajes':'No messages yet'} lang={lang}/>}</div>
-          <form className="chat-compose" onSubmit={sendMessage}><input value={body} onChange={e=>setBody(e.target.value)} placeholder={lang==='es'?'Mensaje al equipo…':'Message the team…'} /><button disabled={busy || !body.trim()}><Send size={16}/>{lang==='es'?'Enviar':'Send'}</button></form>
+          <div className="chat-messages">{messages.length ? messages.map((m,i)=><div className={String(m.sender_id)===session.user.id?'chat-message mine':'chat-message'} key={text(m.id)||String(i)}><div><strong>{String(m.sender_id)===session.user.id?(lang==='es'?'Tú':'You'):(lang==='es'?'Miembro del equipo':'Team member')}</strong><span>{text(m.created_at).replace('T',' ').slice(0,16)}</span></div><p>{text(m.body)}</p></div>) : <Empty message={lang==='es'?'Aún no hay mensajes':'No messages yet'} lang={lang}/>}</div>
+          {org?.role==='read_only'?<div className="inbox-readonly-note">{lang==='es'?'Tu rol tiene acceso de solo lectura.':'Your role has read-only access.'}</div>:<form className="chat-compose" onSubmit={sendMessage}><input value={body} onChange={e=>setBody(e.target.value)} placeholder={lang==='es'?'Mensaje al equipo…':'Message the team…'} /><button disabled={busy || !body.trim()}><Send size={16}/>{lang==='es'?'Enviar':'Send'}</button></form>}
         </>}
       </section>
     </div>}
@@ -277,15 +293,16 @@ function ManualPage({lang}:{lang:'en'|'es'}) {
 }
 
 export function LiveModulePage({path,title,description,session,lang}:{path:string;title:string;description:string;session:Session;lang:'en'|'es'}) {
-  if (path === '/patients') return <PatientsOps session={session} lang={lang}/>
-  if (path === '/schedule') return <ScheduleOps session={session} lang={lang}/>
-  if (path === '/clinical') return <ClinicalOps session={session} lang={lang}/>
-  if (path === '/optical') return <OpticalOps session={session} lang={lang}/>
-  if (path === '/timeclock') return <TimeclockOps session={session} lang={lang}/>
-  if (path === '/billing') return <BillingOps session={session} lang={lang}/>
-  if (path === '/documents') return <DocumentsOps session={session} lang={lang}/>
-  if (path === '/inbox') return <InboxOps session={session} lang={lang}/>
-  if (path === '/support') return <SupportOps session={session} lang={lang}/>
+  if (path === '/patients') return <section className="page"><PatientsOps session={session} lang={lang}/></section>
+  if (path === '/schedule') return <section className="page"><ScheduleOps session={session} lang={lang}/></section>
+  if (path === '/clinical') return <section className="page"><ClinicalOps session={session} lang={lang}/></section>
+  if (path === '/optical') return <section className="page"><OpticalOps session={session} lang={lang}/></section>
+  if (path === '/timeclock') return <section className="page"><TimeclockOps session={session} lang={lang}/></section>
+  if (path === '/billing') return <section className="page"><BillingOps session={session} lang={lang}/></section>
+  if (path === '/documents') return <section className="page"><DocumentsOps session={session} lang={lang}/></section>
+  if (path === '/inbox') return <section className="page"><InboxComms session={session} lang={lang}/></section>
+  if (path === '/phone') return <section className="page"><PhoneOps session={session} lang={lang}/></section>
+  if (path === '/support') return <section className="page"><SupportOps session={session} lang={lang}/></section>
   if (path === '/team-chat') return <TeamChat session={session} lang={lang}/>
   if (path === '/manual') return <ManualPage lang={lang}/>
   if (path === '/reports') return <ReportsPage session={session} lang={lang}/>
@@ -307,7 +324,7 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
       supabase.from('patients').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
       supabase.from('communication_threads').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
       supabase.from('time_entries').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
-      supabase.from('appointments').select('*').eq('organization_id',org.organizationId).limit(8),
+      supabase.from('appointments').select('*').eq('organization_id',org.organizationId).order('starts_at',{ascending:true}).limit(8),
     ])
     const firstError = a.error || p.error || c.error || t.error || arows.error
     if (firstError) setError(firstError.message)
@@ -360,6 +377,6 @@ function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
   },[org?.organizationId])
 
   return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'REPORTES EN VIVO':'LIVE REPORTING'}</span><h1>{lang==='es'?'Reportes':'Reports'}</h1><p>{lang==='es'?'Conteos actuales de registros en los flujos principales de Oculivo.':'Current record counts across core Oculivo workflows.'}</p></div></div>
-    {orgLoading?<div className="live-loading">Loading reports…</div>:orgError?<ErrorBox message={orgError} lang={lang}/>:error?<ErrorBox message={error} lang={lang}/>:<div className="report-grid">{sources.map(([label])=><article className="panel report-card" key={label}><span>{label}</span><strong>{counts[label]??0}</strong></article>)}</div>}
+    {orgLoading?<div className="live-loading">{lang==='es'?'Cargando reportes…':'Loading reports…'}</div>:orgError?<ErrorBox message={orgError} lang={lang}/>:error?<ErrorBox message={error} lang={lang}/>:<div className="report-grid">{sources.map(([label])=><article className="panel report-card" key={label}><span>{label}</span><strong>{counts[label]??0}</strong></article>)}</div>}
   </section>
 }
