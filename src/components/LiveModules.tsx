@@ -313,41 +313,56 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
   const {org,error:orgError,loading:orgLoading} = useOrg(session)
   const [stats,setStats] = useState({appointments:0,patients:0,conversations:0,timeEntries:0})
   const [appointments,setAppointments] = useState<Row[]>([])
+  const [patientNames,setPatientNames] = useState<Record<string,string>>({})
   const [loading,setLoading] = useState(true)
   const [error,setError] = useState('')
 
   async function load() {
     if (!org) return
     setLoading(true); setError('')
-    const [a,p,c,t,arows] = await Promise.all([
+    const [a,p,c,t,arows,patients] = await Promise.all([
       supabase.from('appointments').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
       supabase.from('patients').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
       supabase.from('communication_threads').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
       supabase.from('time_entries').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
-      supabase.from('appointments').select('*').eq('organization_id',org.organizationId).order('starts_at',{ascending:true}).limit(8),
+      supabase.from('appointments').select('id,patient_id,starts_at,ends_at,status,appointment_type,room').eq('organization_id',org.organizationId).order('starts_at',{ascending:true}).limit(8),
+      supabase.from('patients').select('id,first_name,last_name').eq('organization_id',org.organizationId).limit(500),
     ])
-    const firstError = a.error || p.error || c.error || t.error || arows.error
+    const firstError = a.error || p.error || c.error || t.error || arows.error || patients.error
     if (firstError) setError(firstError.message)
     setStats({appointments:a.count||0,patients:p.count||0,conversations:c.count||0,timeEntries:t.count||0})
     setAppointments((arows.data||[]) as Row[])
+    setPatientNames(Object.fromEntries((patients.data||[]).map((x:any)=>[String(x.id),[x.first_name,x.last_name].filter(Boolean).join(' ')||'Patient'])))
     setLoading(false)
   }
 
   useEffect(()=>{void load()},[org?.organizationId])
 
+  const fmtDate=(v:any)=>v?new Date(v).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):'—'
+  const fmtTime=(v:any)=>v?new Date(v).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'—'
+
   return <section className="page overview-page">
-    <div className="page-head overview-head"><div><span className="date-kicker">{lang==='es'?'DATOS EN VIVO DEL CONSULTORIO':'LIVE PRACTICE DATA'}</span><h1>{lang==='es'?'Resumen':'Overview'}</h1><p>{org ? (lang==='es'?`Esto es lo que está pasando en ${org.organizationName}.`:`Here’s what’s happening across ${org.organizationName}.`) : (lang==='es'?'Cargando tu consultorio…':'Loading your practice…')}</p></div><button className="refresh-button" onClick={()=>void load()}><RefreshCw size={15}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>
+    <div className="page-head overview-head"><div><span className="date-kicker">{lang==='es'?'DATOS EN VIVO DEL CONSULTORIO':'LIVE PRACTICE DATA'}</span><h1>{lang==='es'?'Resumen':'Overview'}</h1><p>{org ? (lang==='es'?\`Esto es lo que está pasando en \${org.organizationName}.\`:\`Here’s what’s happening across \${org.organizationName}.\`) : (lang==='es'?'Cargando tu consultorio…':'Loading your practice…')}</p></div><button className="refresh-button" onClick={()=>void load()}><RefreshCw size={15}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>
     {orgError && <ErrorBox message={orgError} lang={lang}/>}
     {error && <ErrorBox message={error} lang={lang}/>}
     <div className="metric-grid">
-      <article className="metric-card"><div><span>{lang==='es'?'Citas':'Appointments'}</span><CalendarDays size={17}/></div><strong>{orgLoading||loading?'…':stats.appointments}</strong><p>{lang==='es'?'Citas del consultorio':'Practice appointments'}</p></article>
-      <article className="metric-card"><div><span>{lang==='es'?'Pacientes':'Patients'}</span><Users size={17}/></div><strong>{orgLoading||loading?'…':stats.patients}</strong><p>{lang==='es'?'Registros de pacientes':'Patient records'}</p></article>
-      <article className="metric-card"><div><span>{lang==='es'?'Conversaciones':'Conversations'}</span><MessageSquareText size={17}/></div><strong>{orgLoading||loading?'…':stats.conversations}</strong><p>{lang==='es'?'Hilos de comunicación':'Communication threads'}</p></article>
-      <article className="metric-card"><div><span>{lang==='es'?'Registros de tiempo':'Time entries'}</span><CalendarDays size={17}/></div><strong>{orgLoading||loading?'…':stats.timeEntries}</strong><p>{lang==='es'?'Tiempo del personal':'Staff time records'}</p></article>
+      <Link to="/schedule" className="metric-card metric-link"><div><span>{lang==='es'?'Citas':'Appointments'}</span><CalendarDays size={17}/></div><strong>{orgLoading||loading?'…':stats.appointments}</strong><p>{lang==='es'?'Abrir agenda':'Open schedule'}</p></Link>
+      <Link to="/patients" className="metric-card metric-link"><div><span>{lang==='es'?'Pacientes':'Patients'}</span><Users size={17}/></div><strong>{orgLoading||loading?'…':stats.patients}</strong><p>{lang==='es'?'Abrir pacientes':'Open patients'}</p></Link>
+      <Link to="/inbox" className="metric-card metric-link"><div><span>{lang==='es'?'Conversaciones':'Conversations'}</span><MessageSquareText size={17}/></div><strong>{orgLoading||loading?'…':stats.conversations}</strong><p>{lang==='es'?'Abrir bandeja':'Open inbox'}</p></Link>
+      <Link to="/timeclock" className="metric-card metric-link"><div><span>{lang==='es'?'Registros de tiempo':'Time entries'}</span><CalendarDays size={17}/></div><strong>{orgLoading||loading?'…':stats.timeEntries}</strong><p>{lang==='es'?'Abrir reloj':'Open timeclock'}</p></Link>
     </div>
     <div className="overview-grid">
-      <section className="panel schedule-panel"><div className="panel-title-row"><div><h2>{lang==='es'?'Flujo de pacientes':'Patient flow'}</h2><p>{lang==='es'?'Citas recientes de este consultorio':'Recent appointments in this practice'}</p></div><Link to="/schedule">{lang==='es'?'Ver agenda completa':'View full schedule'}</Link></div><Records rows={appointments} lang={lang}/></section>
-      <section className="panel inbox-panel"><div className="panel-title-row"><div><h2>{lang==='es'?'Estado del consultorio':'Practice status'}</h2><p>{lang==='es'?'Resumen conectado del backend':'Connected backend snapshot'}</p></div></div><div className="overview-status"><span><b>{org?.organizationName||(lang==='es'?'Consultorio':'Practice')}</b>{lang==='es'?'Organización':'Organization'}</span><span><b>{org?.role||'—'}</b>{lang==='es'?'Tu rol':'Your role'}</span><span><b>{stats.conversations}</b>{lang==='es'?'Hilos de comunicación':'Communication threads'}</span></div></section>
+      <section className="panel schedule-panel">
+        <div className="panel-title-row"><div><h2>{lang==='es'?'Flujo de pacientes':'Patient flow'}</h2><p>{lang==='es'?'Próximas citas del consultorio':'Upcoming appointments in this practice'}</p></div><Link to="/schedule">{lang==='es'?'Ver agenda completa':'View full schedule'}</Link></div>
+        <div className="overview-appointment-list">
+          {appointments.length?appointments.map((row:any)=><Link to="/schedule" className="overview-appointment" key={String(row.id)}>
+            <div className="overview-appointment-time"><strong>{fmtTime(row.starts_at)}</strong><span>{fmtDate(row.starts_at)}</span></div>
+            <div className="overview-appointment-patient"><strong>{patientNames[String(row.patient_id)]||(lang==='es'?'Paciente':'Patient')}</strong><span>{row.appointment_type||'Eye care visit'}{row.room?' · '+row.room:''}</span></div>
+            <span className="status-badge">{localized(row.status,lang)}</span>
+          </Link>):<Empty message={lang==='es'?'No hay citas próximas':'No upcoming appointments'} lang={lang}/>}
+        </div>
+      </section>
+      <section className="panel inbox-panel"><div className="panel-title-row"><div><h2>{lang==='es'?'Estado del consultorio':'Practice status'}</h2><p>{lang==='es'?'Resumen conectado del backend':'Connected practice snapshot'}</p></div></div><div className="overview-status"><span><b>{org?.organizationName||(lang==='es'?'Consultorio':'Practice')}</b>{lang==='es'?'Organización':'Organization'}</span><span><b>{localized(org?.role||'—',lang)}</b>{lang==='es'?'Tu rol':'Your role'}</span><span><b>{stats.conversations}</b>{lang==='es'?'Hilos de comunicación':'Communication threads'}</span><span><b>{stats.patients}</b>{lang==='es'?'Pacientes activos':'Patient records'}</span></div></section>
     </div>
   </section>
 }
