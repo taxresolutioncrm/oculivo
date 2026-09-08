@@ -1,0 +1,22 @@
+name: Launch Hardening Audit
+on:
+  push:
+    branches: [true-final-sandbox-closeout]
+    paths: ['.github/workflows/launch-hardening-audit.yml']
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm install --no-audit --no-fund
+      - name: Runtime dependency audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Full dependency audit
+        run: npm audit --audit-level=high
+      - name: Build and report bundle sizes
+        run: |
+          npm run build
+          find dist -type f -printf '%p %s bytes\n' | sort -k2 -n
