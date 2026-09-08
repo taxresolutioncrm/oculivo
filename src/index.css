@@ -387,3 +387,47 @@ body{font-size:var(--crm-body-font)}
   .app-main{margin-left:0}
   .nav-item{min-height:42px!important;font-size:15px!important}
 }
+
+
+/* True final readability floor — sandbox only */
+.nav-section-label{font-size:10px!important}
+.practice-switch span{font-size:10px!important}
+.practice-switch strong{font-size:13px!important}
+.sidebar-ai small,.help-card small,.sidebar-foot span{font-size:10.5px!important}
+.sidebar-ai strong,.help-card strong,.sidebar-foot strong{font-size:12.5px!important}
+.date-kicker{font-size:10.5px!important}
+.context-strip>div:first-child span{font-size:10.5px!important}
+.context-strip-meta{font-size:11px!important}
+.table-head{font-size:11px!important}
+.panel-title-row a,.tiny-count{font-size:11px!important}
+.status-badge,.ready-pill{font-size:11px!important}
+.wf-date span{font-size:11px!important}
+.clinical-mini span{font-size:10.5px!important}
+.patient-card-name span,.patient-card-facts span,.patient-open-label{font-size:11px!important}
+.patient-info-grid span,.patient-contact-panel span,.patient-linked-grid span{font-size:10.5px!important}
+.patient-activity-item span,.patient-activity-item small{font-size:10.5px!important}
+.inbox-thread-list span,.inbox-thread header span,.message-bubble span{font-size:10.5px!important}
+.message-bubble strong{font-size:11.5px!important}
+.message-bubble p{font-size:12px!important}
+.inbox-readonly-note{font-size:11px!important}
+.chat-channel-title,.chat-channels>button{font-size:12px!important}
+.chat-channel-title button,.chat-channel-create input,.chat-channel-create button{font-size:11px!important}
+.chat-message strong{font-size:11.5px!important}
+.chat-message span{font-size:10.5px!important}
+.chat-message p{font-size:12px!important}
+.chat-compose input{font-size:12px!important}
+.chat-compose button{font-size:11px!important}
+.manual-card p{font-size:12px!important}
+.report-card span{font-size:10.5px!important}
+.overview-status span{font-size:11px!important}
+.search-results>button span{font-size:10.5px!important}
+.live-error p,.live-empty p{font-size:11.5px!important}
+.record-card-head span{font-size:10.5px!important}
+.record-fields span{font-size:10px!important}
+.record-fields b{font-size:11.5px!important}
+.timeclock-hero span{font-size:10px!important}
+.timeclock-hero p{font-size:12px!important}
+.ai-drawer header span,.ai-safety,.ai-msg strong,.ai-thinking,.ai-error{font-size:10.5px!important}
+.ai-empty p,.ai-msg p,.ai-compose textarea{font-size:12px!important}
+.phone-dialer-card>p,.phone-mic-note{font-size:11.5px!important}
+.invoice-lines-head strong,.invoice-lines-head button,.invoice-line input,.invoice-line b,.invoice-summary span,.invoice-summary b,.invoice-summary input{font-size:11px!important}
