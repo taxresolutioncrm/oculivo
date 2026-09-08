@@ -47,7 +47,7 @@ export default function AssistantDrawer({session,lang,open,onClose}:{session:Ses
         {error&&<div className="ai-error">{error}</div>}
         <div ref={end}/>
       </div>
-      <form className="ai-compose" onSubmit={send}><textarea rows={2} value={text} onChange={e=>setText(e.target.value)} placeholder={lang==='es'?'Pregunta a Oculivo…':'Ask Oculivo…'}/><button disabled={busy||!text.trim()}><Send size={16}/></button></form>
+      <form className="ai-compose" onSubmit={send}><textarea rows={2} value={text} onChange={e=>setText(e.target.value)} placeholder={lang==='es'?'Pregunta a Oculivo…':'Ask Oculivo…'}/><button type="submit" disabled={busy||!text.trim()}><Send size={16}/></button></form>
     </aside>}
   </>
 }

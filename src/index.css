@@ -213,3 +213,43 @@ body{background:#f5f6fb;color:var(--text)}
 
 @media(max-width:1100px){.patient-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.patient-profile-body{grid-template-columns:1fr}.patient-linked-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.patient-activity-list{max-height:360px}}
 @media(max-width:760px){.sidebar .brand-wordmark img{width:162px}.patient-grid{grid-template-columns:1fr!important}.patient-detail-overlay{padding:8px!important}.patient-profile-modal{width:100%;max-height:96vh;border-radius:16px}.patient-profile-header{align-items:flex-start;padding:15px}.patient-profile-identity{align-items:flex-start}.patient-profile-identity h2{font-size:19px}.patient-avatar.large{width:52px;height:52px;border-radius:15px}.patient-profile-actions .wf-primary{width:auto!important;font-size:0!important;padding:0 11px!important}.patient-profile-actions .wf-primary svg{margin:0}.patient-profile-body{padding:10px}.patient-info-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.patient-contact-panel{grid-template-columns:1fr}.patient-linked-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Final Oculivo UI/functionality closeout */
+.oculivo-logo-exact{display:flex;align-items:center;gap:7px;font-weight:900;font-size:22px;letter-spacing:-.02em;white-space:nowrap}
+.oculivo-logo-exact svg{width:49px;height:34px;flex:0 0 auto}
+.oculivo-word-exact{color:#4e26ff;line-height:1}
+.oculivo-word-exact b{color:#1e84ff}
+.sidebar-top .oculivo-logo-exact{transform:scale(1.06);transform-origin:left center}
+.auth-brand .oculivo-logo-exact{font-size:30px;gap:10px}
+.auth-brand .oculivo-logo-exact svg{width:66px;height:45px}
+.brand-mobile .oculivo-logo-exact{font-size:26px}
+.brand-mobile .oculivo-logo-exact svg{width:58px;height:40px}
+
+.sidebar-nav-scroll{scrollbar-gutter:stable;position:relative;z-index:2}
+.nav-item{width:100%;border:1px solid transparent;background:transparent;text-align:left;cursor:pointer;font-family:inherit}
+.nav-item:focus-visible{outline:2px solid #2fd4cf;outline-offset:2px}
+.nav-item span{pointer-events:none}
+.nav-item svg{pointer-events:none;flex:0 0 auto}
+.nav-section{position:relative;z-index:2}
+.help-card,.sidebar-ai,.sidebar-foot{position:relative;z-index:3}
+
+.metric-link{text-decoration:none;color:inherit;cursor:pointer;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+.metric-link:hover,.metric-link:focus-visible{transform:translateY(-2px);border-color:#cbc5ec;box-shadow:0 14px 34px rgba(42,34,95,.09);outline:none}
+.metric-link p{color:#6950ca!important;font-weight:800}
+.overview-appointment-list{display:grid}
+.overview-appointment{display:grid;grid-template-columns:130px minmax(0,1fr) auto;gap:18px;align-items:center;padding:16px 18px;border-bottom:1px solid #ececf3;text-decoration:none;color:inherit;transition:background .14s ease}
+.overview-appointment:last-child{border-bottom:0}
+.overview-appointment:hover{background:#faf9ff}
+.overview-appointment-time{display:flex;flex-direction:column}
+.overview-appointment-time strong{font-size:13px;color:#202541}
+.overview-appointment-time span{font-size:9px;color:#858ba0;margin-top:3px}
+.overview-appointment-patient{min-width:0}
+.overview-appointment-patient strong{display:block;font-size:12px;color:#202541}
+.overview-appointment-patient span{display:block;margin-top:4px;font-size:9px;color:#747a90;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+@media(max-width:760px){
+  .sidebar-top .oculivo-logo-exact{transform:none;font-size:20px}
+  .sidebar-top .oculivo-logo-exact svg{width:44px;height:31px}
+  .overview-appointment{grid-template-columns:90px minmax(0,1fr);gap:10px}
+  .overview-appointment>.status-badge{grid-column:2;justify-self:start}
+}
