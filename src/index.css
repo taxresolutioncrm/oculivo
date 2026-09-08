@@ -138,3 +138,78 @@ body{background:#f5f6fb;color:var(--text)}
   .wf-tabs button{flex:1}
   .sidebar-nav-scroll{padding-bottom:20px!important}
 }
+
+
+/* Approved Oculivo wordmark + patient profile polish */
+.brand-wordmark{display:flex!important;align-items:center!important;min-width:0}
+.brand-wordmark img{display:block;width:188px;max-width:100%;height:auto;object-fit:contain}
+.sidebar .brand-wordmark img{width:174px}
+.sidebar-top{min-height:72px;padding:13px 16px!important}
+.auth-brand .brand-wordmark img{width:238px}
+.brand-mobile .brand-wordmark img{width:205px}
+
+.patient-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.patient-card{cursor:pointer;position:relative;overflow:hidden;padding:0!important;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+.patient-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#6f32ed,#20cfd1);opacity:0;transition:opacity .16s ease}
+.patient-card:hover,.patient-card:focus-visible{transform:translateY(-2px);border-color:#cfc8ef;box-shadow:0 16px 38px rgba(42,34,95,.1);outline:none}
+.patient-card:hover:before,.patient-card:focus-visible:before{opacity:1}
+.patient-card-top{display:grid!important;grid-template-columns:46px minmax(0,1fr) auto;align-items:center!important;gap:11px;padding:16px 16px 10px}
+.patient-avatar{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,#2ccfd0,#7344ef);color:#fff;font-size:13px;font-weight:900;letter-spacing:.04em;box-shadow:0 7px 18px rgba(87,65,190,.16)}
+.patient-avatar.large{width:64px;height:64px;border-radius:18px;font-size:18px;box-shadow:0 10px 30px rgba(87,65,190,.2)}
+.patient-card-name{min-width:0}
+.patient-card-name h3{font-size:14px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.patient-card-name span{display:block;margin-top:3px;color:#81869b;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.patient-card .status-badge{align-self:start;margin-top:2px}
+.patient-card-facts{display:grid;gap:7px;padding:7px 16px 14px}
+.patient-card-facts span{display:flex;align-items:center;gap:7px;min-width:0;color:#6f758b;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.patient-card-facts svg{color:#7a5bda;flex:0 0 auto}
+.patient-card footer{margin:0!important;padding:11px 16px!important;border-top:1px solid #ededf4!important;background:#fbfbfe;align-items:center}
+.patient-open-label{display:inline-flex;align-items:center;gap:3px;margin-right:auto;color:#5b42b8;font-size:9px;font-weight:850}
+.patient-card footer button{background:#fff!important}
+.patient-card footer button:hover{border-color:#cfc8ef!important;background:#f5f2ff!important}
+
+.patient-detail-overlay{z-index:95!important;padding:28px!important}
+.patient-profile-modal{width:min(1120px,96vw);max-height:92vh;overflow:auto;background:#f7f8fc;border:1px solid rgba(214,216,228,.95);border-radius:22px;box-shadow:0 36px 110px rgba(9,10,31,.32)}
+.patient-profile-header{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px 22px;background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-bottom:1px solid #e6e7ef}
+.patient-profile-identity{display:flex;align-items:center;gap:14px;min-width:0}
+.patient-profile-identity>div:last-child{min-width:0}
+.patient-kicker{display:block;color:#8b8fa4;font-size:8px;font-weight:900;letter-spacing:.14em}
+.patient-profile-identity h2{margin:4px 0 3px;color:#171b38;font-size:24px;line-height:1.1}
+.patient-profile-identity p{margin:0;color:#73798e;font-size:10px}
+.patient-profile-actions{display:flex;align-items:center;gap:8px}
+.patient-close{width:40px;height:40px;border:1px solid #e0e2eb;border-radius:10px;background:#fff;color:#666c82;display:grid;place-items:center;cursor:pointer}
+.patient-close:hover{background:#f4f2fb;color:#4f37aa}
+.patient-profile-body{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(300px,.75fr);gap:16px;padding:18px}
+.patient-profile-main{display:grid;gap:14px}
+.patient-info-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.patient-info-grid>div,.patient-linked-grid>div,.patient-contact-panel>div,.patient-notes-panel{background:#fff;border:1px solid #e3e5ee;border-radius:13px;box-shadow:0 7px 22px rgba(18,21,52,.035)}
+.patient-info-grid>div{padding:14px}
+.patient-info-grid span,.patient-notes-panel>span,.patient-activity-head span{display:block;color:#9195a8;font-size:7.5px;font-weight:900;letter-spacing:.11em;text-transform:uppercase}
+.patient-info-grid strong{display:block;margin-top:7px;color:#242943;font-size:11px;overflow:hidden;text-overflow:ellipsis}
+.patient-info-grid .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.patient-contact-panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.patient-contact-panel>div{display:grid;grid-template-columns:30px 1fr;column-gap:9px;align-items:center;padding:14px}
+.patient-contact-panel svg{grid-row:1/3;color:#6d4dd3;background:#f0edfb;border-radius:9px;padding:7px;width:30px;height:30px}
+.patient-contact-panel span{color:#9296aa;font-size:8px}
+.patient-contact-panel strong{min-width:0;color:#2d324e;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.patient-notes-panel{padding:15px 16px}
+.patient-notes-panel p{margin:8px 0 0;color:#555c73;font-size:10px;line-height:1.6;white-space:pre-wrap}
+.patient-linked-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.patient-linked-grid>div{padding:12px 10px;display:grid;grid-template-columns:28px 1fr;align-items:center;column-gap:8px}
+.patient-linked-grid svg{grid-row:1/3;color:#6e4bd3;background:#f1edfb;border-radius:8px;padding:6px;width:28px;height:28px}
+.patient-linked-grid span{color:#858a9e;font-size:7.5px}
+.patient-linked-grid strong{font-size:16px;color:#242943}
+.patient-activity-panel{background:#fff;border:1px solid #e3e5ee;border-radius:15px;min-width:0;overflow:hidden;box-shadow:0 8px 28px rgba(18,21,52,.04)}
+.patient-activity-head{padding:15px 16px;border-bottom:1px solid #ececf2}
+.patient-activity-head strong{display:block;margin-top:4px;color:#252a45;font-size:13px}
+.patient-activity-list{display:grid;max-height:560px;overflow:auto}
+.patient-activity-item{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;padding:12px 14px;border-bottom:1px solid #f0f0f5}
+.patient-activity-item:last-child{border-bottom:0}
+.patient-activity-icon{width:34px;height:34px;border-radius:10px;background:#f0edfb;color:#6847cf;display:grid;place-items:center}
+.patient-activity-item span{display:block;color:#8d91a5;font-size:7.5px;font-weight:850;text-transform:uppercase;letter-spacing:.08em}
+.patient-activity-item strong{display:block;margin-top:3px;color:#2b304b;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.patient-activity-item small{display:block;margin-top:4px;color:#8c91a5;font-size:8px}
+.patient-activity-empty{padding:34px 20px;text-align:center;color:#8b90a4;font-size:9px}
+
+@media(max-width:1100px){.patient-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.patient-profile-body{grid-template-columns:1fr}.patient-linked-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.patient-activity-list{max-height:360px}}
+@media(max-width:760px){.sidebar .brand-wordmark img{width:162px}.patient-grid{grid-template-columns:1fr!important}.patient-detail-overlay{padding:8px!important}.patient-profile-modal{width:100%;max-height:96vh;border-radius:16px}.patient-profile-header{align-items:flex-start;padding:15px}.patient-profile-identity{align-items:flex-start}.patient-profile-identity h2{font-size:19px}.patient-avatar.large{width:52px;height:52px;border-radius:15px}.patient-profile-actions .wf-primary{width:auto!important;font-size:0!important;padding:0 11px!important}.patient-profile-actions .wf-primary svg{margin:0}.patient-profile-body{padding:10px}.patient-info-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.patient-contact-panel{grid-template-columns:1fr}.patient-linked-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
