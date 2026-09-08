@@ -27,7 +27,11 @@ export default function AssistantDrawer({session,lang,open,onClose}:{session:Ses
       history:messages.slice(-10)
     }})
     if(error){
-      setError(lang==='es'?'El asistente de Oculivo no está disponible en este momento.':'Oculivo AI is unavailable right now.')
+      const raw=String(error.message||'')
+      const missing=/not found|404|function/i.test(raw)
+      setError(missing
+        ? (lang==='es'?'El servicio Oculivo AI todavía no está desplegado en el backend.':'Oculivo AI backend function is not deployed yet.')
+        : (lang==='es'?'El asistente de Oculivo no está disponible en este momento.':'Oculivo AI is unavailable right now.'))
     }else{
       const answer=String(data?.answer||data?.message||data?.content||'').trim()
       if(answer)setMessages(v=>[...v,{role:'assistant',content:answer}])
