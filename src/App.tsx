@@ -193,6 +193,7 @@ function SearchOverlay({session,open,onClose,lang}:{session:Session;open:boolean
 function Shell({session}:{session:Session}){
   const [open,setOpen]=useState(false)
   const [searchOpen,setSearchOpen]=useState(false)
+  const [assistantOpen,setAssistantOpen]=useState(false)
   const [orgMenuOpen,setOrgMenuOpen]=useState(false)
   const [orgs,setOrgs]=useState<OrgOption[]>([])
   const [selectedOrgId,setSelectedOrgId]=useState(()=>localStorage.getItem('oculivo-org-id')||'')
@@ -228,7 +229,7 @@ function Shell({session}:{session:Session}){
   const currentNav=nav.find(item=>item.path===location.pathname)||nav[0]
   const currentLabel=t[currentNav.key]||t.overview
   function chooseOrg(id:string){localStorage.setItem('oculivo-org-id',id);setSelectedOrgId(id);setOrgMenuOpen(false);window.dispatchEvent(new CustomEvent('oculivo-org-change',{detail:id}))}
-  function openNewPatient(){if(location.pathname==='/patients'){window.dispatchEvent(new Event('oculivo-new-patient'));return}sessionStorage.setItem('oculivo-open-new-patient','1');navigate('/patients')}
+  function openNewPatient(){navigate('/patients?new=1')}
   async function signOut(){await supabase.auth.signOut()}
 
   return <div className="app-shell">
@@ -237,7 +238,7 @@ function Shell({session}:{session:Session}){
       <div className="practice-wrap"><button className="practice-switch" onClick={()=>setOrgMenuOpen(v=>!v)} aria-expanded={orgMenuOpen}><div className="practice-icon">O</div><div><span>{t.practice}</span><strong>{selectedOrg?.name||t.yourPractice}</strong></div><ChevronDown size={14}/></button>{orgMenuOpen&&<div className="practice-menu">{orgs.map(org=><button key={org.id} className={org.id===selectedOrgId?'active':''} onClick={()=>chooseOrg(org.id)}><strong>{org.name}</strong><span>{org.role}</span></button>)}</div>}</div>
       <nav className="sidebar-nav-scroll">{navGroups.map(group=><div className="nav-section" key={group.key}><div className="nav-section-label">{lang==='es'?group.es:group.en}</div>{nav.filter(item=>item.group===group.key).map(({key,path,icon:Icon})=><NavLink key={path} to={path} end={path==='/' } className={({isActive})=>isActive?'nav-item active':'nav-item'}><Icon size={17}/><span>{t[key]}</span></NavLink>)}</div>)}</nav>
       <div className="sidebar-spacer"/>
-      <button className="sidebar-ai" onClick={()=>window.dispatchEvent(new Event('oculivo-ai-open'))}><Sparkles size={16}/><div><strong>{lang==='es'?'Preguntar a Oculivo':'Ask Oculivo'}</strong><small>{lang==='es'?'Asistente de IA':'AI practice assistant'}</small></div></button>
+      <button className="sidebar-ai" onClick={()=>setAssistantOpen(true)}><Sparkles size={16}/><div><strong>{lang==='es'?'Preguntar a Oculivo':'Ask Oculivo'}</strong><small>{lang==='es'?'Asistente de IA':'AI practice assistant'}</small></div></button>
       <NavLink to="/support" className="help-card"><span>?</span><div><strong>{t.needHelp}</strong><small>{t.contactSupport}</small></div></NavLink>
       <div className="sidebar-foot"><div className="user-chip"><div className="avatar">{name.slice(0,1).toUpperCase()}</div><div><strong>{session.user.email||'Practice owner'}</strong><span>{selectedOrg?.role|| (lang==='es'?'Usuario autenticado':'Authenticated user')}</span></div></div><button className="logout-button" onClick={()=>void signOut()} aria-label={lang==='es'?'Cerrar sesión':'Sign out'} title={lang==='es'?'Cerrar sesión':'Sign out'}><LogOut size={16}/></button></div>
     </aside>
@@ -247,7 +248,7 @@ function Shell({session}:{session:Session}){
       <Routes><Route path="/" element={<LiveOverview session={session} lang={lang}/>}/>{Object.entries(moduleCopy[lang]).map(([path,[title,description]])=><Route key={path} path={path} element={<LiveModulePage path={path} title={title} description={description} session={session} lang={lang}/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>
     </div>
     <SearchOverlay session={session} open={searchOpen} onClose={()=>setSearchOpen(false)} lang={lang}/>
-    <AssistantDrawer session={session} lang={lang}/>
+    <AssistantDrawer session={session} lang={lang} open={assistantOpen} onClose={()=>setAssistantOpen(false)}/>
     {open&&<div className="overlay" onClick={()=>setOpen(false)}/>}
   </div>
 }
