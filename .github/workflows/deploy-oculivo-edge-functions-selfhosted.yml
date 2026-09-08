@@ -1,0 +1,109 @@
+name: Deploy Oculivo Edge Functions Self Hosted
+
+on:
+  push:
+    branches:
+      - edge-functions-deploy
+    paths:
+      - '.github/workflows/deploy-oculivo-edge-functions-selfhosted.yml'
+      - 'supabase/functions/**'
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 20
+    env:
+      PROJECT_REF: czejdbdwaumbdepiswcu
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.OCULIVO_SUPABASE_ACCESS_TOKEN || secrets.SUPABASE_ACCESS_TOKEN }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OCULIVO_AI_MODEL: ${{ secrets.OCULIVO_AI_MODEL }}
+      BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+      OCULIVO_FROM_EMAIL: ${{ secrets.OCULIVO_FROM_EMAIL }}
+      SIGNALWIRE_PROJECT_ID: ${{ secrets.SIGNALWIRE_PROJECT_ID }}
+      SIGNALWIRE_AUTH_TOKEN: ${{ secrets.SIGNALWIRE_AUTH_TOKEN }}
+      SIGNALWIRE_SPACE_URL: ${{ secrets.SIGNALWIRE_SPACE_URL }}
+      OCULIVO_SMS_FROM_NUMBER: ${{ secrets.OCULIVO_SMS_FROM_NUMBER }}
+      OCULIVO_VOICE_FROM_NUMBER: ${{ secrets.OCULIVO_VOICE_FROM_NUMBER }}
+      OCULIVO_SUPPORT_SECRET: ${{ secrets.OCULIVO_SUPPORT_SECRET }}
+      ROMYLABS_SUPPORT_API_URL: ${{ secrets.ROMYLABS_SUPPORT_API_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require Supabase credential
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:SUPABASE_ACCESS_TOKEN)) {
+            Write-Error 'No Supabase access token is available to this repository.'
+            exit 1
+          }
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Sync available provider secrets
+        shell: pwsh
+        run: |
+          $pairs = [ordered]@{
+            OPENAI_API_KEY = $env:OPENAI_API_KEY
+            OCULIVO_AI_MODEL = $env:OCULIVO_AI_MODEL
+            BREVO_API_KEY = $env:BREVO_API_KEY
+            OCULIVO_FROM_EMAIL = $env:OCULIVO_FROM_EMAIL
+            SIGNALWIRE_PROJECT_ID = $env:SIGNALWIRE_PROJECT_ID
+            SIGNALWIRE_AUTH_TOKEN = $env:SIGNALWIRE_AUTH_TOKEN
+            SIGNALWIRE_SPACE_URL = $env:SIGNALWIRE_SPACE_URL
+            OCULIVO_SMS_FROM_NUMBER = $env:OCULIVO_SMS_FROM_NUMBER
+            OCULIVO_VOICE_FROM_NUMBER = $env:OCULIVO_VOICE_FROM_NUMBER
+            OCULIVO_SUPPORT_SECRET = $env:OCULIVO_SUPPORT_SECRET
+            ROMYLABS_SUPPORT_API_URL = $env:ROMYLABS_SUPPORT_API_URL
+          }
+
+          $lines = @()
+          foreach ($key in $pairs.Keys) {
+            $value = [string]$pairs[$key]
+            if (-not [string]::IsNullOrWhiteSpace($value)) {
+              $escaped = $value.Replace('"','\"')
+              $lines += "$key=$escaped"
+            }
+          }
+
+          if ($lines.Count -gt 0) {
+            $path = Join-Path $env:RUNNER_TEMP 'oculivo-edge-secrets.env'
+            [System.IO.File]::WriteAllLines($path, $lines)
+            supabase secrets set --project-ref $env:PROJECT_REF --env-file $path
+            $code = $LASTEXITCODE
+            Remove-Item $path -Force -ErrorAction SilentlyContinue
+            if ($code -ne 0) { exit $code }
+          } else {
+            Write-Host 'No provider secrets were available in GitHub; deploying code only.'
+          }
+
+      - name: Deploy Oculivo Edge Functions
+        shell: pwsh
+        run: |
+          $functions = @(
+            'oculivo-ai',
+            'phone-session',
+            'send-email',
+            'send-sms',
+            'oculivo-support-api'
+          )
+          foreach ($fn in $functions) {
+            Write-Host "Deploying $fn"
+            supabase functions deploy $fn --project-ref $env:PROJECT_REF
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - name: Verify deployed functions
+        shell: pwsh
+        run: |
+          $out = supabase functions list --project-ref $env:PROJECT_REF
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($fn in @('oculivo-ai','phone-session','send-email','send-sms','oculivo-support-api')) {
+            if ($out -notmatch [regex]::Escape($fn)) {
+              Write-Error "Missing deployed function: $fn"
+              exit 1
+            }
+          }
+          Write-Host 'All five Oculivo Edge Functions are deployed.'
