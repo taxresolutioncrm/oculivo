@@ -12,25 +12,32 @@ import { LiveModulePage, LiveOverview } from './components/LiveModules'
 import AssistantDrawer from './components/AssistantDrawer'
 
 type Lang = 'en' | 'es'
-type NavItem = { key:string; path:string; icon:LucideIcon }
+type NavItem = { key:string; path:string; icon:LucideIcon; group:'core'|'communications'|'operations'|'help' }
 type SearchHit = { table:string; route:string; title:string; meta:string }
 type OrgOption = { id:string; name:string; role:string }
 
 const nav:NavItem[] = [
-  {key:'overview',path:'/',icon:LayoutDashboard},
-  {key:'schedule',path:'/schedule',icon:CalendarDays},
-  {key:'patients',path:'/patients',icon:Users},
-  {key:'clinical',path:'/clinical',icon:Stethoscope},
-  {key:'optical',path:'/optical',icon:Glasses},
-  {key:'inbox',path:'/inbox',icon:Inbox},
-  {key:'phone',path:'/phone',icon:Phone},
-  {key:'teamChat',path:'/team-chat',icon:MessageSquareText},
-  {key:'timeclock',path:'/timeclock',icon:Timer},
-  {key:'billing',path:'/billing',icon:CircleDollarSign},
-  {key:'documents',path:'/documents',icon:Files},
-  {key:'reports',path:'/reports',icon:BarChart3},
-  {key:'manual',path:'/manual',icon:BookOpen},
-  {key:'support',path:'/support',icon:TicketCheck},
+  {key:'overview',path:'/',icon:LayoutDashboard,group:'core'},
+  {key:'schedule',path:'/schedule',icon:CalendarDays,group:'core'},
+  {key:'patients',path:'/patients',icon:Users,group:'core'},
+  {key:'clinical',path:'/clinical',icon:Stethoscope,group:'core'},
+  {key:'optical',path:'/optical',icon:Glasses,group:'core'},
+  {key:'inbox',path:'/inbox',icon:Inbox,group:'communications'},
+  {key:'phone',path:'/phone',icon:Phone,group:'communications'},
+  {key:'teamChat',path:'/team-chat',icon:MessageSquareText,group:'communications'},
+  {key:'timeclock',path:'/timeclock',icon:Timer,group:'operations'},
+  {key:'billing',path:'/billing',icon:CircleDollarSign,group:'operations'},
+  {key:'documents',path:'/documents',icon:Files,group:'operations'},
+  {key:'reports',path:'/reports',icon:BarChart3,group:'operations'},
+  {key:'manual',path:'/manual',icon:BookOpen,group:'help'},
+  {key:'support',path:'/support',icon:TicketCheck,group:'help'},
+]
+
+const navGroups:{key:NavItem['group'];en:string;es:string}[]=[
+  {key:'core',en:'Practice',es:'Consultorio'},
+  {key:'communications',en:'Communications',es:'Comunicaciones'},
+  {key:'operations',en:'Operations',es:'Operaciones'},
+  {key:'help',en:'Help',es:'Ayuda'}
 ]
 
 const labels:Record<Lang,Record<string,string>> = {
@@ -218,6 +225,8 @@ function Shell({session}:{session:Session}){
   const name=useMemo(()=>session.user.email?.split('@')[0]||'User',[session])
   const t=labels[lang]
   const selectedOrg=orgs.find(o=>o.id===selectedOrgId)||orgs[0]
+  const currentNav=nav.find(item=>item.path===location.pathname)||nav[0]
+  const currentLabel=t[currentNav.key]||t.overview
   function chooseOrg(id:string){localStorage.setItem('oculivo-org-id',id);setSelectedOrgId(id);setOrgMenuOpen(false);window.dispatchEvent(new CustomEvent('oculivo-org-change',{detail:id}))}
   function openNewPatient(){if(location.pathname==='/patients'){window.dispatchEvent(new Event('oculivo-new-patient'));return}sessionStorage.setItem('oculivo-open-new-patient','1');navigate('/patients')}
   async function signOut(){await supabase.auth.signOut()}
@@ -226,7 +235,7 @@ function Shell({session}:{session:Session}){
     <aside className={open?'sidebar open':'sidebar'}>
       <div className="sidebar-top"><Brand/><button className="icon-btn mobile-only" onClick={()=>setOpen(false)}><X size={22}/></button></div>
       <div className="practice-wrap"><button className="practice-switch" onClick={()=>setOrgMenuOpen(v=>!v)} aria-expanded={orgMenuOpen}><div className="practice-icon">O</div><div><span>{t.practice}</span><strong>{selectedOrg?.name||t.yourPractice}</strong></div><ChevronDown size={14}/></button>{orgMenuOpen&&<div className="practice-menu">{orgs.map(org=><button key={org.id} className={org.id===selectedOrgId?'active':''} onClick={()=>chooseOrg(org.id)}><strong>{org.name}</strong><span>{org.role}</span></button>)}</div>}</div>
-      <nav>{nav.map(({key,path,icon:Icon})=><NavLink key={path} to={path} end={path==='/' } className={({isActive})=>isActive?'nav-item active':'nav-item'}><Icon size={17}/><span>{t[key]}</span></NavLink>)}</nav>
+      <nav className="sidebar-nav-scroll">{navGroups.map(group=><div className="nav-section" key={group.key}><div className="nav-section-label">{lang==='es'?group.es:group.en}</div>{nav.filter(item=>item.group===group.key).map(({key,path,icon:Icon})=><NavLink key={path} to={path} end={path==='/' } className={({isActive})=>isActive?'nav-item active':'nav-item'}><Icon size={17}/><span>{t[key]}</span></NavLink>)}</div>)}</nav>
       <div className="sidebar-spacer"/>
       <button className="sidebar-ai" onClick={()=>window.dispatchEvent(new Event('oculivo-ai-open'))}><Sparkles size={16}/><div><strong>{lang==='es'?'Preguntar a Oculivo':'Ask Oculivo'}</strong><small>{lang==='es'?'Asistente de IA':'AI practice assistant'}</small></div></button>
       <NavLink to="/support" className="help-card"><span>?</span><div><strong>{t.needHelp}</strong><small>{t.contactSupport}</small></div></NavLink>
@@ -234,6 +243,7 @@ function Shell({session}:{session:Session}){
     </aside>
     <div className="app-main">
       <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><button className="searchbox search-trigger" onClick={()=>setSearchOpen(true)}><Search size={18}/><span>{t.search}</span></button><button className="kbd" onClick={()=>setSearchOpen(true)}>⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div><NavLink to="/phone" className="secondary-action"><Phone size={16}/>{t.call}</NavLink><NavLink to="/inbox" className="icon-action" aria-label={lang==='es'?'Abrir bandeja':'Open inbox'} title={lang==='es'?'Abrir bandeja':'Open inbox'}><Bell size={17}/></NavLink><button type="button" className="new-patient" onClick={openNewPatient}><Plus size={17}/>{t.newPatient}</button></div></header>
+      <div className="context-strip"><div><span>{lang==='es'?'ESPACIO DE TRABAJO':'WORKSPACE'}</span><strong>{currentLabel}</strong></div><div className="context-strip-meta"><span className="context-live-dot"/><span>{selectedOrg?.name||t.yourPractice}</span><span className="context-role">{selectedOrg?.role||'member'}</span></div></div>
       <Routes><Route path="/" element={<LiveOverview session={session} lang={lang}/>}/>{Object.entries(moduleCopy[lang]).map(([path,[title,description]])=><Route key={path} path={path} element={<LiveModulePage path={path} title={title} description={description} session={session} lang={lang}/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>
     </div>
     <SearchOverlay session={session} open={searchOpen} onClose={()=>setSearchOpen(false)} lang={lang}/>
