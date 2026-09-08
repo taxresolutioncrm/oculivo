@@ -1,0 +1,80 @@
+name: Deploy Oculivo Edge Functions
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PROJECT_REF: czejdbdwaumbdepiswcu
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.OCULIVO_SUPABASE_ACCESS_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require Oculivo Supabase access
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            echo "Missing repository secret: OCULIVO_SUPABASE_ACCESS_TOKEN"
+            exit 1
+          fi
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Verify target project access
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase functions list --project-ref "$PROJECT_REF" >/tmp/functions-before.txt
+
+      - name: Deploy the five Oculivo functions
+        shell: bash
+        run: |
+          set -euo pipefail
+          for fn in oculivo-ai phone-session send-email send-sms oculivo-support-api; do
+            echo "Deploying $fn"
+            supabase functions deploy "$fn" --project-ref "$PROJECT_REF"
+          done
+
+      - name: Verify all five functions exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase functions list --project-ref "$PROJECT_REF" | tee /tmp/functions-after.txt
+          for fn in oculivo-ai phone-session send-email send-sms oculivo-support-api; do
+            grep -q "$fn" /tmp/functions-after.txt || { echo "Missing deployed function: $fn"; exit 1; }
+          done
+
+      - name: Verify required provider secret names
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase secrets list --project-ref "$PROJECT_REF" > /tmp/secret-list.txt
+          required=(
+            OPENAI_API_KEY
+            BREVO_API_KEY
+            OCULIVO_FROM_EMAIL
+            SIGNALWIRE_PROJECT_ID
+            SIGNALWIRE_AUTH_TOKEN
+            SIGNALWIRE_SPACE_URL
+            OCULIVO_SMS_FROM_NUMBER
+            OCULIVO_VOICE_FROM_NUMBER
+            OCULIVO_SUPPORT_SECRET
+            ROMYLABS_SUPPORT_API_URL
+          )
+          missing=0
+          for key in "${required[@]}"; do
+            if grep -q "$key" /tmp/secret-list.txt; then
+              echo "$key=present"
+            else
+              echo "$key=missing"
+              missing=$((missing+1))
+            fi
+          done
+          test "$missing" -eq 0
