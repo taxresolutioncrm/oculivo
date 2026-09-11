@@ -1,0 +1,2 @@
+[functions.platform-metrics]
+verify_jwt = false
