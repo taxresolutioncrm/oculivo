@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const cors = {
   'Access-Control-Allow-Origin': 'https://admin.romylabs.com',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'x-hub-secret, content-type',
+  'Access-Control-Allow-Headers': 'x-romylabs-support-secret, content-type',
 }
 
 const json = (body: unknown, status = 200) =>
@@ -12,8 +12,8 @@ const json = (body: unknown, status = 200) =>
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors })
   if (req.method !== 'GET') return json({ ok:false, error:'Method not allowed' }, 405)
-  const expected = Deno.env.get('HUB_METRICS_SECRET')
-  if (!expected || req.headers.get('x-hub-secret') !== expected) return json({ ok:false, error:'Unauthorized' }, 401)
+  const expected = Deno.env.get('OCULIVO_SUPPORT_SECRET')
+  if (!expected || req.headers.get('x-romylabs-support-secret') !== expected) return json({ ok:false, error:'Unauthorized' }, 401)
 
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth:{ persistSession:false } })
   const [{data:orgs,error:orgErr},{count:staff},{count:patients}] = await Promise.all([
