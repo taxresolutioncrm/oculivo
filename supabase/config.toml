@@ -1,0 +1,4 @@
+project_id = "czejdbdwaumbdepiswcu"
+
+[functions.universal-esign]
+verify_jwt = false
