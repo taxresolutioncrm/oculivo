@@ -51,8 +51,8 @@ Deno.serve(async(req:Request)=>{
 
   if(callback){
     if(!secret)return json({error:"Fax callback is not configured"},503);
-    const u=new URL(req.url),org=u.searchParams.get("org")||"",threadId=u.searchParams.get("thread")||"",sig=u.searchParams.get("sig")||"";
-    if(!org||!threadId||!sig||!same(sig,await hmac(secret,org+"."+threadId)))return json({error:"Invalid callback signature"},403);
+    const u=new URL(req.url),org=u.searchParams.get("org")||"",threadId=u.searchParams.get("thread")||"",actorId=u.searchParams.get("actor")||"",sig=u.searchParams.get("sig")||"";
+    if(!org||!threadId||!actorId||!sig||!same(sig,await hmac(secret,org+"."+threadId+"."+actorId)))return json({error:"Invalid callback signature"},403);
     const form=await req.formData().catch(()=>null); if(!form)return json({error:"Invalid callback"},400);
     const {data:thread}=await service.from("communication_threads").select("id,organization_id,phone_number").eq("id",threadId).eq("organization_id",org).maybeSingle();
     if(!thread)return json({error:"Thread not found"},404);
@@ -61,7 +61,7 @@ Deno.serve(async(req:Request)=>{
     const pages=String(form.get("NumPages")||"");
     const error=String(form.get("ErrorMessage")||"");
     const summary="Fax "+status+(pages?" · "+pages+" page"+(pages==="1"?"":"s"):"")+(sid?" · "+sid:"")+(error?" · "+error:"");
-    await logFax(service,thread,null,summary,Deno.env.get("OCULIVO_FAX_FROM_NUMBER")||"");
+    await logFax(service,thread,actorId,summary,Deno.env.get("OCULIVO_FAX_FROM_NUMBER")||"");
     return json({ok:true});
   }
 
@@ -88,8 +88,8 @@ Deno.serve(async(req:Request)=>{
   const signed=await service.storage.from("oculivo-documents").createSignedUrl(String(b.storage_path),18000);
   if(signed.error||!signed.data?.signedUrl)return json({error:"Could not open fax document"},404);
 
-  const callbackSig=await hmac(secret,String(thread.organization_id)+"."+String(thread.id));
-  const callbackUrl=(Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/send-fax?callback=1&org="+encodeURIComponent(String(thread.organization_id))+"&thread="+encodeURIComponent(String(thread.id))+"&sig="+callbackSig;
+  const callbackSig=await hmac(secret,String(thread.organization_id)+"."+String(thread.id)+"."+actor.id);
+  const callbackUrl=(Deno.env.get("SUPABASE_URL")||"")+"/functions/v1/send-fax?callback=1&org="+encodeURIComponent(String(thread.organization_id))+"&thread="+encodeURIComponent(String(thread.id))+"&actor="+encodeURIComponent(actor.id)+"&sig="+callbackSig;
   const form=new URLSearchParams({
     MediaUrl:signed.data.signedUrl,
     To:to,
