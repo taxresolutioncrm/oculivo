@@ -23,7 +23,7 @@ check(comms.includes("from('documents').insert"),'Outbound fax document is retai
 check(requiredFunctions.every(fn=>fs.existsSync(new URL('../supabase/functions/'+fn+'/index.ts',import.meta.url))),'All required Edge Function source files exist')
 check(config.includes('[functions.send-fax]')&&config.includes('verify_jwt = false'),'Fax callback function is configured for signed provider callbacks')
 check(!/voicemail|patient portal conversations/i.test(app),'CRM copy does not claim unsupported voicemail or patient portal workflows')
-check(app.includes("function canAccessPath(")&&app.includes("path==='/clinical'"),'Clinical navigation and routes are role-gated')
+check(app.includes("function canAccessPath(")&&app.includes("path==='/clinical'")&&app.includes("path==='/inbox'||path==='/phone'||path==='/esign'"),'Clinical, communications, and e-sign routes are role-gated')
 check(fs.existsSync(new URL('../supabase/migrations/20260913113500_clinical_read_least_privilege.sql',import.meta.url)),'Clinical read least-privilege migration is present')
 check(fs.existsSync(new URL('../supabase/migrations/20260913114000_communication_read_least_privilege.sql',import.meta.url)),'Communication read least-privilege migration is present')
 if(process.exitCode)process.exit(process.exitCode)
