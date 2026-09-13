@@ -54,8 +54,10 @@ export function PhoneOps({session,lang}:{session:Session;lang:Lang}){
    const storagePath=orgId+'/fax/'+Date.now()+'-'+safe
    const up=await supabase.storage.from('oculivo-documents').upload(storagePath,faxFile,{contentType:'application/pdf',upsert:false})
    if(up.error)throw up.error
+   const doc=await supabase.from('documents').insert({organization_id:orgId,patient_id:null,uploaded_by:session.user.id,document_type:'fax',file_name:faxFile.name,storage_path:storagePath,mime_type:'application/pdf',file_size:faxFile.size,description:lang==='es'?'Fax saliente':'Outbound fax'}).select('id').single()
+   if(doc.error){await supabase.storage.from('oculivo-documents').remove([storagePath]);throw doc.error}
    const sent=await supabase.functions.invoke('send-fax',{body:{thread_id:threadId,storage_path:storagePath,file_name:faxFile.name}})
-   if(sent.error||sent.data?.error){await supabase.storage.from('oculivo-documents').remove([storagePath]);throw new Error(sent.data?.error||sent.error?.message||(lang==='es'?'No se pudo enviar el fax.':'Fax send failed'))}
+   if(sent.error||sent.data?.error){await supabase.from('documents').delete().eq('id',doc.data.id).eq('organization_id',orgId);await supabase.storage.from('oculivo-documents').remove([storagePath]);throw new Error(sent.data?.error||sent.error?.message||(lang==='es'?'No se pudo enviar el fax.':'Fax send failed'))}
    setFaxMessage(lang==='es'?'Fax en cola para envío. El estado final aparecerá en la bandeja.':'Fax queued. Final delivery status will appear in the inbox.')
    setFaxFile(null)
   }catch(e:any){setError(e?.message||(lang==='es'?'No se pudo enviar el fax.':'Fax send failed'))}
