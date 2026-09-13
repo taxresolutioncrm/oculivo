@@ -2,3 +2,6 @@ project_id = "czejdbdwaumbdepiswcu"
 
 [functions.universal-esign]
 verify_jwt = false
+
+[functions.send-fax]
+verify_jwt = false
