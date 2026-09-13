@@ -23,6 +23,7 @@ export default function ESignaturesPage({lang}:{lang:Lang}){
  useEffect(()=>{const h=(e:any)=>setOrganizationId(String(e.detail||localStorage.getItem('oculivo-org-id')||''));window.addEventListener('oculivo-org-change',h as EventListener);return()=>window.removeEventListener('oculivo-org-change',h as EventListener)},[])
  const initialField=()=>({id:crypto.randomUUID(),type:'signature' as FieldType,label:fieldLabel('signature',lang),page:1,...placements.bottomLeft,required:true})
  const [file,setFile]=useState<File|null>(null),[title,setTitle]=useState(''),[signerName,setSignerName]=useState(''),[signerEmail,setSignerEmail]=useState(''),[page,setPage]=useState(1),[type,setType]=useState<FieldType>('signature'),[placement,setPlacement]=useState<keyof typeof placements>('bottomLeft'),[fields,setFields]=useState<Field[]>([initialField()]),[docs,setDocs]=useState<Doc[]>([]),[busy,setBusy]=useState(false),[message,setMessage]=useState('')
+ useEffect(()=>setFields(v=>v.map(f=>({...f,label:fieldLabel(f.type,lang)}))),[lang])
  const scopeReady=Boolean(organizationId)
  const call=async(body:any)=>{const {data,error}=await supabase.functions.invoke('universal-esign',{body:{...body,organization_id:organizationId}});if(error||data?.error)throw new Error(data?.error||error?.message||(lang==='es'?'Falló la solicitud de firma electrónica':'E-sign request failed'));return data}
  const load=async()=>{try{const d=await call({action:'list'});setDocs(d.documents||[])}catch(e:any){setMessage(e.message)}}
