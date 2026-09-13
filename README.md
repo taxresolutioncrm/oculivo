@@ -24,6 +24,8 @@ Configure these in the Oculivo Supabase project's Edge Function secrets before p
 - `SIGNALWIRE_AUTH_TOKEN`
 - `SIGNALWIRE_SPACE_URL`
 - `OCULIVO_SMS_FROM_NUMBER`
+- `OCULIVO_FAX_FROM_NUMBER`
+- `OCULIVO_FAX_CALLBACK_SECRET`
 - `OCULIVO_VOICE_FROM_NUMBER` (falls back to SMS number)
 - `OCULIVO_SUPPORT_SECRET`
 - `ROMYLABS_SUPPORT_API_URL`
