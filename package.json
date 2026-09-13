@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verify:closeout": "node scripts/verify-closeout.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.47.0",
