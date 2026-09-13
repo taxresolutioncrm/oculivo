@@ -25,4 +25,5 @@ check(config.includes('[functions.send-fax]')&&config.includes('verify_jwt = fal
 check(!/voicemail|patient portal conversations/i.test(app),'CRM copy does not claim unsupported voicemail or patient portal workflows')
 check(app.includes("function canAccessPath(")&&app.includes("path==='/clinical'"),'Clinical navigation and routes are role-gated')
 check(fs.existsSync(new URL('../supabase/migrations/20260913113500_clinical_read_least_privilege.sql',import.meta.url)),'Clinical read least-privilege migration is present')
+check(fs.existsSync(new URL('../supabase/migrations/20260913114000_communication_read_least_privilege.sql',import.meta.url)),'Communication read least-privilege migration is present')
 if(process.exitCode)process.exit(process.exitCode)
