@@ -29,6 +29,12 @@ Deno.serve(async(req:Request)=>{
    return json({token:td.token,destination:dest,message_id:ins.data.id});
  }
  if(!b.message_id||!b.action)return json({error:"message_id and action are required"},400);
- const {data:m}=await service.from("communication_messages").select("id,sent_by").eq("id",b.message_id).single(); if(!m||m.sent_by!==user.id)return json({error:"Call record not authorized"},403);
+ if(!["connected","complete","failed"].includes(b.action))return json({error:"Invalid call status action"},400);
+ const {data:m}=await service.from("communication_messages").select("id,sent_by,thread_id,organization_id").eq("id",b.message_id).single(); if(!m||m.sent_by!==user.id)return json({error:"Call record not authorized"},403);
+ const label=b.action==="connected"?"Connected":b.action==="complete"?"Completed":"Failed";
+ const at=new Date().toISOString();
+ const upd=await service.from("communication_messages").update({body:"Outbound browser call · "+label}).eq("id",m.id).eq("sent_by",user.id);
+ if(upd.error)return json({error:"Could not update CRM call status"},500);
+ if(m.thread_id)await service.from("communication_threads").update({last_message_at:at}).eq("id",m.thread_id).eq("organization_id",m.organization_id);
  return json({status:b.action});
 });
