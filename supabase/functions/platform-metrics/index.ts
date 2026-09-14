@@ -59,7 +59,7 @@ Deno.serve(async(req:Request)=>{
   const sb=createClient(url,key,{auth:{autoRefreshToken:false,persistSession:false}})
 
   const errors:string[]=[]
-  const staff=await countRows(sb,'organization_memberships',q=>q.eq('status','active')); if(staff.error)errors.push(staff.error)
+  const staff=await countRows(sb,'organization_memberships',q=>q.eq('is_active',true)); if(staff.error)errors.push(staff.error)
   const clients=await countRows(sb,'patients'); if(clients.error)errors.push(clients.error)
   const jobs=await countRows(sb,'appointments'); if(jobs.error)errors.push(jobs.error)
   const {data:orgs,error:orgErr}=await sb.from('organizations').select('id,name,created_at').order('name')
