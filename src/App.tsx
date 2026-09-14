@@ -140,7 +140,7 @@ function hitMeta(row:Record<string,unknown>){
   return vals.slice(0,3).join(' · ')
 }
 
-function SearchOverlay({session,open,onClose,lang}:{session:Session;open:boolean;onClose:()=>void;lang:Lang}){
+function SearchOverlay({session,open,onClose,lang,role}:{session:Session;open:boolean;onClose:()=>void;lang:Lang;role:string}){
   const [query,setQuery]=useState('')
   const [hits,setHits]=useState<SearchHit[]>([])
   const [loading,setLoading]=useState(false)
@@ -176,7 +176,7 @@ function SearchOverlay({session,open,onClose,lang}:{session:Session;open:boolean
         {table:'documents',route:'/documents',label:lang==='es'?'Documentos':'Documents',result:documents},
         {table:'support_tickets',route:'/support',label:lang==='es'?'Soporte':'Support',result:support}
       ]
-      const results=packs.map(({table,route,label,result})=>{
+      const results=packs.filter(({route})=>canAccessPath(route,role)).map(({table,route,label,result})=>{
         if(result.error)return {error:result.error.message,hits:[] as SearchHit[]}
         const found=((result.data||[]) as Record<string,unknown>[]).filter(row=>JSON.stringify(row).toLowerCase().includes(q)).slice(0,8).map(row=>({table,route,title:hitTitle(row),meta:label+(hitMeta(row)?' · '+hitMeta(row):'')}))
         return {error:'',hits:found}
@@ -237,6 +237,7 @@ function Shell({session}:{session:Session}){
   const selectedOrg=orgs.find(o=>o.id===selectedOrgId)||orgs[0]
   const currentNav=nav.find(item=>item.path===location.pathname)||nav[0]
   const currentLabel=t[currentNav.key]||t.overview
+  const canCreatePatient=['owner','admin','manager','provider','staff'].includes(selectedOrg?.role||'')
   function chooseOrg(id:string){localStorage.setItem('oculivo-org-id',id);setSelectedOrgId(id);setOrgMenuOpen(false);window.dispatchEvent(new CustomEvent('oculivo-org-change',{detail:id}))}
   function openNewPatient(){navigate('/patients?new=1')}
   async function signOut(){await supabase.auth.signOut()}
@@ -252,11 +253,11 @@ function Shell({session}:{session:Session}){
       <div className="sidebar-foot"><div className="user-chip"><div className="avatar">{name.slice(0,1).toUpperCase()}</div><div><strong>{session.user.email||'Practice owner'}</strong><span>{selectedOrg?.role|| (lang==='es'?'Usuario autenticado':'Authenticated user')}</span></div></div><button className="logout-button" onClick={()=>void signOut()} aria-label={lang==='es'?'Cerrar sesión':'Sign out'} title={lang==='es'?'Cerrar sesión':'Sign out'}><LogOut size={16}/></button></div>
     </aside>
     <div className="app-main">
-      <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><button className="searchbox search-trigger" onClick={()=>setSearchOpen(true)}><Search size={18}/><span>{t.search}</span></button><button className="kbd" onClick={()=>setSearchOpen(true)}>⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div><button type="button" className="secondary-action" onClick={()=>window.location.assign('/phone')}><Phone size={16}/>{t.call}</button><button type="button" className="icon-action" onClick={()=>window.location.assign('/inbox')} aria-label={lang==='es'?'Abrir bandeja':'Open inbox'} title={lang==='es'?'Abrir bandeja':'Open inbox'}><Bell size={17}/></button><button type="button" className="new-patient" onClick={openNewPatient}><Plus size={17}/>{t.newPatient}</button></div></header>
+      <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><button className="searchbox search-trigger" onClick={()=>setSearchOpen(true)}><Search size={18}/><span>{t.search}</span></button><button className="kbd" onClick={()=>setSearchOpen(true)}>⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div>{canAccessPath('/phone',selectedOrg?.role||'')&&<button type="button" className="secondary-action" onClick={()=>window.location.assign('/phone')}><Phone size={16}/>{t.call}</button>}{canAccessPath('/inbox',selectedOrg?.role||'')&&<button type="button" className="icon-action" onClick={()=>window.location.assign('/inbox')} aria-label={lang==='es'?'Abrir bandeja':'Open inbox'} title={lang==='es'?'Abrir bandeja':'Open inbox'}><Bell size={17}/></button>}{canCreatePatient&&<button type="button" className="new-patient" onClick={openNewPatient}><Plus size={17}/>{t.newPatient}</button>}</div></header>
       <div className="context-strip"><div><span>{lang==='es'?'ESPACIO DE TRABAJO':'WORKSPACE'}</span><strong>{currentLabel}</strong></div><div className="context-strip-meta"><span className="context-live-dot"/><span>{selectedOrg?.name||t.yourPractice}</span><span className="context-role">{selectedOrg?.role||'member'}</span></div></div>
-      <Routes><Route path="/" element={<LiveOverview session={session} lang={lang}/>}/><Route path="/esign" element={<ESignaturesPage lang={lang}/>}/>{Object.entries(moduleCopy[lang]).map(([path,[title,description]])=><Route key={path} path={path} element={canAccessPath(path,selectedOrg?.role||'')?<LiveModulePage path={path} title={title} description={description} session={session} lang={lang}/>:<Navigate to="/" replace/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>
+      <Routes><Route path="/" element={<LiveOverview session={session} lang={lang}/>}/><Route path="/esign" element={canAccessPath('/esign',selectedOrg?.role||'')?<ESignaturesPage lang={lang}/>:<Navigate to="/" replace/>}/>{Object.entries(moduleCopy[lang]).map(([path,[title,description]])=><Route key={path} path={path} element={canAccessPath(path,selectedOrg?.role||'')?<LiveModulePage path={path} title={title} description={description} session={session} lang={lang}/>:<Navigate to="/" replace/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>
     </div>
-    <SearchOverlay session={session} open={searchOpen} onClose={()=>setSearchOpen(false)} lang={lang}/>
+    <SearchOverlay session={session} open={searchOpen} onClose={()=>setSearchOpen(false)} lang={lang} role={selectedOrg?.role||''}/>
     <AssistantDrawer session={session} lang={lang} open={assistantOpen} onClose={()=>setAssistantOpen(false)}/>
     {open&&<div className="overlay" onClick={()=>setOpen(false)}/>}
   </div>
