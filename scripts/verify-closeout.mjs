@@ -11,6 +11,7 @@ const esign=read('src/pages/ESignaturesPage.tsx')
 const publicSign=read('src/pages/PublicSignPage.tsx')
 const config=read('supabase/config.toml')
 const esignFn=read('supabase/functions/universal-esign/index.ts')
+const phoneFn=read('supabase/functions/phone-session/index.ts')
 const requiredRoutes=['/schedule','/patients','/clinical','/optical','/inbox','/phone','/team-chat','/timeclock','/billing','/documents','/esign','/reports','/manual','/support']
 const requiredFunctions=['oculivo-ai','oculivo-support-api','phone-session','send-email','send-sms','send-fax','universal-esign']
 const allSource=[app,comms,live,esign,publicSign].join('\n')
@@ -25,6 +26,7 @@ check(comms.includes("from('documents').insert"),'Outbound fax document is retai
 check(requiredFunctions.every(fn=>fs.existsSync(new URL('../supabase/functions/'+fn+'/index.ts',import.meta.url))),'All required Edge Function source files exist')
 check(config.includes('[functions.send-fax]')&&config.includes('verify_jwt = false'),'Fax callback function is configured for signed provider callbacks')
 check(esignFn.includes("action==='resend_invite'")&&esignFn.includes('Uploaded file must be a valid PDF'),'E-sign backend supports secure resend and PDF signature validation')
+check(phoneFn.includes('Invalid call status action')&&phoneFn.includes('Outbound browser call · '),'Phone call lifecycle is validated and persisted in CRM history')
 check(!/voicemail|patient portal conversations/i.test(app),'CRM copy does not claim unsupported voicemail or patient portal workflows')
 check(app.includes("function canAccessPath(")&&app.includes("path==='/clinical'")&&app.includes("path==='/inbox'||path==='/phone'||path==='/esign'")&&app.includes("canAccessPath('/esign',selectedOrg?.role||'')?<ESignaturesPage"),'Clinical, communications, and e-sign routes are role-gated')
 check(fs.existsSync(new URL('../supabase/migrations/20260913113500_clinical_read_least_privilege.sql',import.meta.url)),'Clinical read least-privilege migration is present')
