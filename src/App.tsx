@@ -158,10 +158,13 @@ function SearchOverlay({session,open,onClose,lang,role}:{session:Session;open:bo
       const allowed=(memberships.data||[]).map(m=>String(m.organization_id))
       const org=allowed.includes(preferred)?preferred:allowed[0]
       const q=query.trim().toLowerCase()
+      const canSearchCommunications=canAccessPath('/inbox',role)
       const [patients,appointments,threads,optical,invoices,documents,support]=await Promise.all([
         supabase.from('patients').select('id,first_name,last_name,email,phone,status').eq('organization_id',org).limit(60),
         supabase.from('appointments').select('id,appointment_type,starts_at,status,room').eq('organization_id',org).limit(60),
-        supabase.from('communication_threads').select('id,subject,phone_number,email_address,channel,status,last_message_at').eq('organization_id',org).limit(60),
+        canSearchCommunications
+          ? supabase.from('communication_threads').select('id,subject,phone_number,email_address,channel,status,last_message_at').eq('organization_id',org).limit(60)
+          : Promise.resolve({data:[],error:null}),
         supabase.from('optical_orders').select('id,order_number,order_type,status').eq('organization_id',org).limit(60),
         supabase.from('invoices').select('id,invoice_number,status,patient_amount,amount_paid,created_at').eq('organization_id',org).limit(60),
         supabase.from('documents').select('id,file_name,document_type,created_at').eq('organization_id',org).limit(60),
@@ -187,7 +190,7 @@ function SearchOverlay({session,open,onClose,lang,role}:{session:Session;open:bo
       setLoading(false)
     },250)
     return()=>clearTimeout(handle)
-  },[query,open,session.user.id])
+  },[query,open,session.user.id,role,lang])
 
   if(!open)return null
   return <div className="search-overlay" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><div className="search-modal"><div className="search-modal-head"><Search size={18}/><input autoFocus value={query} onChange={e=>setQuery(e.target.value)} placeholder={labels[lang].search}/><button onClick={onClose}><X size={18}/></button></div><div className="search-results">{loading?<div className="search-state">{lang==='es'?'Buscando…':'Searching…'}</div>:error?<div className="search-state error">{error}</div>:query.length<2?<div className="search-state">{lang==='es'?'Escribe al menos 2 caracteres.':'Type at least 2 characters.'}</div>:hits.length?hits.map((h,i)=><button key={h.table+i} onClick={()=>{navigate(h.route);onClose()}}><strong>{h.title}</strong><span>{h.meta}</span></button>):<div className="search-state">{lang==='es'?'No se encontraron resultados.':'No results found.'}</div>}</div></div></div>
