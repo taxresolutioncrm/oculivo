@@ -12,6 +12,8 @@ const publicSign=read('src/pages/PublicSignPage.tsx')
 const config=read('supabase/config.toml')
 const esignFn=read('supabase/functions/universal-esign/index.ts')
 const phoneFn=read('supabase/functions/phone-session/index.ts')
+const ops=read('src/components/OperationalModules.tsx')
+const css=read('src/index.css')
 const requiredRoutes=['/schedule','/patients','/clinical','/optical','/inbox','/phone','/team-chat','/timeclock','/billing','/documents','/esign','/reports','/manual','/support']
 const requiredFunctions=['oculivo-ai','oculivo-support-api','phone-session','send-email','send-sms','send-fax','universal-esign']
 const allSource=[app,comms,live,esign,publicSign].join('\n')
@@ -32,4 +34,9 @@ check(app.includes("function canAccessPath(")&&app.includes("path==='/clinical'"
 check(fs.existsSync(new URL('../supabase/migrations/20260913113500_clinical_read_least_privilege.sql',import.meta.url)),'Clinical read least-privilege migration is present')
 check(fs.existsSync(new URL('../supabase/migrations/20260913114000_communication_read_least_privilege.sql',import.meta.url)),'Communication read least-privilege migration is present')
 check(app.includes("role={selectedOrg?.role||''}"),'Global search receives the active role for sensitive-result filtering')
+check(app.includes('canSearchCommunications')&&app.includes("Promise.resolve({data:[],error:null})"),'Global search skips restricted communications queries instead of relying on post-query filtering')
+check(ops.includes('canReadClinical=clinician(org.role)')&&ops.includes("Promise.resolve({data:[],error:null})"),'Patient profile skips restricted clinical queries for non-clinical roles')
+check(live.includes("table==='clinical_records'")&&live.includes("table==='communication_messages'")&&live.includes('org?.role'),'Reports respect role-scoped clinical and communication access')
+check(live.includes('canReadCommunications')&&live.includes("Promise.resolve({count:0,error:null})"),'Overview skips restricted communication counts for roles without access')
+check(css.includes('Hide sidebar scrollbar while preserving scroll')&&css.includes('scrollbar-width:none!important')&&css.includes('.sidebar-nav-scroll::-webkit-scrollbar'),'Sidebar scrollbar is hidden while scroll remains enabled')
 if(process.exitCode)process.exit(process.exitCode)
