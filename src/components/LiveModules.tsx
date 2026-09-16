@@ -320,10 +320,13 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
   async function load() {
     if (!org) return
     setLoading(true); setError('')
+    const canReadCommunications=['owner','admin','manager','provider','staff'].includes(org.role)
     const [a,p,c,t,arows,patients] = await Promise.all([
       supabase.from('appointments').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
       supabase.from('patients').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
-      supabase.from('communication_threads').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
+      canReadCommunications
+        ? supabase.from('communication_threads').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId)
+        : Promise.resolve({count:0,error:null}),
       supabase.from('time_entries').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
       supabase.from('appointments').select('id,patient_id,starts_at,ends_at,status,appointment_type,room').eq('organization_id',org.organizationId).order('starts_at',{ascending:true}).limit(8),
       supabase.from('patients').select('id,first_name,last_name').eq('organization_id',org.organizationId).limit(500),
@@ -348,7 +351,7 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
     <div className="metric-grid">
       <Link to="/schedule" className="metric-card metric-link"><div><span>{lang==='es'?'Citas':'Appointments'}</span><CalendarDays size={17}/></div><strong>{orgLoading||loading?'…':stats.appointments}</strong><p>{lang==='es'?'Abrir agenda':'Open schedule'}</p></Link>
       <Link to="/patients" className="metric-card metric-link"><div><span>{lang==='es'?'Pacientes':'Patients'}</span><Users size={17}/></div><strong>{orgLoading||loading?'…':stats.patients}</strong><p>{lang==='es'?'Abrir pacientes':'Open patients'}</p></Link>
-      <Link to="/inbox" className="metric-card metric-link"><div><span>{lang==='es'?'Conversaciones':'Conversations'}</span><MessageSquareText size={17}/></div><strong>{orgLoading||loading?'…':stats.conversations}</strong><p>{lang==='es'?'Abrir bandeja':'Open inbox'}</p></Link>
+      {org&&['owner','admin','manager','provider','staff'].includes(org.role)&&<Link to="/inbox" className="metric-card metric-link"><div><span>{lang==='es'?'Conversaciones':'Conversations'}</span><MessageSquareText size={17}/></div><strong>{orgLoading||loading?'…':stats.conversations}</strong><p>{lang==='es'?'Abrir bandeja':'Open inbox'}</p></Link>}
       <Link to="/timeclock" className="metric-card metric-link"><div><span>{lang==='es'?'Registros de tiempo':'Time entries'}</span><CalendarDays size={17}/></div><strong>{orgLoading||loading?'…':stats.timeEntries}</strong><p>{lang==='es'?'Abrir reloj':'Open timeclock'}</p></Link>
     </div>
     <div className="overview-grid">
@@ -372,11 +375,24 @@ function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
   const [counts,setCounts] = useState<Record<string,number>>({})
   const [error,setError] = useState('')
 
-  const sources = useMemo(()=>[
-    [lang==='es'?'Pacientes':'Patients','patients'],[lang==='es'?'Citas':'Appointments','appointments'],[lang==='es'?'Registros clínicos':'Clinical records','clinical_records'],
-    [lang==='es'?'Órdenes ópticas':'Optical orders','optical_orders'],[lang==='es'?'Reclamaciones':'Claims','insurance_claims'],[lang==='es'?'Facturas':'Invoices','invoices'],
-    [lang==='es'?'Pagos':'Payments','payments'],[lang==='es'?'Mensajes':'Messages','communication_messages'],[lang==='es'?'Tickets de soporte':'Support tickets','support_tickets'],
-  ] as const,[lang])
+  const sources = useMemo(()=>{
+    const all=[
+      [lang==='es'?'Pacientes':'Patients','patients'],
+      [lang==='es'?'Citas':'Appointments','appointments'],
+      [lang==='es'?'Registros clínicos':'Clinical records','clinical_records'],
+      [lang==='es'?'Órdenes ópticas':'Optical orders','optical_orders'],
+      [lang==='es'?'Reclamaciones':'Claims','insurance_claims'],
+      [lang==='es'?'Facturas':'Invoices','invoices'],
+      [lang==='es'?'Pagos':'Payments','payments'],
+      [lang==='es'?'Mensajes':'Messages','communication_messages'],
+      [lang==='es'?'Tickets de soporte':'Support tickets','support_tickets'],
+    ] as const
+    return all.filter(([,table])=>{
+      if(table==='clinical_records')return ['owner','admin','manager','provider'].includes(org?.role||'')
+      if(table==='communication_messages')return ['owner','admin','manager','provider','staff'].includes(org?.role||'')
+      return true
+    })
+  },[lang,org?.role])
 
   useEffect(()=>{
     if(!org)return
@@ -389,7 +405,7 @@ function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
       if(bad)setError(bad[2])
       setCounts(Object.fromEntries(results.map(([label,count])=>[label,count])))
     })()
-  },[org?.organizationId])
+  },[org?.organizationId,sources])
 
   return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'REPORTES EN VIVO':'LIVE REPORTING'}</span><h1>{lang==='es'?'Reportes':'Reports'}</h1><p>{lang==='es'?'Conteos actuales de registros en los flujos principales de Oculivo.':'Current record counts across core Oculivo workflows.'}</p></div></div>
     {orgLoading?<div className="live-loading">{lang==='es'?'Cargando reportes…':'Loading reports…'}</div>:orgError?<ErrorBox message={orgError} lang={lang}/>:error?<ErrorBox message={error} lang={lang}/>:<div className="report-grid">{sources.map(([label])=><article className="panel report-card" key={label}><span>{label}</span><strong>{counts[label]??0}</strong></article>)}</div>}
