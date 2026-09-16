@@ -66,9 +66,12 @@ export function PatientsOps({session,lang}:{session:Session;lang:Lang}){
    setSelected(r);setDetailLoading(true);setMsg('')
    if(!org){setDetailLoading(false);return}
    const pid=s(r.id),oid=org.organizationId
+   const canReadClinical=clinician(org.role)
    const [appointments,clinical,optical,invoices,documents]=await Promise.all([
      supabase.from('appointments').select('id,starts_at,status,appointment_type,room').eq('organization_id',oid).eq('patient_id',pid).order('starts_at',{ascending:false}).limit(12),
-     supabase.from('clinical_records').select('id,created_at,chief_complaint,assessment,signed_at').eq('organization_id',oid).eq('patient_id',pid).order('created_at',{ascending:false}).limit(12),
+     canReadClinical
+       ? supabase.from('clinical_records').select('id,created_at,chief_complaint,assessment,signed_at').eq('organization_id',oid).eq('patient_id',pid).order('created_at',{ascending:false}).limit(12)
+       : Promise.resolve({data:[],error:null}),
      supabase.from('optical_orders').select('id,created_at,order_number,status,order_type').eq('organization_id',oid).eq('patient_id',pid).order('created_at',{ascending:false}).limit(12),
      supabase.from('invoices').select('id,created_at,invoice_number,status,patient_amount,amount_paid').eq('organization_id',oid).eq('patient_id',pid).order('created_at',{ascending:false}).limit(12),
      supabase.from('documents').select('id,created_at,file_name,document_type').eq('organization_id',oid).eq('patient_id',pid).order('created_at',{ascending:false}).limit(12)
