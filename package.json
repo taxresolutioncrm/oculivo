@@ -10,6 +10,7 @@
     "verify:closeout": "node scripts/verify-closeout.mjs"
   },
   "dependencies": {
+    "@signalwire/js": "4.0.0-rc.2",
     "@supabase/supabase-js": "2.47.0",
     "lucide-react": "0.460.0",
     "react": "18.3.1",
