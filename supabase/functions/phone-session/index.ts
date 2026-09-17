@@ -4,6 +4,7 @@ const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,
 const e164=/^\+[1-9]\d{7,14}$/;
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
+ if(req.method!=="POST")return json({error:"Method not allowed"},405);
  const auth=req.headers.get("Authorization")||""; if(!auth.startsWith("Bearer "))return json({error:"Missing authorization"},401);
  const uc=createClient(Deno.env.get("SUPABASE_URL")!,Deno.env.get("SUPABASE_ANON_KEY")!,{global:{headers:{Authorization:auth}},auth:{persistSession:false}});
  const {data:{user}}=await uc.auth.getUser(); if(!user)return json({error:"Invalid token"},401);
