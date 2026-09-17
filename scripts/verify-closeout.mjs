@@ -38,6 +38,7 @@ check(config.includes('[functions.universal-esign]\nverify_jwt = false'),'Public
 check(esignFn.includes("action==='resend_invite'")&&esignFn.includes('Uploaded file must be a valid PDF'),'E-sign backend supports secure resend and PDF signature validation')
 check(esignFn.includes("createBucket(BUCKET,{public:false")&&esignFn.includes("allowedMimeTypes:['application/pdf','application/json']"),'E-sign storage self-provisions as a private PDF/JSON bucket when absent')
 check(esignFn.includes('source_sha256')&&esignFn.includes('signed_sha256')&&esignFn.includes('certificate_sha256'),'E-sign completion preserves source, signed PDF, and certificate hashes')
+check(fs.existsSync(new URL('../supabase/migrations/20260917112500_universal_esign_bucket_hardening.sql',import.meta.url)),'E-sign bucket hardening migration is present for existing bucket state')
 check(phoneFn.includes('req.method!=="POST"')&&phoneFn.includes('Method not allowed'),'Phone function rejects non-POST requests after CORS preflight')
 check(phoneFn.includes('Invalid call status action')&&phoneFn.includes('Outbound browser call · '),'Phone call lifecycle is validated and persisted in CRM history')
 check(faxFn.includes('OCULIVO_FAX_CALLBACK_SECRET')&&faxFn.includes('Invalid callback signature')&&faxFn.includes('await hmac(secret'),'Fax provider callbacks are HMAC authenticated')
