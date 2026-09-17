@@ -35,7 +35,7 @@ check(esignFn.includes('source_sha256')&&esignFn.includes('signed_sha256')&&esig
 check(phoneFn.includes('req.method!=="POST"')&&phoneFn.includes('Method not allowed'),'Phone function rejects non-POST requests after CORS preflight')
 check(phoneFn.includes('Invalid call status action')&&phoneFn.includes('Outbound browser call · '),'Phone call lifecycle is validated and persisted in CRM history')
 check(faxFn.includes('OCULIVO_FAX_CALLBACK_SECRET')&&faxFn.includes('Invalid callback signature')&&faxFn.includes('await hmac(secret'),'Fax provider callbacks are HMAC authenticated')
-check(faxFn.includes('storage_path').toString()&&faxFn.includes('outside this practice')&&faxFn.includes('organization_memberships'),'Fax sends enforce practice-scoped storage and active membership')
+check(faxFn.includes('storage_path')&&faxFn.includes('outside this practice')&&faxFn.includes('organization_memberships'),'Fax sends enforce practice-scoped storage and active membership')
 check(!/voicemail|patient portal conversations/i.test(app),'CRM copy does not claim unsupported voicemail or patient portal workflows')
 check(app.includes("function canAccessPath(")&&app.includes("path==='/clinical'")&&app.includes("path==='/inbox'||path==='/phone'||path==='/esign'")&&app.includes("canAccessPath('/esign',selectedOrg?.role||'')?<ESignaturesPage"),'Clinical, communications, and e-sign routes are role-gated')
 check(fs.existsSync(new URL('../supabase/migrations/20260913113500_clinical_read_least_privilege.sql',import.meta.url)),'Clinical read least-privilege migration is present')
