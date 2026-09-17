@@ -42,6 +42,14 @@ export function PhoneOps({session,lang}:{session:Session;lang:Lang}){
  useEffect(()=>()=>{void cleanup()},[])
  async function cleanup(){try{await clientRef.current?.destroy?.()}catch{}clientRef.current=null;callRef.current=null;if(audioRef.current)audioRef.current.srcObject=null}
  async function report(action:string){if(!messageIdRef.current)return;await supabase.functions.invoke('phone-session',{body:{action,message_id:messageIdRef.current}})}
+ async function waitForReady(client:any){
+  await new Promise<void>((resolve,reject)=>{
+   let settled=false,sub:any
+   const done=(err?:unknown)=>{if(settled)return;settled=true;window.clearTimeout(timer);try{sub?.unsubscribe?.()}catch{};err?reject(err):resolve()}
+   const timer=window.setTimeout(()=>done(new Error(lang==='es'?'La sesión telefónica tardó demasiado en conectarse.':'Phone session timed out before becoming ready.')),10000)
+   sub=client.ready$.subscribe({next:(ready:any)=>{if(ready===false)return;done()},error:(err:unknown)=>done(err)})
+  })
+ }
  async function finish(action:'complete'|'failed'){
   if(terminalRef.current)return
   terminalRef.current=true
@@ -59,6 +67,7 @@ export function PhoneOps({session,lang}:{session:Session;lang:Lang}){
    const provider=new StaticCredentialProvider({token:String(prep.data.token)})
    const client=new SignalWire(provider)
    clientRef.current=client
+   await waitForReady(client)
    const call=await client.dial(String(prep.data.destination),{audio:true,video:false})
    callRef.current=call;setStatus('ringing')
    call.remoteStream$.subscribe((stream:MediaStream|null)=>{if(audioRef.current&&stream){audioRef.current.srcObject=stream;audioRef.current.play().catch(()=>undefined)}})
