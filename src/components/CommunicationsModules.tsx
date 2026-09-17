@@ -1,6 +1,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import { SignalWire, StaticCredentialProvider } from '@signalwire/js'
 import { FileText, MessageSquareText, Mic, Phone, PhoneOff, RefreshCw, Send } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
@@ -33,17 +34,43 @@ export function InboxComms({session,lang}:{session:Session;lang:Lang}){
  return <section><div className="wf-head"><div><h2>{lang==='es'?'Bandeja unificada':'Unified inbox'}</h2><p>{lang==='es'?'Correo y SMS por consultorio':'Practice-scoped email and SMS'}</p></div><button className="refresh-button" onClick={()=>void loadThreads()}><RefreshCw size={14}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>{error&&<div className="wf-alert">{error}</div>}<div className="inbox-workspace"><aside className="inbox-thread-list">{!threads.length&&<div className="inbox-empty"><MessageSquareText size={20}/><strong>{lang==='es'?'Sin conversaciones todavía':'No conversations yet'}</strong><p>{lang==='es'?'Los hilos de correo y SMS aparecerán aquí.':'Email and SMS threads will appear here.'}</p></div>}{threads.map(x=><button key={x.id} className={threadId===String(x.id)?'active':''} onClick={()=>setThreadId(String(x.id))}><strong>{x.subject||x.phone_number||x.email_address||(lang==='es'?'Conversación':'Conversation')}</strong><span>{localized(x.channel,lang)} · {localized(x.status,lang)}</span></button>)}</aside><div className="inbox-thread"><header><div><h3>{active?.subject||active?.phone_number||active?.email_address||(lang==='es'?'Conversación':'Conversation')}</h3><span>{localized(active?.channel||'',lang)}</span></div></header><div className="inbox-messages">{messages.map(m=><article key={m.id} className={m.direction==='outbound'?'message-bubble outbound':'message-bubble'}><div><strong>{m.sender_name||(m.direction==='outbound'?(lang==='es'?'Consultorio':'Practice'):(lang==='es'?'Paciente':'Patient'))}</strong><span>{new Date(m.created_at).toLocaleString()}</span></div><p>{m.body}</p></article>)}</div>{active&&canCommunicate&&(String(active.channel)==='sms'||String(active.channel)==='email')?<form className="inbox-compose" onSubmit={send}><textarea rows={2} value={body} onChange={e=>setBody(e.target.value)} placeholder={lang==='es'?'Escribe una respuesta…':'Write a reply…'}/><button type="submit" disabled={busy||!body.trim()}><Send size={15}/>{busy?(lang==='es'?'Enviando…':'Sending…'):(lang==='es'?'Enviar':'Send')}</button></form>:<div className="inbox-readonly-note">{!canCommunicate?(lang==='es'?'Tu rol tiene acceso de solo lectura.':'Your role has read-only access.'):(lang==='es'?'Selecciona un hilo de correo o SMS para responder.':'Select an email or SMS thread to reply.')}</div>}</div></div></section>
 }
 
-const SDK_URL='https://esm.sh/@signalwire/js@4.0.0-rc.2?bundle'
-
 export function PhoneOps({session,lang}:{session:Session;lang:Lang}){
  const {orgId,canCommunicate}=useOrgAccess(session),[threads,setThreads]=useState<Row[]>([]),[threadId,setThreadId]=useState(''),[status,setStatus]=useState<'idle'|'preparing'|'ringing'|'connected'|'ended'|'error'>('idle'),[destination,setDestination]=useState(''),[error,setError]=useState(''),[faxFile,setFaxFile]=useState<File|null>(null),[faxBusy,setFaxBusy]=useState(false),[faxMessage,setFaxMessage]=useState('')
- const audioRef=useRef<HTMLAudioElement>(null),clientRef=useRef<any>(null),callRef=useRef<any>(null),messageIdRef=useRef('')
+ const audioRef=useRef<HTMLAudioElement>(null),clientRef=useRef<any>(null),callRef=useRef<any>(null),messageIdRef=useRef(''),terminalRef=useRef(false)
  async function load(){if(!orgId)return;const r=await supabase.from('communication_threads').select('*').eq('organization_id',orgId).eq('channel','phone').order('last_message_at',{ascending:false,nullsFirst:false}).limit(200);if(r.error){setError(r.error.message);return}setThreads(r.data||[]);if(!threadId&&r.data?.[0]?.id)setThreadId(String(r.data[0].id))}
  useEffect(()=>{void load()},[orgId])
+ useEffect(()=>()=>{void cleanup()},[])
  async function cleanup(){try{await clientRef.current?.destroy?.()}catch{}clientRef.current=null;callRef.current=null;if(audioRef.current)audioRef.current.srcObject=null}
  async function report(action:string){if(!messageIdRef.current)return;await supabase.functions.invoke('phone-session',{body:{action,message_id:messageIdRef.current}})}
- async function start(){if(!threadId||!canCommunicate)return;setStatus('preparing');setError('');const prep=await supabase.functions.invoke('phone-session',{body:{action:'prepare',thread_id:threadId}});if(prep.error||prep.data?.error||!prep.data?.token){setError(prep.data?.error||prep.error?.message||(lang==='es'?'No se pudo preparar la llamada.':'Could not prepare call'));setStatus('error');return}try{messageIdRef.current=String(prep.data.message_id||'');setDestination(String(prep.data.destination||''));const sdk:any=await import(/* @vite-ignore */ SDK_URL);const provider=new sdk.StaticCredentialProvider({token:prep.data.token});const client=new sdk.SignalWire(provider);clientRef.current=client;const call=await client.dial(prep.data.destination,{audio:true,video:false});callRef.current=call;setStatus('ringing');call.remoteStream$.subscribe((stream:MediaStream|null)=>{if(audioRef.current&&stream){audioRef.current.srcObject=stream;audioRef.current.play().catch(()=>undefined)}});call.status$.subscribe(async(next:string)=>{if(next==='connected'){setStatus('connected');await report('connected')}if(next==='ringing'||next==='trying'||next==='connecting')setStatus('ringing');if(next==='failed'){setError(lang==='es'?'La llamada falló.':'Phone call failed');setStatus('error');await report('failed');await cleanup()}if(next==='disconnected'||next==='ended'||next==='destroyed'){setStatus('ended');await report('complete');await cleanup()}})}catch(e:any){setError(e?.message||(lang==='es'?'La llamada falló.':'Phone call failed'));setStatus('error');await report('failed');await cleanup()}}
- async function hangup(){try{await callRef.current?.hangup?.()}finally{setStatus('ended');await report('complete');await cleanup()}}
+ async function finish(action:'complete'|'failed'){
+  if(terminalRef.current)return
+  terminalRef.current=true
+  if(action==='failed'){setError(lang==='es'?'La llamada falló.':'Phone call failed');setStatus('error')}else setStatus('ended')
+  await report(action)
+  await cleanup()
+ }
+ async function start(){
+  if(!threadId||!canCommunicate)return
+  terminalRef.current=false;messageIdRef.current='';setStatus('preparing');setError('')
+  const prep=await supabase.functions.invoke('phone-session',{body:{action:'prepare',thread_id:threadId}})
+  if(prep.error||prep.data?.error||!prep.data?.token||!prep.data?.destination){setError(prep.data?.error||prep.error?.message||(lang==='es'?'No se pudo preparar la llamada.':'Could not prepare call'));setStatus('error');return}
+  try{
+   messageIdRef.current=String(prep.data.message_id||'');setDestination(String(prep.data.destination||''))
+   const provider=new StaticCredentialProvider({token:String(prep.data.token)})
+   const client=new SignalWire(provider)
+   clientRef.current=client
+   const call=await client.dial(String(prep.data.destination),{audio:true,video:false})
+   callRef.current=call;setStatus('ringing')
+   call.remoteStream$.subscribe((stream:MediaStream|null)=>{if(audioRef.current&&stream){audioRef.current.srcObject=stream;audioRef.current.play().catch(()=>undefined)}})
+   call.status$.subscribe(async(next:string)=>{
+    if(next==='connected'){setStatus('connected');await report('connected');return}
+    if(next==='ringing'||next==='trying'||next==='connecting'){setStatus('ringing');return}
+    if(next==='failed'){await finish('failed');return}
+    if(next==='disconnected'||next==='ended'||next==='destroyed')await finish('complete')
+   })
+  }catch(e:any){setError(e?.message||(lang==='es'?'La llamada falló.':'Phone call failed'));await finish('failed')}
+ }
+ async function hangup(){try{await callRef.current?.hangup?.()}finally{await finish('complete')}}
  async function sendFax(){
   if(!orgId||!threadId||!faxFile||!canCommunicate||faxBusy)return
   setFaxBusy(true);setFaxMessage('');setError('')
