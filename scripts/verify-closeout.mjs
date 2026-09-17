@@ -32,7 +32,7 @@ check(publicSign.includes('Firma electrónica de Oculivo')&&publicSign.includes(
 check(comms.includes("functions.invoke('send-fax'"),'Outbound fax is wired into communications')
 check(comms.includes("from('documents').insert"),'Outbound fax document is retained in private Documents audit trail')
 check(comms.includes("next==='failed'")&&comms.includes("next==='destroyed'")&&comms.includes("next==='connecting'"),'Browser dialer handles SignalWire connecting, failed, and destroyed call states')
-check(pkg.dependencies?.['@signalwire/js']==='4.0.0-rc.2','SignalWire browser SDK dependency is pinned for the dialer build')
+check(pkg.dependencies?.['@signalwire/js']==='4.0.0-rc.2'&&pkg.dependencies?.rxjs==='7.8.2','SignalWire browser SDK and RxJS peer dependency are pinned for the dialer build')
 check(requiredFunctions.every(fn=>fs.existsSync(new URL('../supabase/functions/'+fn+'/index.ts',import.meta.url))),'All required Edge Function source files exist')
 check(['oculivo-ai','oculivo-support-api','phone-session','send-email','send-sms'].every(fn=>config.includes(`[functions.${fn}]\nverify_jwt = true`)),'Authenticated Edge Functions explicitly require gateway JWT verification')
 check(config.includes('[functions.send-fax]\nverify_jwt = false'),'Fax callback function explicitly allows provider callback traffic with custom authentication')
