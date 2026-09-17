@@ -8,7 +8,6 @@ Oculivo is RomyLabs practice management software for optometry, ophthalmology, a
 - Deployment target: Cloudflare Pages
 - GitHub Actions: intentionally unused
 
-
 ## Edge Function secrets
 
 Configure these in the Oculivo Supabase project's Edge Function secrets before provider-backed controls are considered production-ready:
@@ -32,4 +31,4 @@ Configure these in the Oculivo Supabase project's Edge Function secrets before p
 
 ## Closeout deployment rule
 
-Work and regression-test in `final-crm-closeout` first. Do not merge or deploy production changes until the branch build, provider-backed actions, route interactions, mobile layout, and Supabase/RLS checks are green. Use one controlled production deploy after closeout to avoid wasting Cloudflare build minutes.
+Work and regression-test in `sandbox/oculivo-closeout-20260913` first. Keep the one-commit release candidate on `release/oculivo-closeout-20260917`. Do not move production `main` until the sandbox build, provider-backed actions, route interactions, mobile layout, and Supabase/RLS checks are green. Use one controlled production deploy after closeout to avoid wasting Cloudflare build minutes.
