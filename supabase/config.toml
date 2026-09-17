@@ -1,5 +1,20 @@
 project_id = "czejdbdwaumbdepiswcu"
 
+[functions.oculivo-ai]
+verify_jwt = true
+
+[functions.oculivo-support-api]
+verify_jwt = true
+
+[functions.phone-session]
+verify_jwt = true
+
+[functions.send-email]
+verify_jwt = true
+
+[functions.send-sms]
+verify_jwt = true
+
 [functions.universal-esign]
 verify_jwt = false
 
