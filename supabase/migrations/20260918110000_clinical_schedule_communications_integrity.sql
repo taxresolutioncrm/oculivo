@@ -75,4 +75,20 @@ create trigger appointments_integrity_guard
 before insert or update on public.appointments
 for each row execute function public.oculivo_enforce_appointment_integrity();
 
+create or replace function public.oculivo_preserve_appointment_history()
+returns trigger
+language plpgsql
+set search_path = public
+as $
+begin
+  raise exception 'Appointments must be cancelled, not deleted'
+    using errcode = '55000';
+end;
+$;
+
+drop trigger if exists appointments_no_delete on public.appointments;
+create trigger appointments_no_delete
+before delete on public.appointments
+for each row execute function public.oculivo_preserve_appointment_history();
+
 commit;
