@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "npm run verify:closeout && tsc && vite build",
     "preview": "vite preview",
     "verify:closeout": "node scripts/verify-closeout.mjs && node scripts/verify-imports.mjs && node scripts/verify-deploy-config.mjs"
   },
