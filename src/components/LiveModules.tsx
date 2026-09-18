@@ -306,7 +306,7 @@ function ManualPage({lang}:{lang:'en'|'es'}) {
     ['Firmas electrónicas','Crea sobres PDF, coloca campos, envía solicitudes, reenvía, rastrea, anula y conserva evidencia y certificados de firma.'],
     ['Reportes','Revisa conteos operativos y, para roles de facturación, métricas financieras actuales del consultorio.'],
     ['Soporte','Envía tickets de soporte a RomyLabs desde el CRM y conserva la copia local del ticket.'],
-    ['IA','Oculivo AI puede ayudar con guía de flujos y contexto del consultorio dentro del alcance permitido para la práctica.'],
+    ['IA','Oculivo AI puede ayudar con guía de flujos y resumir la información que proporciones dentro del alcance permitido para la práctica.'],
     ['Seguridad','Oculivo usa acceso por organización, controles de rol y seguridad a nivel de fila para separar los datos de cada consultorio.'],
   ] : [
     ['Getting started','Sign in, choose your practice, review the Overview, and use the left navigation to move through patient and office workflows.'],
@@ -323,7 +323,7 @@ function ManualPage({lang}:{lang:'en'|'es'}) {
     ['E-Signatures','Create PDF envelopes, place fields, send requests, resend, track, void, and retain signing evidence and certificates.'],
     ['Reports','Review operational counts and, for billing roles, current practice financial metrics.'],
     ['Support','Submit support tickets to RomyLabs from the CRM and retain the local ticket mirror.'],
-    ['AI','Oculivo AI can help with workflow guidance and practice context within the authorized practice scope.'],
+    ['AI','Oculivo AI can help with workflow guidance and summarize information you provide within the authorized practice scope.'],
     ['Security','Oculivo uses organization-scoped access, role controls, and row-level security to separate practice data.'],
   ]
   const q=query.trim().toLowerCase()
