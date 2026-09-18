@@ -159,6 +159,7 @@ function SearchOverlay({session,open,onClose,lang,role}:{session:Session;open:bo
       const org=allowed.includes(preferred)?preferred:allowed[0]
       const q=query.trim().toLowerCase()
       const canSearchCommunications=canAccessPath('/inbox',role)
+      const canSearchBilling=canAccessPath('/billing',role)
       const [patients,appointments,threads,optical,invoices,documents,support]=await Promise.all([
         supabase.from('patients').select('id,first_name,last_name,email,phone,status').eq('organization_id',org).limit(60),
         supabase.from('appointments').select('id,appointment_type,starts_at,status,room').eq('organization_id',org).limit(60),
@@ -166,7 +167,9 @@ function SearchOverlay({session,open,onClose,lang,role}:{session:Session;open:bo
           ? supabase.from('communication_threads').select('id,subject,phone_number,email_address,channel,status,last_message_at').eq('organization_id',org).limit(60)
           : Promise.resolve({data:[],error:null}),
         supabase.from('optical_orders').select('id,order_number,order_type,status').eq('organization_id',org).limit(60),
-        supabase.from('invoices').select('id,invoice_number,status,patient_amount,amount_paid,created_at').eq('organization_id',org).limit(60),
+        canSearchBilling
+          ? supabase.from('invoices').select('id,invoice_number,status,patient_amount,amount_paid,created_at').eq('organization_id',org).limit(60)
+          : Promise.resolve({data:[],error:null}),
         supabase.from('documents').select('id,file_name,document_type,created_at').eq('organization_id',org).limit(60),
         supabase.from('support_tickets').select('id,subject,category,priority,status,created_at').eq('organization_id',org).limit(60)
       ])
