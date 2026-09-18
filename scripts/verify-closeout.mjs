@@ -67,7 +67,7 @@ check(!app.includes("window.location.assign('/support')")&&!app.includes("window
 check(!/(?:^|[^\p{L}\p{N}_])(?:TODO|FIXME|HACK|XXX)(?=$|[^\p{L}\p{N}_])|not implemented|coming soon|mock data|demo data/iu.test(allSource),'No incomplete implementation markers remain in primary UI source')
 check(esign.includes('Firmas electrónicas')&&esign.includes('E-Signatures'),'Internal e-signature workflow is bilingual')
 check(esign.includes("action:'resend_invite'")&&esign.includes("'Reenviar':'Resend'"),'E-signature resend workflow is wired in EN/ES')
-check(publicSign.includes('Firma electrónica de Oculivo')&&publicSign.includes('Oculivo E-Signature'),'Public signer workflow is bilingual')
+check(esignFn.includes('audit:m.audit')&&esign.includes('Reminder due')&&esign.includes('audit?.length'),'Authenticated e-sign list exposes audit events and reminder-due visibility')\ncheck(publicSign.includes('Firma electrónica de Oculivo')&&publicSign.includes('Oculivo E-Signature'),'Public signer workflow is bilingual')
 check(comms.includes("functions.invoke('send-fax'"),'Outbound fax is wired into communications')
 check(comms.includes("from('documents').insert"),'Outbound fax document is retained in private Documents audit trail')
 check(comms.includes("next==='failed'")&&comms.includes("next==='destroyed'")&&comms.includes("next==='connecting'"),'Browser dialer handles SignalWire connecting, failed, and destroyed call states')
