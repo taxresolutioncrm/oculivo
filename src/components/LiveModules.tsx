@@ -278,13 +278,13 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
 function ManualPage({lang}:{lang:'en'|'es'}) {
   const sections = lang==='es' ? [
     ['Primeros pasos','Inicia sesión, elige tu consultorio, revisa el Resumen y usa la navegación izquierda para moverte por los flujos de pacientes y operaciones.'],
-    ['Agenda','Usa Agenda para citas y coordinación de proveedores. Las reservas del sitio web y las citas creadas por el personal aparecen en el mismo flujo.'],
+    ['Agenda','Usa Agenda para citas y coordinación de proveedores. Las citas creadas por el personal y las citas existentes del consultorio aparecen en el mismo flujo.'],
     ['Pacientes y clínica','Los registros de pacientes conectan contacto, citas, registros clínicos, documentos, óptica, seguros y facturación.'],
     ['Comunicaciones','Bandeja reúne correo y SMS; Teléfono permite llamadas desde el navegador y envío de fax PDF; Chat del equipo mantiene separada la colaboración interna.'],
     ['Seguridad','Oculivo usa acceso por organización y seguridad a nivel de fila en Supabase para separar los datos de cada consultorio.'],
   ] : [
     ['Getting started','Sign in, choose your practice, review the Overview, and use the left navigation to move through patient and office workflows.'],
-    ['Scheduling','Use Schedule for appointments and provider coordination. Website bookings and staff-created appointments appear in the same operational flow.'],
+    ['Scheduling','Use Schedule for appointments and provider coordination. Staff-created appointments and existing practice appointments appear in the same operational flow.'],
     ['Patients & clinical','Patient records connect practice contact information with appointments, clinical records, documents, optical, insurance, and billing workflows.'],
     ['Communications','Inbox handles email and SMS; Phone supports browser calls and private PDF fax sending; Team Chat keeps internal collaboration separate.'],
     ['Security','Oculivo uses organization-scoped access controls and Supabase row-level security to keep practice data separated.'],
