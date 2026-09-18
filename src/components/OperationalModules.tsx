@@ -22,7 +22,7 @@ const clinician=(r:string)=>['owner','admin','provider','manager'].includes(r)
 const localized=(v:any,lang:Lang)=>{
  const raw=s(v),k=raw.toLowerCase().replace(/[ -]+/g,'_')
  if(lang!=='es')return raw
- const m:Record<string,string>={active:'Activo',archived:'Archivado',inactive:'Inactivo',draft:'Borrador',signed:'Firmado',pending:'Pendiente',ordered:'Ordenada',received:'Recibida',ready:'Lista',dispensed:'Entregada',scheduled:'Programada',confirmed:'Confirmada',completed:'Completada',cancelled:'Cancelada',canceled:'Cancelada',paid:'Pagada',unpaid:'Sin pagar',partial:'Parcial',open:'Abierto',closed:'Cerrado',normal:'Normal',high:'Alta',urgent:'Urgente',technical:'Técnico',billing:'Facturación',feature_request:'Solicitud de función',training:'Capacitación',other:'Otro',frames:'Monturas',eyewear:'Anteojos',general:'General',clinical:'Clínico',insurance:'Seguro',consent:'Consentimiento',prescription:'Receta'}
+ const m:Record<string,string>={active:'Activo',archived:'Archivado',inactive:'Inactivo',draft:'Borrador',signed:'Firmado',pending:'Pendiente',ordered:'Ordenada',received:'Recibida',ready:'Lista',dispensed:'Entregada',scheduled:'Programada',confirmed:'Confirmada',completed:'Completada',cancelled:'Cancelada',canceled:'Cancelada',no_show:'No asistió',paid:'Pagada',unpaid:'Sin pagar',partial:'Parcial',open:'Abierto',closed:'Cerrado',normal:'Normal',high:'Alta',urgent:'Urgente',technical:'Técnico',billing:'Facturación',feature_request:'Solicitud de función',training:'Capacitación',other:'Otro',frames:'Monturas',eyewear:'Anteojos',general:'General',clinical:'Clínico',insurance:'Seguro',consent:'Consentimiento',prescription:'Receta'}
  return m[k]||raw
 }
 
