@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.send-fax]
 verify_jwt = false
+
+[functions.receive-sms]
+verify_jwt = false
+
+[functions.receive-email]
+verify_jwt = false
