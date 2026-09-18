@@ -19,7 +19,7 @@ const missing=[]
 const markers=[]
 for(const file of files){
   const src=fs.readFileSync(file,'utf8')
-  if(/(?:^|[^\\p{L}\\p{N}_])(?:TODO|FIXME|HACK|XXX)(?=$|[^\\p{L}\\p{N}_])|not implemented|coming soon|mock data|demo data/iu.test(src))markers.push(path.relative(root,file))
+  if(/(?:^|[^\p{L}\p{N}_])(?:TODO|FIXME|HACK|XXX)(?=$|[^\p{L}\p{N}_])|not implemented|coming soon|mock data|demo data/iu.test(src))markers.push(path.relative(root,file))
   const specs=[]
   for(const m of src.matchAll(/\b(?:import|export)\s+(?:type\s+)?(?:[\s\S]*?\s+from\s+)?['"]([^'"]+)['"]/g))specs.push(m[1])
   for(const m of src.matchAll(/\bimport\(\s*['"]([^'"]+)['"]\s*\)/g))specs.push(m[1])
