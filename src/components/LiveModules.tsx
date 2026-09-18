@@ -290,20 +290,45 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
 }
 
 function ManualPage({lang}:{lang:'en'|'es'}) {
+  const [query,setQuery]=useState('')
   const sections = lang==='es' ? [
     ['Primeros pasos','Inicia sesión, elige tu consultorio, revisa el Resumen y usa la navegación izquierda para moverte por los flujos de pacientes y operaciones.'],
-    ['Agenda','Usa Agenda para citas y coordinación de proveedores. Las citas creadas por el personal y las citas existentes del consultorio aparecen en el mismo flujo.'],
-    ['Pacientes y clínica','Los registros de pacientes conectan contacto, citas, registros clínicos, documentos, óptica, seguros y facturación.'],
-    ['Comunicaciones','Bandeja reúne correo y SMS; Teléfono permite llamadas desde el navegador y envío de fax PDF; Chat del equipo mantiene separada la colaboración interna.'],
-    ['Seguridad','Oculivo usa acceso por organización y seguridad a nivel de fila en Supabase para separar los datos de cada consultorio.'],
+    ['Agenda','Usa Agenda para crear y editar citas, asignar proveedores y ubicaciones, y evitar conflictos de horario del proveedor.'],
+    ['Pacientes','Crea y edita perfiles, archiva pacientes y abre el historial conectado de citas, clínica, óptica, documentos y facturación según tus permisos.'],
+    ['Clínica','Los usuarios clínicos autorizados pueden crear y editar registros, documentar agudeza visual, presión intraocular, evaluación y plan de tratamiento, y firmar el registro.'],
+    ['Óptica','Administra órdenes ópticas, estados de pedido e inventario con cantidades, puntos de reorden, costos y precios de venta.'],
+    ['Bandeja','Inicia y responde conversaciones de correo y SMS. Los hilos y mensajes se actualizan en tiempo real dentro del consultorio.'],
+    ['Teléfono y fax','Marca números E.164 desde el navegador, conserva el historial de llamadas y envía faxes PDF privados desde un hilo telefónico.'],
+    ['Chat del equipo','Usa canales internos del consultorio para colaboración en tiempo real.'],
+    ['Reloj','Marca entrada y salida y revisa horas del día, de la semana y por turno.'],
+    ['Facturación','Los roles autorizados pueden crear facturas, registrar pagos, crear y editar reclamaciones y revisar métricas financieras.'],
+    ['Documentos','Sube PDF e imágenes a almacenamiento privado, abre enlaces firmados temporales y elimina documentos cuando tu rol lo permite.'],
+    ['Firmas electrónicas','Crea sobres PDF, coloca campos, envía solicitudes, reenvía, rastrea, anula y conserva evidencia y certificados de firma.'],
+    ['Reportes','Revisa conteos operativos y, para roles de facturación, métricas financieras actuales del consultorio.'],
+    ['Soporte','Envía tickets de soporte a RomyLabs desde el CRM y conserva la copia local del ticket.'],
+    ['IA','Oculivo AI puede ayudar con guía de flujos y contexto del consultorio dentro del alcance permitido para la práctica.'],
+    ['Seguridad','Oculivo usa acceso por organización, controles de rol y seguridad a nivel de fila para separar los datos de cada consultorio.'],
   ] : [
     ['Getting started','Sign in, choose your practice, review the Overview, and use the left navigation to move through patient and office workflows.'],
-    ['Scheduling','Use Schedule for appointments and provider coordination. Staff-created appointments and existing practice appointments appear in the same operational flow.'],
-    ['Patients & clinical','Patient records connect practice contact information with appointments, clinical records, documents, optical, insurance, and billing workflows.'],
-    ['Communications','Inbox handles email and SMS; Phone supports browser calls and private PDF fax sending; Team Chat keeps internal collaboration separate.'],
-    ['Security','Oculivo uses organization-scoped access controls and Supabase row-level security to keep practice data separated.'],
+    ['Scheduling','Use Schedule to create and edit appointments, assign providers and locations, and prevent provider time conflicts.'],
+    ['Patients','Create and edit profiles, archive patients, and open connected appointment, clinical, optical, document, and billing history according to your role.'],
+    ['Clinical','Authorized clinical users can create and edit records, document visual acuity, intraocular pressure, assessment and treatment plan, and sign the record.'],
+    ['Optical','Manage optical orders, order status progression, and inventory quantities, reorder points, cost, and retail pricing.'],
+    ['Inbox','Start and reply to email and SMS conversations. Threads and messages update in real time within the practice.'],
+    ['Phone & fax','Dial E.164 numbers from the browser, retain call history, and send private PDF faxes from a phone thread.'],
+    ['Team Chat','Use internal practice channels for real-time staff collaboration.'],
+    ['Timeclock','Clock in and out and review daily, weekly, and per-shift hours.'],
+    ['Billing','Authorized roles can create invoices, record payments, create and edit claims, and review financial metrics.'],
+    ['Documents','Upload PDFs and images to private storage, open temporary signed links, and delete documents when your role allows it.'],
+    ['E-Signatures','Create PDF envelopes, place fields, send requests, resend, track, void, and retain signing evidence and certificates.'],
+    ['Reports','Review operational counts and, for billing roles, current practice financial metrics.'],
+    ['Support','Submit support tickets to RomyLabs from the CRM and retain the local ticket mirror.'],
+    ['AI','Oculivo AI can help with workflow guidance and practice context within the authorized practice scope.'],
+    ['Security','Oculivo uses organization-scoped access, role controls, and row-level security to separate practice data.'],
   ]
-  return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'MANUAL DE OCULIVO':'OCULIVO MANUAL'}</span><h1>Manual</h1><p>{lang==='es'?'Guía rápida del producto para el personal del consultorio.':'Quick product guidance for practice staff.'}</p></div></div><div className="manual-grid">{sections.map(([title,body])=><article className="panel manual-card" key={title}><h2>{title}</h2><p>{body}</p></article>)}</div></section>
+  const q=query.trim().toLowerCase()
+  const visible=q?sections.filter(([title,body])=>(title+' '+body).toLowerCase().includes(q)):sections
+  return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'CENTRO DE AYUDA DE OCULIVO':'OCULIVO HELP CENTER'}</span><h1>{lang==='es'?'Manual':'Manual'}</h1><p>{lang==='es'?'Busca instrucciones de los flujos disponibles en Oculivo.':'Search guidance for the workflows available in Oculivo.'}</p></div></div><div className="searchbox" style={{marginBottom:18,maxWidth:620}}><Search size={18}/><input aria-label={lang==='es'?'Buscar en el manual':'Search manual'} value={query} onChange={e=>setQuery(e.target.value)} placeholder={lang==='es'?'Buscar agenda, facturación, fax, firmas…':'Search scheduling, billing, fax, signatures…'}/></div>{visible.length?<div className="manual-grid">{visible.map(([title,body])=><article className="panel manual-card" key={title}><h2>{title}</h2><p>{body}</p></article>)}</div>:<Empty message={lang==='es'?'No se encontraron temas del manual':'No manual topics found'} lang={lang}/>}</section>
 }
 
 export function LiveModulePage({path,title,description,session,lang}:{path:string;title:string;description:string;session:Session;lang:'en'|'es'}) {
