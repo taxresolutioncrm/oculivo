@@ -116,4 +116,6 @@ check(!/Website bookings|reservas del sitio web/i.test(live),'Manual does not cl
 check(comms.includes("table:'communication_threads'")&&comms.includes("table:'communication_messages'")&&comms.includes('supabase.removeChannel(ch)'),'Inbox subscribes to realtime thread and message changes')
 check(live.includes("table:'team_channels'")&&live.includes("table:'team_messages'")&&live.includes('supabase.removeChannel(ch)'),'Team Chat subscribes to realtime channel and message changes')
 check(live.includes('OCULIVO HELP CENTER')&&live.includes('Search manual')&&live.includes('const [query,setQuery]'),'Manual is a searchable help center rather than a static card list')
+check(ops.includes("status:s(f.status)||'scheduled'")&&ops.includes('value="no_show"'),'Schedule can manage appointment lifecycle status including no-show')
+check(ops.includes("setPatientStatus(r,'archived')")&&ops.includes("setPatientStatus(r,'active')"),'Patients can be archived and restored')
 if(process.exitCode)process.exit(process.exitCode)
