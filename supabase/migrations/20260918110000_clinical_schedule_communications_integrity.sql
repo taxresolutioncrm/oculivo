@@ -37,7 +37,7 @@ create or replace function public.oculivo_validate_communication_patient()
 returns trigger
 language plpgsql
 set search_path = public
-as $
+as $func$
 begin
   if new.patient_id is not null and not exists (
     select 1
@@ -50,7 +50,7 @@ begin
   end if;
   return new;
 end;
-$;
+$func$;
 
 drop trigger if exists communication_threads_patient_scope on public.communication_threads;
 create trigger communication_threads_patient_scope
@@ -76,7 +76,7 @@ create or replace function public.oculivo_protect_signed_clinical_record()
 returns trigger
 language plpgsql
 set search_path = public
-as $$
+as $func$
 begin
   if old.signed_at is not null then
     raise exception 'Signed clinical records are immutable'
@@ -87,7 +87,7 @@ begin
   end if;
   return new;
 end;
-$$;
+$func$;
 
 drop trigger if exists clinical_records_signed_immutable on public.clinical_records;
 create trigger clinical_records_signed_immutable
@@ -98,7 +98,7 @@ create or replace function public.oculivo_enforce_appointment_integrity()
 returns trigger
 language plpgsql
 set search_path = public
-as $$
+as $func$
 declare
   v_conflict uuid;
 begin
@@ -133,7 +133,7 @@ begin
 
   return new;
 end;
-$$;
+$func$;
 
 drop trigger if exists appointments_integrity_guard on public.appointments;
 create trigger appointments_integrity_guard
@@ -144,12 +144,12 @@ create or replace function public.oculivo_preserve_appointment_history()
 returns trigger
 language plpgsql
 set search_path = public
-as $
+as $func$
 begin
   raise exception 'Appointments must be cancelled, not deleted'
     using errcode = '55000';
 end;
-$;
+$func$;
 
 drop trigger if exists appointments_no_delete on public.appointments;
 create trigger appointments_no_delete
