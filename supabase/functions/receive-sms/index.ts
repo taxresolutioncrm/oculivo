@@ -26,9 +26,13 @@ Deno.serve(async(req:Request)=>{
   const from=String(form.get("From")||"").trim();
   const to=String(form.get("To")||"").trim();
   const body=String(form.get("Body")||"").trim();
+  const configuredTo=String(Deno.env.get("OCULIVO_SMS_FROM_NUMBER")||"").trim();
+  const rawProviderId=String(form.get("MessageSid")||form.get("SmsSid")||"").trim(),providerMessageId=rawProviderId?"signalwire:"+rawProviderId:null;
   if(!e164.test(from)||!e164.test(to)||!body)return json({error:"Invalid inbound SMS payload"},400);
+  if(!e164.test(configuredTo)||to!==configuredTo)return json({error:"Inbound SMS destination is not configured for Oculivo"},403);
 
   const sb=createClient(Deno.env.get("SUPABASE_URL")!,Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,{auth:{persistSession:false}});
+  if(providerMessageId){const dupe=await sb.from("communication_messages").select("id").eq("organization_id",org).eq("provider_message_id",providerMessageId).limit(1);if(!dupe.error&&dupe.data?.length)return new Response("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response></Response>",{status:200,headers:{"Content-Type":"text/xml"}});}
   const existing=await sb.from("communication_threads").select("id,organization_id").eq("organization_id",org).eq("channel","sms").eq("phone_number",from).order("last_message_at",{ascending:false}).limit(1).maybeSingle();
   if(existing.error)return json({error:"Could not look up SMS conversation"},500);
   let thread=existing.data;
@@ -38,7 +42,7 @@ Deno.serve(async(req:Request)=>{
     if(created.error||!created.data)return json({error:"Could not create SMS conversation"},500);
     thread=created.data;
   }
-  const ins=await sb.from("communication_messages").insert({organization_id:org,thread_id:thread.id,direction:"inbound",sender_name:from,sender_address:from,body,is_read:false,sent_by:null,created_at:now});
+  const ins=await sb.from("communication_messages").insert({organization_id:org,thread_id:thread.id,direction:"inbound",sender_name:from,sender_address:from,body,is_read:false,sent_by:null,created_at:now,provider_message_id:providerMessageId});
   if(ins.error)return json({error:"Could not store inbound SMS"},500);
   await sb.from("communication_threads").update({last_message_at:now,status:"open"}).eq("id",thread.id).eq("organization_id",org);
   return new Response("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response></Response>",{status:200,headers:{"Content-Type":"text/xml"}});
