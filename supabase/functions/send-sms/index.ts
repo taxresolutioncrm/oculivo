@@ -34,7 +34,9 @@ Deno.serve(async(req:Request)=>{
  }
  const {data:membership}=await userClient.from("organization_memberships").select("role,is_active").eq("organization_id",thread.organization_id).eq("user_id",user.id).eq("is_active",true).maybeSingle();
  if(!membership||!["owner","admin","manager","provider","staff"].includes(String(membership.role)))return json({error:"Communication permission required"},403);
- const to=(thread.phone_number||"").trim(); const from=(Deno.env.get("OCULIVO_SMS_FROM_NUMBER")||"").trim();
+ const to=(thread.phone_number||"").trim();
+ const endpoint=await service.from("communication_endpoints").select("address").eq("organization_id",thread.organization_id).eq("kind","sms").eq("is_active",true).order("is_primary",{ascending:false}).limit(1).maybeSingle();
+ const from=String(endpoint.data?.address||Deno.env.get("OCULIVO_SMS_FROM_NUMBER")||"").trim();
  if(!e164.test(to)||!e164.test(from))return json({error:"SMS phone numbers are not configured in E.164 format"},409);
  const project=Deno.env.get("SIGNALWIRE_PROJECT_ID")||"", token=Deno.env.get("SIGNALWIRE_AUTH_TOKEN")||"", space=(Deno.env.get("SIGNALWIRE_SPACE_URL")||"").replace(/^https?:\/\//,"").replace(/\/$/,"");
  if(!project||!token||!space)return json({error:"SMS provider is not configured"},503);
