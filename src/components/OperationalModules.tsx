@@ -22,7 +22,7 @@ const clinician=(r:string)=>['owner','admin','provider','manager'].includes(r)
 const localized=(v:any,lang:Lang)=>{
  const raw=s(v),k=raw.toLowerCase().replace(/[ -]+/g,'_')
  if(lang!=='es')return raw
- const m:Record<string,string>={active:'Activo',archived:'Archivado',inactive:'Inactivo',draft:'Borrador',signed:'Firmado',pending:'Pendiente',scheduled:'Programada',confirmed:'Confirmada',completed:'Completada',cancelled:'Cancelada',canceled:'Cancelada',paid:'Pagada',unpaid:'Sin pagar',partial:'Parcial',open:'Abierto',closed:'Cerrado',normal:'Normal',high:'Alta',urgent:'Urgente',technical:'Técnico',billing:'Facturación',feature_request:'Solicitud de función',training:'Capacitación',other:'Otro',frames:'Monturas',eyewear:'Anteojos',general:'General',clinical:'Clínico',insurance:'Seguro',consent:'Consentimiento',prescription:'Receta'}
+ const m:Record<string,string>={active:'Activo',archived:'Archivado',inactive:'Inactivo',draft:'Borrador',signed:'Firmado',pending:'Pendiente',ordered:'Ordenada',received:'Recibida',ready:'Lista',dispensed:'Entregada',scheduled:'Programada',confirmed:'Confirmada',completed:'Completada',cancelled:'Cancelada',canceled:'Cancelada',paid:'Pagada',unpaid:'Sin pagar',partial:'Parcial',open:'Abierto',closed:'Cerrado',normal:'Normal',high:'Alta',urgent:'Urgente',technical:'Técnico',billing:'Facturación',feature_request:'Solicitud de función',training:'Capacitación',other:'Otro',frames:'Monturas',eyewear:'Anteojos',general:'General',clinical:'Clínico',insurance:'Seguro',consent:'Consentimiento',prescription:'Receta'}
  return m[k]||raw
 }
 
@@ -67,13 +67,16 @@ export function PatientsOps({session,lang}:{session:Session;lang:Lang}){
    if(!org){setDetailLoading(false);return}
    const pid=s(r.id),oid=org.organizationId
    const canReadClinical=clinician(org.role)
+   const canReadFinancial=biller(org.role)
    const [appointments,clinical,optical,invoices,documents]=await Promise.all([
      supabase.from('appointments').select('id,starts_at,status,appointment_type,room').eq('organization_id',oid).eq('patient_id',pid).order('starts_at',{ascending:false}).limit(12),
      canReadClinical
        ? supabase.from('clinical_records').select('id,created_at,chief_complaint,assessment,signed_at').eq('organization_id',oid).eq('patient_id',pid).order('created_at',{ascending:false}).limit(12)
        : Promise.resolve({data:[],error:null}),
      supabase.from('optical_orders').select('id,created_at,order_number,status,order_type').eq('organization_id',oid).eq('patient_id',pid).order('created_at',{ascending:false}).limit(12),
-     supabase.from('invoices').select('id,created_at,invoice_number,status,patient_amount,amount_paid').eq('organization_id',oid).eq('patient_id',pid).order('created_at',{ascending:false}).limit(12),
+     canReadFinancial
+       ? supabase.from('invoices').select('id,created_at,invoice_number,status,patient_amount,amount_paid').eq('organization_id',oid).eq('patient_id',pid).order('created_at',{ascending:false}).limit(12)
+       : Promise.resolve({data:[],error:null}),
      supabase.from('documents').select('id,created_at,file_name,document_type').eq('organization_id',oid).eq('patient_id',pid).order('created_at',{ascending:false}).limit(12)
    ])
    const firstError=[appointments,clinical,optical,invoices,documents].find(x=>x.error)?.error
