@@ -107,6 +107,7 @@ check(emailFn.includes('organization_id?:string')&&emailFn.includes('Could not c
 check(smsFn.includes('organization_id?:string')&&smsFn.includes('Could not create SMS conversation')&&smsFn.includes('thread_id:thread.id'),'SMS backend can create a practice-scoped outbound conversation')
 check(phoneFn.includes('organization_id?:string')&&phoneFn.includes('Could not create phone conversation')&&phoneFn.includes('thread_id:thread.id'),'Phone backend can create a practice-scoped call thread from a direct number')
 check(comms.includes('dialNumber')&&comms.includes("body.organization_id=orgId")&&comms.includes("body.to=dialNumber.trim()"),'Phone UI can initiate a direct outbound call without a pre-existing thread')
+check(comms.includes('loadCallHistory')&&comms.includes('Call history')&&comms.includes("from('communication_messages').select('id,direction,body,sender_name,sender_address,created_at')"),'Phone workspace exposes persisted call history')
 check(app.includes("path==='/billing'")&&app.includes("['owner','admin','manager','billing'].includes(role)"),'Billing route is restricted to billing-capable roles')
 check(ops.includes('canReadFinancial=biller(org.role)')&&ops.includes("canReadFinancial\n       ? supabase.from('invoices')"),'Patient profile skips financial queries for roles without billing access')
 check(live.includes("['owner','admin','manager','billing'].includes(org?.role||'')")&&live.includes('Patient billed')&&live.includes('Payments recorded'),'Reports expose financial metrics only to billing-capable roles')
