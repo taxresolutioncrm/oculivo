@@ -120,4 +120,7 @@ check(ops.includes("status:s(f.status)||'scheduled'")&&ops.includes('value="no_s
 check(ops.includes("setPatientStatus(r,'archived')")&&ops.includes("setPatientStatus(r,'active')"),'Patients can be archived and restored')
 check(ops.includes("statusFilter,setStatusFilter")&&ops.includes('filteredPatients'),'Patients support search plus active/archive filtering')
 check(ops.includes("scheduleFilter,setScheduleFilter")&&ops.includes('filteredAppointments'),'Schedule supports upcoming, today, completed, cancelled, and all views')
+check(ops.includes("clinicalQuery,setClinicalQuery")&&ops.includes('filteredClinical'),'Clinical records support search plus draft/signed filtering')
+check(ops.includes("opticalQuery,setOpticalQuery")&&ops.includes('visibleOrders')&&ops.includes('visibleInventory'),'Optical orders and inventory support search')
+check(ops.includes("documentQuery,setDocumentQuery")&&ops.includes('visibleDocuments'),'Documents support search by file, type, patient, and description')
 if(process.exitCode)process.exit(process.exitCode)
