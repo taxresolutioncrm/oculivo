@@ -233,6 +233,7 @@ function Shell({session}:{session:Session}){
     return()=>{active=false}
   },[session.user.id])
   useEffect(()=>{localStorage.setItem('oculivo-lang',lang);document.documentElement.lang=lang==='es'?'es':'en'},[lang])
+  const selectedOrg=orgs.find(o=>o.id===selectedOrgId)||orgs[0]
   useEffect(()=>{
     if(!selectedOrgId||!canAccessPath('/inbox',selectedOrg?.role||'')){setUnreadCount(0);return}
     let active=true
@@ -250,7 +251,6 @@ function Shell({session}:{session:Session}){
   },[])
   const name=useMemo(()=>session.user.email?.split('@')[0]||'User',[session])
   const t=labels[lang]
-  const selectedOrg=orgs.find(o=>o.id===selectedOrgId)||orgs[0]
   const currentNav=nav.find(item=>item.path===location.pathname)||nav[0]
   const currentLabel=t[currentNav.key]||t.overview
   const canCreatePatient=['owner','admin','manager','provider','staff'].includes(selectedOrg?.role||'')
