@@ -215,6 +215,20 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
 
   useEffect(()=>{setChannelId('');setMessages([]);void loadChannels()},[org?.organizationId])
   useEffect(()=>{void loadMessages(channelId)},[channelId,org?.organizationId])
+  useEffect(()=>{
+    if(!org?.organizationId)return
+    const ch=supabase.channel('oculivo-team-channels-'+org.organizationId)
+      .on('postgres_changes',{event:'*',schema:'public',table:'team_channels',filter:'organization_id=eq.'+org.organizationId},()=>void loadChannels())
+      .subscribe()
+    return()=>{void supabase.removeChannel(ch)}
+  },[org?.organizationId])
+  useEffect(()=>{
+    if(!org?.organizationId||!channelId)return
+    const ch=supabase.channel('oculivo-team-messages-'+channelId)
+      .on('postgres_changes',{event:'*',schema:'public',table:'team_messages',filter:'channel_id=eq.'+channelId},()=>void loadMessages(channelId))
+      .subscribe()
+    return()=>{void supabase.removeChannel(ch)}
+  },[org?.organizationId,channelId])
 
   async function createChannel(name='general') {
     if (!org || !['owner','admin'].includes(org?.role||'')) return
