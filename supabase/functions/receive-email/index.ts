@@ -35,7 +35,10 @@ Deno.serve(async(req:Request)=>{
     const rawProviderId=String(item?.MessageId||"").trim(),providerMessageId=rawProviderId?"brevo:"+rawProviderId:null;
     if(!validEmail.test(from)||!validEmail.test(to)||!body)continue;
     const endpoint=await sb.from("communication_endpoints").select("organization_id").eq("kind","email").eq("is_active",true).ilike("address",to).limit(1).maybeSingle();
-    if(endpoint.error||!endpoint.data||String(endpoint.data.organization_id)!==org)continue;
+    const fallbackEmail=String(Deno.env.get("OCULIVO_FROM_EMAIL")||"").trim().toLowerCase();
+    const endpointOk=!endpoint.error&&endpoint.data&&String(endpoint.data.organization_id)===org;
+    const fallbackOk=!endpoint.data&&validEmail.test(fallbackEmail)&&to===fallbackEmail;
+    if(!endpointOk&&!fallbackOk)continue;
     if(providerMessageId){const dupe=await sb.from("communication_messages").select("id").eq("organization_id",org).eq("provider_message_id",providerMessageId).limit(1);if(!dupe.error&&dupe.data?.length)continue;}
     const existing=await sb.from("communication_threads").select("id,organization_id,subject").eq("organization_id",org).eq("channel","email").eq("email_address",from).order("last_message_at",{ascending:false}).limit(1).maybeSingle();
     if(existing.error)continue;
