@@ -68,6 +68,7 @@ check(!/(?:^|[^\p{L}\p{N}_])(?:TODO|FIXME|HACK|XXX)(?=$|[^\p{L}\p{N}_])|not impl
 check(esign.includes('Firmas electrónicas')&&esign.includes('E-Signatures'),'Internal e-signature workflow is bilingual')
 check(esign.includes("action:'resend_invite'")&&esign.includes('Recordatorio / reenviar')&&esign.includes('Reminder / resend'),'E-signature reminder/resend workflow is wired in EN/ES')
 check(esignFn.includes('audit:m.audit')&&esign.includes('Reminder due')&&esign.includes('audit?.length'),'Authenticated e-sign list exposes audit events and reminder-due visibility')
+check(esignFn.includes("event:first?'viewed':'revisited'")&&esignFn.includes('view_count=Number(m.view_count||0)+1')&&esign.includes('Last viewed'),'E-sign tracks first open and every subsequent revisit')
 check(publicSign.includes('Firma electrónica de Oculivo')&&publicSign.includes('Oculivo E-Signature'),'Public signer workflow is bilingual')
 check(comms.includes("functions.invoke('send-fax'"),'Outbound fax is wired into communications')
 check(comms.includes("from('documents').insert"),'Outbound fax document is retained in private Documents audit trail')
