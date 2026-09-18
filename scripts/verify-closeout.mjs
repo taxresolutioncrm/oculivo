@@ -108,6 +108,7 @@ check(fs.existsSync(new URL('../supabase/migrations/20260913113500_clinical_read
 check(fs.existsSync(new URL('../supabase/migrations/20260913114000_communication_read_least_privilege.sql',import.meta.url)),'Communication read least-privilege migration is present')
 check(app.includes("role={selectedOrg?.role||''}"),'Global search receives the active role for sensitive-result filtering')
 check(app.includes('canSearchCommunications')&&app.includes("Promise.resolve({data:[],error:null})"),'Global search skips restricted communications queries instead of relying on post-query filtering')
+check(app.includes('canSearchBilling')&&app.includes("canSearchBilling\n          ? supabase.from('invoices')"),'Global search skips restricted billing queries instead of querying then filtering')
 check(ops.includes('canReadClinical=clinician(org.role)')&&ops.includes("Promise.resolve({data:[],error:null})"),'Patient profile skips restricted clinical queries for non-clinical roles')
 check(live.includes("table==='clinical_records'")&&live.includes("table==='communication_messages'")&&live.includes('org?.role'),'Reports respect role-scoped clinical and communication access')
 check(live.includes('canReadCommunications')&&live.includes("Promise.resolve({count:0,error:null})"),'Overview skips restricted communication counts for roles without access')
