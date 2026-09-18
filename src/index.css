@@ -403,3 +403,5 @@ body{font-size:var(--crm-body-font)}
   width:0;
   height:0;
 }
+
+.nav-count{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#dd3b72;color:#fff;display:grid;place-items:center;font-size:10px;font-weight:850;line-height:1}.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
