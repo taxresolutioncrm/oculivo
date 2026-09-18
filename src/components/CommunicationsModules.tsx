@@ -68,7 +68,7 @@ export function PhoneOps({session,lang}:{session:Session;lang:Lang}){
    const client=new SignalWire(provider)
    clientRef.current=client
    await waitForReady(client)
-   const call=await client.dial(String(prep.data.destination),{audio:true,video:false})
+   const call=await client.dial(String(prep.data.destination),{audio:true,video:false,receiveAudio:true,receiveVideo:false})
    callRef.current=call;setStatus('ringing')
    call.remoteStream$.subscribe((stream:MediaStream|null)=>{if(audioRef.current&&stream){audioRef.current.srcObject=stream;audioRef.current.play().catch(()=>undefined)}})
    call.status$.subscribe(async(next:string)=>{
