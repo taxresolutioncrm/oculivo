@@ -41,9 +41,9 @@ Deno.serve(async(req:Request)=>{
  const form=new URLSearchParams({From:from,To:to,Body:body});
  const pr=await fetch("https://"+space+"/api/laml/2010-04-01/Accounts/"+encodeURIComponent(project)+"/Messages.json",{method:"POST",headers:{Authorization:"Basic "+btoa(project+":"+token),"Content-Type":"application/x-www-form-urlencoded",Accept:"application/json"},body:form.toString()});
  if(!pr.ok){console.error("SignalWire SMS",pr.status,await pr.text());return json({error:"SMS provider rejected the message"},502)}
- const pdata=await pr.json().catch(()=>({}));
- const now=new Date().toISOString(); const ins=await service.from("communication_messages").insert({organization_id:thread.organization_id,thread_id:thread.id,direction:"outbound",sender_name:"Oculivo",sender_address:from,body,is_read:true,sent_by:user.id,created_at:now}).select("id").single();
+ const pdata=await pr.json().catch(()=>({})); const providerId=String(pdata.sid||pdata.Sid||"").trim();
+ const now=new Date().toISOString(); const ins=await service.from("communication_messages").insert({organization_id:thread.organization_id,thread_id:thread.id,direction:"outbound",sender_name:"Oculivo",sender_address:from,body,is_read:true,sent_by:user.id,created_at:now,provider_message_id:providerId?"signalwire:"+providerId:null}).select("id").single();
  if(ins.error)return json({error:"SMS sent but CRM logging failed"},500);
  await service.from("communication_threads").update({last_message_at:now}).eq("id",thread.id).eq("organization_id",thread.organization_id);
- return json({status:"sent",message_id:ins.data?.id,provider_id:pdata.sid||pdata.Sid||null,thread_id:thread.id});
+ return json({status:"sent",message_id:ins.data?.id,provider_id:providerId||null,thread_id:thread.id});
 });
