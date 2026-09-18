@@ -29,6 +29,20 @@ export function InboxComms({session,lang}:{session:Session;lang:Lang}){
  async function loadMessages(id=threadId){if(!orgId||!id){setMessages([]);return}const r=await supabase.from('communication_messages').select('*').eq('organization_id',orgId).eq('thread_id',id).order('created_at',{ascending:true}).limit(500);if(r.error){setError(r.error.message);return}setMessages(r.data||[]);const unread=(r.data||[]).filter(x=>x.direction==='inbound'&&!x.is_read).map(x=>x.id);if(canCommunicate&&unread.length)await supabase.from('communication_messages').update({is_read:true}).eq('organization_id',orgId).in('id',unread)}
  useEffect(()=>{setThreadId('');setMessages([]);void loadThreads()},[orgId])
  useEffect(()=>{void loadMessages(threadId)},[threadId,orgId])
+ useEffect(()=>{
+   if(!orgId)return
+   const ch=supabase.channel('oculivo-inbox-'+orgId)
+     .on('postgres_changes',{event:'*',schema:'public',table:'communication_threads',filter:'organization_id=eq.'+orgId},()=>void loadThreads())
+     .subscribe()
+   return()=>{void supabase.removeChannel(ch)}
+ },[orgId])
+ useEffect(()=>{
+   if(!orgId||!threadId)return
+   const ch=supabase.channel('oculivo-messages-'+threadId)
+     .on('postgres_changes',{event:'*',schema:'public',table:'communication_messages',filter:'thread_id=eq.'+threadId},()=>{void loadMessages(threadId);void loadThreads(threadId)})
+     .subscribe()
+   return()=>{void supabase.removeChannel(ch)}
+ },[orgId,threadId])
  const active=threads.find(x=>String(x.id)===threadId)
  async function send(e:any){e.preventDefault();if(!active||!body.trim()||busy||!canCommunicate)return;setBusy(true);setError('');const channel=String(active.channel);const fn=channel==='sms'?'send-sms':channel==='email'?'send-email':'';if(!fn){setError(lang==='es'?'Este canal no admite respuestas desde la bandeja.':'This channel does not support inbox replies.');setBusy(false);return}const r=await supabase.functions.invoke(fn,{body:{thread_id:threadId,body:body.trim(),subject:active.subject||undefined}});if(r.error||r.data?.error){setError(r.data?.error||r.error?.message||(lang==='es'?'No se pudo enviar el mensaje.':'Send failed'))}else{setBody('');await Promise.all([loadMessages(threadId),loadThreads(threadId)])}setBusy(false)}
  async function startConversation(e:any){
