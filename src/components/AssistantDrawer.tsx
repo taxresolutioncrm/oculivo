@@ -39,7 +39,7 @@ export default function AssistantDrawer({session,lang,open,onClose}:{session:Ses
   return <>
     {open&&<aside className="ai-drawer">
       <header><div className="ai-drawer-icon"><Bot size={18}/></div><div><strong>Oculivo AI</strong><span>{lang==='es'?'Asistente del consultorio':'Practice assistant'}</span></div><button onClick={onClose}><X size={18}/></button></header>
-      <div className="ai-safety">{lang==='es'?'Puede ayudar con flujos del consultorio y resumir contexto. No cambia contraseñas ni ejecuta nómina.':'Can help with practice workflows and summarize context. It cannot change passwords or run payroll.'}</div>
+      <div className="ai-safety">{lang==='es'?'Puede ayudar con los flujos de Oculivo y resumir la información que proporciones. No cambia contraseñas ni ejecuta nómina.':'Can help with Oculivo workflow guidance and summarize information you provide. It cannot change passwords or run payroll.'}</div>
       <div className="ai-thread">
         {!messages.length&&<div className="ai-empty"><Sparkles size={22}/><strong>{lang==='es'?'¿En qué puedo ayudarte?':'How can I help?'}</strong><p>{lang==='es'?'Pregunta sobre pacientes, agenda, facturación, comunicaciones o flujos de Oculivo.':'Ask about patients, scheduling, billing, communications, or Oculivo workflows.'}</p></div>}
         {messages.map((m,i)=><article key={i} className={'ai-msg '+m.role}><strong>{m.role==='user'?(lang==='es'?'Tú':'You'):'Oculivo AI'}</strong><p>{m.content}</p></article>)}

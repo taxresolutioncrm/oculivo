@@ -1,13 +1,14 @@
-import { useEffect,useMemo,useState } from 'react'
+import { useEffect,useMemo,useRef,useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 type Lang='en'|'es'
-type Field={id:string;type:string;label?:string;required?:boolean}
+type Field={id:string;type:string;label?:string;page?:number;required?:boolean}
 
 export default function PublicSignPage(){
  const {token=''}=useParams()
  const [lang,setLang]=useState<Lang>(()=>localStorage.getItem('oculivo-lang')==='es'||(!localStorage.getItem('oculivo-lang')&&navigator.language.toLowerCase().startsWith('es'))?'es':'en')
- const [doc,setDoc]=useState<any>(null),[values,setValues]=useState<Record<string,string>>({}),[signature,setSignature]=useState(''),[consent,setConsent]=useState(false),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[done,setDone]=useState(false),[declined,setDeclined]=useState(false)
+ const [doc,setDoc]=useState<any>(null),[values,setValues]=useState<Record<string,string>>({}),[signature,setSignature]=useState(''),[consent,setConsent]=useState(false),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[done,setDone]=useState(false),[declined,setDeclined]=useState(false) 
+ const progressRef=useRef('')
  useEffect(()=>{localStorage.setItem('oculivo-lang',lang);document.documentElement.lang=lang},[lang])
  const publicFieldLabel=(f:Field)=>lang==='es'?({text:'Texto',title:'Título',checkbox:'Casilla'} as Record<string,string>)[f.type]||f.label||f.type:f.label||f.type
  const copy=lang==='es'?{
@@ -35,6 +36,19 @@ export default function PublicSignPage(){
  async function load(){setLoading(true);setError('');try{const d=await call({action:'load',token});setDoc(d.document);setSignature(d.document.signer_name||'');setDone(d.document.status==='signed');setDeclined(d.document.status==='declined');const auto:Record<string,string>={};for(const f of d.document.fields||[]){if(f.type==='date')auto[f.id]=new Date().toLocaleDateString(lang==='es'?'es-DO':'en-US');if(f.type==='name')auto[f.id]=d.document.signer_name||'';if(f.type==='initials')auto[f.id]=(d.document.signer_name||'').split(/\s+/).filter(Boolean).map((x:string)=>x[0]).join('').toUpperCase()}setValues(auto)}catch(e:any){setError(e.message)}finally{setLoading(false)}}
  useEffect(()=>{void load()},[token,lang])
  const ready=useMemo(()=>Boolean(signature.trim()&&consent&&(doc?.fields||[]).every((f:Field)=>f.required===false||['signature','initials','name','date'].includes(f.type)||String(values[f.id]||'').trim())),[signature,consent,doc,values])
+ const completedFieldIds=useMemo(()=>((doc?.fields||[]) as Field[]).filter(f=>{
+   if(f.type==='signature')return Boolean(signature.trim())
+   if(['initials','name','date'].includes(f.type))return Boolean(String(values[f.id]||'').trim())
+   return Boolean(String(values[f.id]||'').trim())
+ }).map(f=>f.id),[doc,values,signature])
+ useEffect(()=>{
+   if(!doc||done||declined||!['sent','viewed'].includes(doc.status))return
+   const key=[...completedFieldIds].sort().join('|')
+   if(progressRef.current===key)return
+   const timer=window.setTimeout(()=>{progressRef.current=key;void call({action:'progress',token,completed_field_ids:completedFieldIds}).catch(()=>undefined)},700)
+   return()=>window.clearTimeout(timer)
+ },[doc?.id,doc?.status,done,declined,completedFieldIds.join('|'),token])
+
  async function sign(){if(!ready)return;setBusy(true);setError('');try{await call({action:'sign',token,signature_name:signature.trim(),values,consent:true});setDone(true)}catch(e:any){setError(e.message)}finally{setBusy(false)}}
  async function decline(){const reason=window.prompt(copy.declinePrompt);if(reason===null)return;if(!reason.trim()){setError(copy.reasonRequired);return}setBusy(true);setError('');try{await call({action:'decline',token,reason:reason.trim()});setDeclined(true)}catch(e:any){setError(e.message)}finally{setBusy(false)}}
  if(loading)return <main style={{maxWidth:900,margin:'60px auto',padding:24}}>{copy.loading}</main>

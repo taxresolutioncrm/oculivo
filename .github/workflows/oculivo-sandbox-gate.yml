@@ -1,0 +1,20 @@
+name: Oculivo CRM Sandbox Gate
+on:
+  push:
+    branches:
+      - sandbox/oculivo-left-nav-fix
+jobs:
+  sandbox-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: npm install
+      - run: npm audit --omit=dev --audit-level=high
+      - run: deno check supabase/functions/*/index.ts
+      - run: npm run build

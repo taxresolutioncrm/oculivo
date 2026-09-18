@@ -50,32 +50,32 @@ const labels:Record<Lang,Record<string,string>> = {
 
 const moduleCopy:Record<Lang,Record<string,[string,string]>> = {
   en:{
-    '/schedule':['Schedule','Appointments, provider schedules, booking, availability, and practice coordination.'],
-    '/patients':['Patients','Patient profiles, contact information, intake, history, and practice relationships.'],
+    '/schedule':['Schedule','Appointments, provider assignment, status tracking, conflict checks, and practice coordination.'],
+    '/patients':['Patients','Patient profiles, contact information, linked history, and practice records.'],
     '/clinical':['Clinical','Clinical records and provider workflows with tenant-secured access.'],
-    '/optical':['Optical','Inventory, optical orders, frames, lenses, and fulfillment workflows.'],
+    '/optical':['Optical','Inventory, optical orders, status progression, and fulfillment tracking.'],
     '/inbox':['Inbox','Unified practice email and SMS conversations.'],
     '/phone':['Phone','Browser calls, call history, and outbound fax workflows.'],
-    '/team-chat':['Team Chat','Internal channels, private conversations and staff coordination.'],
+    '/team-chat':['Team Chat','Internal channels, team conversations and staff coordination.'],
     '/timeclock':['Timeclock','Employee clock-in, clock-out, time entries and workforce operations.'],
-    '/billing':['Billing','Insurance, invoices, payments, balances and revenue-cycle workflows.'],
+    '/billing':['Billing','Insurance claims, itemized invoices, payments, balances, and financial reporting.'],
     '/documents':['Documents','Private practice documents, patient files, clinical attachments, and secure storage.'],
-    '/reports':['Reports','Practice operations, patient flow, revenue and team reporting.'],
+    '/reports':['Reports','Practice operations, patient activity, communications, and financial reporting.'],
     '/manual':['Manual','Oculivo help center, product manual and workflow guidance.'],
     '/support':['Support','Support tickets routed into the RomyLabs Admin Portal.'],
   },
   es:{
-    '/schedule':['Agenda','Citas, horarios de proveedores, reservas, disponibilidad y coordinación del consultorio.'],
-    '/patients':['Pacientes','Perfiles de pacientes, contacto, admisión, historial y relaciones del consultorio.'],
+    '/schedule':['Agenda','Citas, asignación de proveedores, estados, controles de conflicto y coordinación del consultorio.'],
+    '/patients':['Pacientes','Perfiles de pacientes, contacto, historial vinculado y registros del consultorio.'],
     '/clinical':['Clínica','Registros clínicos y flujos de proveedores con acceso seguro por consultorio.'],
-    '/optical':['Óptica','Inventario, órdenes ópticas, monturas, lentes y flujos de entrega.'],
+    '/optical':['Óptica','Inventario, órdenes ópticas, progresión de estados y seguimiento de entrega.'],
     '/inbox':['Bandeja','Correo y SMS del consultorio en un solo lugar.'],
     '/phone':['Teléfono','Llamadas desde el navegador, historial y envío de fax.'],
-    '/team-chat':['Chat del equipo','Canales internos, conversaciones privadas y coordinación del personal.'],
+    '/team-chat':['Chat del equipo','Canales internos, conversaciones del equipo y coordinación del personal.'],
     '/timeclock':['Reloj','Entrada, salida, registros de tiempo y operaciones del personal.'],
-    '/billing':['Facturación','Seguros, facturas, pagos, saldos y ciclo de ingresos.'],
+    '/billing':['Facturación','Reclamaciones de seguro, facturas detalladas, pagos, saldos y reportes financieros.'],
     '/documents':['Documentos','Documentos privados, archivos de pacientes, adjuntos clínicos y almacenamiento seguro.'],
-    '/reports':['Reportes','Operaciones del consultorio, flujo de pacientes, ingresos y equipo.'],
+    '/reports':['Reportes','Operaciones del consultorio, actividad de pacientes, comunicaciones y reportes financieros.'],
     '/manual':['Manual','Centro de ayuda de Oculivo, manual del producto y guía de flujos.'],
     '/support':['Soporte','Tickets de soporte enviados al portal administrativo de RomyLabs.'],
   }
@@ -159,6 +159,7 @@ function SearchOverlay({session,open,onClose,lang,role}:{session:Session;open:bo
       const org=allowed.includes(preferred)?preferred:allowed[0]
       const q=query.trim().toLowerCase()
       const canSearchCommunications=canAccessPath('/inbox',role)
+      const canSearchBilling=canAccessPath('/billing',role)
       const [patients,appointments,threads,optical,invoices,documents,support]=await Promise.all([
         supabase.from('patients').select('id,first_name,last_name,email,phone,status').eq('organization_id',org).limit(60),
         supabase.from('appointments').select('id,appointment_type,starts_at,status,room').eq('organization_id',org).limit(60),
@@ -166,7 +167,9 @@ function SearchOverlay({session,open,onClose,lang,role}:{session:Session;open:bo
           ? supabase.from('communication_threads').select('id,subject,phone_number,email_address,channel,status,last_message_at').eq('organization_id',org).limit(60)
           : Promise.resolve({data:[],error:null}),
         supabase.from('optical_orders').select('id,order_number,order_type,status').eq('organization_id',org).limit(60),
-        supabase.from('invoices').select('id,invoice_number,status,patient_amount,amount_paid,created_at').eq('organization_id',org).limit(60),
+        canSearchBilling
+          ? supabase.from('invoices').select('id,invoice_number,status,patient_amount,amount_paid,created_at').eq('organization_id',org).limit(60)
+          : Promise.resolve({data:[],error:null}),
         supabase.from('documents').select('id,file_name,document_type,created_at').eq('organization_id',org).limit(60),
         supabase.from('support_tickets').select('id,subject,category,priority,status,created_at').eq('organization_id',org).limit(60)
       ])
@@ -199,6 +202,7 @@ function SearchOverlay({session,open,onClose,lang,role}:{session:Session;open:bo
 function canAccessPath(path:string,role:string){
   if(path==='/clinical')return ['owner','admin','manager','provider'].includes(role)
   if(path==='/inbox'||path==='/phone'||path==='/esign')return ['owner','admin','manager','provider','staff'].includes(role)
+  if(path==='/billing')return ['owner','admin','manager','billing'].includes(role)
   return true
 }
 
@@ -206,6 +210,7 @@ function Shell({session}:{session:Session}){
   const [open,setOpen]=useState(false)
   const [searchOpen,setSearchOpen]=useState(false)
   const [assistantOpen,setAssistantOpen]=useState(false)
+  const [unreadCount,setUnreadCount]=useState(0)
   const [orgMenuOpen,setOrgMenuOpen]=useState(false)
   const [orgs,setOrgs]=useState<OrgOption[]>([])
   const [selectedOrgId,setSelectedOrgId]=useState(()=>localStorage.getItem('oculivo-org-id')||'')
@@ -231,13 +236,24 @@ function Shell({session}:{session:Session}){
     return()=>{active=false}
   },[session.user.id])
   useEffect(()=>{localStorage.setItem('oculivo-lang',lang);document.documentElement.lang=lang==='es'?'es':'en'},[lang])
+  const selectedOrg=orgs.find(o=>o.id===selectedOrgId)||orgs[0]
+  useEffect(()=>{
+    if(!selectedOrgId||!canAccessPath('/inbox',selectedOrg?.role||'')){setUnreadCount(0);return}
+    let active=true
+    const load=async()=>{const r=await supabase.from('communication_messages').select('id',{count:'exact',head:true}).eq('organization_id',selectedOrgId).eq('direction','inbound').eq('is_read',false);if(active&&!r.error)setUnreadCount(r.count||0)}
+    void load()
+    const ch=supabase.channel('oculivo-shell-unread-'+selectedOrgId)
+      .on('postgres_changes',{event:'*',schema:'public',table:'communication_messages',filter:'organization_id=eq.'+selectedOrgId},()=>void load())
+      .subscribe()
+    return()=>{active=false;void supabase.removeChannel(ch)}
+  },[selectedOrgId,selectedOrg?.role])
+
   useEffect(()=>{
     const onKey=(e:KeyboardEvent)=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setSearchOpen(true)}}
     window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey)
   },[])
   const name=useMemo(()=>session.user.email?.split('@')[0]||'User',[session])
   const t=labels[lang]
-  const selectedOrg=orgs.find(o=>o.id===selectedOrgId)||orgs[0]
   const currentNav=nav.find(item=>item.path===location.pathname)||nav[0]
   const currentLabel=t[currentNav.key]||t.overview
   const canCreatePatient=['owner','admin','manager','provider','staff'].includes(selectedOrg?.role||'')
@@ -249,14 +265,14 @@ function Shell({session}:{session:Session}){
     <aside className={open?'sidebar open':'sidebar'}>
       <div className="sidebar-top"><Brand/><button className="icon-btn mobile-only" onClick={()=>setOpen(false)}><X size={22}/></button></div>
       <div className="practice-wrap"><button className="practice-switch" onClick={()=>setOrgMenuOpen(v=>!v)} aria-expanded={orgMenuOpen}><div className="practice-icon">O</div><div><span>{t.practice}</span><strong>{selectedOrg?.name||t.yourPractice}</strong></div><ChevronDown size={14}/></button>{orgMenuOpen&&<div className="practice-menu">{orgs.map(org=><button key={org.id} className={org.id===selectedOrgId?'active':''} onClick={()=>chooseOrg(org.id)}><strong>{org.name}</strong><span>{org.role}</span></button>)}</div>}</div>
-      <nav className="sidebar-nav-scroll" aria-label={lang==='es'?'Navegación principal':'Primary navigation'}>{navGroups.map(group=><div className="nav-section" key={group.key}><div className="nav-section-label">{lang==='es'?group.es:group.en}</div>{nav.filter(item=>item.group===group.key&&canAccessPath(item.path,selectedOrg?.role||'')).map(({key,path,icon:Icon})=><button type="button" key={path} className={location.pathname===path?'nav-item active':'nav-item'} aria-current={location.pathname===path?'page':undefined} onClick={()=>{setOpen(false);window.location.assign(path)}}><Icon size={18}/><span>{t[key]}</span></button>)}</div>)}</nav>
+      <nav className="sidebar-nav-scroll" aria-label={lang==='es'?'Navegación principal':'Primary navigation'}>{navGroups.map(group=><div className="nav-section" key={group.key}><div className="nav-section-label">{lang==='es'?group.es:group.en}</div>{nav.filter(item=>item.group===group.key&&canAccessPath(item.path,selectedOrg?.role||'')).map(({key,path,icon:Icon})=><button type="button" key={path} className={location.pathname===path?'nav-item active':'nav-item'} aria-current={location.pathname===path?'page':undefined} onClick={()=>{setOpen(false);navigate(path)}}><Icon size={18}/><span>{t[key]}</span>{path==='/inbox'&&unreadCount>0&&<b className="nav-count" aria-label={(lang==='es'?'Mensajes no leídos: ':'Unread messages: ')+unreadCount}>{unreadCount>99?'99+':unreadCount}</b>}</button>)}</div>)}</nav>
       <div className="sidebar-spacer"/>
       <button className="sidebar-ai" onClick={()=>setAssistantOpen(true)}><Sparkles size={16}/><div><strong>{lang==='es'?'Preguntar a Oculivo':'Ask Oculivo'}</strong><small>{lang==='es'?'Asistente de IA':'AI practice assistant'}</small></div></button>
-      <button type="button" className="help-card" onClick={()=>window.location.assign('/support')}><span>?</span><div><strong>{t.needHelp}</strong><small>{t.contactSupport}</small></div></button>
+      <button type="button" className="help-card" onClick={()=>navigate('/support')}><span>?</span><div><strong>{t.needHelp}</strong><small>{t.contactSupport}</small></div></button>
       <div className="sidebar-foot"><div className="user-chip"><div className="avatar">{name.slice(0,1).toUpperCase()}</div><div><strong>{session.user.email||'Practice owner'}</strong><span>{selectedOrg?.role|| (lang==='es'?'Usuario autenticado':'Authenticated user')}</span></div></div><button className="logout-button" onClick={()=>void signOut()} aria-label={lang==='es'?'Cerrar sesión':'Sign out'} title={lang==='es'?'Cerrar sesión':'Sign out'}><LogOut size={16}/></button></div>
     </aside>
     <div className="app-main">
-      <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><button className="searchbox search-trigger" onClick={()=>setSearchOpen(true)}><Search size={18}/><span>{t.search}</span></button><button className="kbd" onClick={()=>setSearchOpen(true)}>⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div>{canAccessPath('/phone',selectedOrg?.role||'')&&<button type="button" className="secondary-action" onClick={()=>window.location.assign('/phone')}><Phone size={16}/>{t.call}</button>}{canAccessPath('/inbox',selectedOrg?.role||'')&&<button type="button" className="icon-action" onClick={()=>window.location.assign('/inbox')} aria-label={lang==='es'?'Abrir bandeja':'Open inbox'} title={lang==='es'?'Abrir bandeja':'Open inbox'}><Bell size={17}/></button>}{canCreatePatient&&<button type="button" className="new-patient" onClick={openNewPatient}><Plus size={17}/>{t.newPatient}</button>}</div></header>
+      <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><button className="searchbox search-trigger" onClick={()=>setSearchOpen(true)}><Search size={18}/><span>{t.search}</span></button><button className="kbd" onClick={()=>setSearchOpen(true)}>⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div>{canAccessPath('/phone',selectedOrg?.role||'')&&<button type="button" className="secondary-action" onClick={()=>navigate('/phone')}><Phone size={16}/>{t.call}</button>}{canAccessPath('/inbox',selectedOrg?.role||'')&&<button type="button" className="icon-action" onClick={()=>navigate('/inbox')} aria-label={lang==='es'?'Abrir bandeja':'Open inbox'} title={lang==='es'?'Abrir bandeja':'Open inbox'}><Bell size={17}/>{unreadCount>0&&<i aria-hidden="true"/>}<span className="sr-only">{unreadCount>0?((lang==='es'?'Mensajes no leídos: ':'Unread messages: ')+unreadCount):''}</span></button>}{canCreatePatient&&<button type="button" className="new-patient" onClick={openNewPatient}><Plus size={17}/>{t.newPatient}</button>}</div></header>
       <div className="context-strip"><div><span>{lang==='es'?'ESPACIO DE TRABAJO':'WORKSPACE'}</span><strong>{currentLabel}</strong></div><div className="context-strip-meta"><span className="context-live-dot"/><span>{selectedOrg?.name||t.yourPractice}</span><span className="context-role">{selectedOrg?.role||'member'}</span></div></div>
       <Routes><Route path="/" element={<LiveOverview session={session} lang={lang}/>}/><Route path="/esign" element={canAccessPath('/esign',selectedOrg?.role||'')?<ESignaturesPage lang={lang}/>:<Navigate to="/" replace/>}/>{Object.entries(moduleCopy[lang]).map(([path,[title,description]])=><Route key={path} path={path} element={canAccessPath(path,selectedOrg?.role||'')?<LiveModulePage path={path} title={title} description={description} session={session} lang={lang}/>:<Navigate to="/" replace/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>
     </div>

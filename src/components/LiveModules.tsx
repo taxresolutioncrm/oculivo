@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
-import { CalendarDays, MessageSquareText, Plus, RefreshCw, Send, Users } from 'lucide-react'
+import { CalendarDays, MessageSquareText, Plus, RefreshCw, Search, Send, Users } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { BillingOps, ClinicalOps, DocumentsOps, OpticalOps, PatientsOps, ScheduleOps, SupportOps, TimeclockOps } from './OperationalModules'
 import { InboxComms, PhoneOps } from './CommunicationsModules'
@@ -215,6 +215,20 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
 
   useEffect(()=>{setChannelId('');setMessages([]);void loadChannels()},[org?.organizationId])
   useEffect(()=>{void loadMessages(channelId)},[channelId,org?.organizationId])
+  useEffect(()=>{
+    if(!org?.organizationId)return
+    const ch=supabase.channel('oculivo-team-channels-'+org.organizationId)
+      .on('postgres_changes',{event:'*',schema:'public',table:'team_channels',filter:'organization_id=eq.'+org.organizationId},()=>void loadChannels())
+      .subscribe()
+    return()=>{void supabase.removeChannel(ch)}
+  },[org?.organizationId])
+  useEffect(()=>{
+    if(!org?.organizationId||!channelId)return
+    const ch=supabase.channel('oculivo-team-messages-'+channelId)
+      .on('postgres_changes',{event:'*',schema:'public',table:'team_messages',filter:'channel_id=eq.'+channelId},()=>void loadMessages(channelId))
+      .subscribe()
+    return()=>{void supabase.removeChannel(ch)}
+  },[org?.organizationId,channelId])
 
   async function createChannel(name='general') {
     if (!org || !['owner','admin'].includes(org?.role||'')) return
@@ -276,20 +290,45 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
 }
 
 function ManualPage({lang}:{lang:'en'|'es'}) {
+  const [query,setQuery]=useState('')
   const sections = lang==='es' ? [
     ['Primeros pasos','Inicia sesión, elige tu consultorio, revisa el Resumen y usa la navegación izquierda para moverte por los flujos de pacientes y operaciones.'],
-    ['Agenda','Usa Agenda para citas y coordinación de proveedores. Las reservas del sitio web y las citas creadas por el personal aparecen en el mismo flujo.'],
-    ['Pacientes y clínica','Los registros de pacientes conectan contacto, citas, registros clínicos, documentos, óptica, seguros y facturación.'],
-    ['Comunicaciones','Bandeja reúne correo y SMS; Teléfono permite llamadas desde el navegador y envío de fax PDF; Chat del equipo mantiene separada la colaboración interna.'],
-    ['Seguridad','Oculivo usa acceso por organización y seguridad a nivel de fila en Supabase para separar los datos de cada consultorio.'],
+    ['Agenda','Usa Agenda para crear y editar citas, asignar proveedores y ubicaciones, y evitar conflictos de horario del proveedor.'],
+    ['Pacientes','Crea y edita perfiles, archiva pacientes y abre el historial conectado de citas, clínica, óptica, documentos y facturación según tus permisos.'],
+    ['Clínica','Los usuarios clínicos autorizados pueden crear y editar registros, documentar agudeza visual, presión intraocular, evaluación y plan de tratamiento, y firmar el registro.'],
+    ['Óptica','Administra órdenes ópticas, estados de pedido e inventario con cantidades, puntos de reorden, costos y precios de venta.'],
+    ['Bandeja','Inicia y responde conversaciones de correo y SMS. Los hilos y mensajes se actualizan en tiempo real dentro del consultorio.'],
+    ['Teléfono y fax','Marca números E.164 desde el navegador, conserva el historial de llamadas y envía faxes PDF privados desde un hilo telefónico.'],
+    ['Chat del equipo','Usa canales internos del consultorio para colaboración en tiempo real.'],
+    ['Reloj','Marca entrada y salida y revisa horas del día, de la semana y por turno.'],
+    ['Facturación','Los roles autorizados pueden crear facturas, registrar pagos, crear y editar reclamaciones y revisar métricas financieras.'],
+    ['Documentos','Sube PDF e imágenes a almacenamiento privado, abre enlaces firmados temporales y elimina documentos cuando tu rol lo permite.'],
+    ['Firmas electrónicas','Crea sobres PDF, coloca campos, envía solicitudes, reenvía, rastrea, anula y conserva evidencia y certificados de firma.'],
+    ['Reportes','Revisa conteos operativos y, para roles de facturación, métricas financieras actuales del consultorio.'],
+    ['Soporte','Envía tickets de soporte a RomyLabs desde el CRM y conserva la copia local del ticket.'],
+    ['IA','Oculivo AI puede ayudar con guía de flujos y resumir la información que proporciones dentro del alcance permitido para la práctica.'],
+    ['Seguridad','Oculivo usa acceso por organización, controles de rol y seguridad a nivel de fila para separar los datos de cada consultorio.'],
   ] : [
     ['Getting started','Sign in, choose your practice, review the Overview, and use the left navigation to move through patient and office workflows.'],
-    ['Scheduling','Use Schedule for appointments and provider coordination. Website bookings and staff-created appointments appear in the same operational flow.'],
-    ['Patients & clinical','Patient records connect practice contact information with appointments, clinical records, documents, optical, insurance, and billing workflows.'],
-    ['Communications','Inbox handles email and SMS; Phone supports browser calls and private PDF fax sending; Team Chat keeps internal collaboration separate.'],
-    ['Security','Oculivo uses organization-scoped access controls and Supabase row-level security to keep practice data separated.'],
+    ['Scheduling','Use Schedule to create and edit appointments, assign providers and locations, and prevent provider time conflicts.'],
+    ['Patients','Create and edit profiles, archive patients, and open connected appointment, clinical, optical, document, and billing history according to your role.'],
+    ['Clinical','Authorized clinical users can create and edit records, document visual acuity, intraocular pressure, assessment and treatment plan, and sign the record.'],
+    ['Optical','Manage optical orders, order status progression, and inventory quantities, reorder points, cost, and retail pricing.'],
+    ['Inbox','Start and reply to email and SMS conversations. Threads and messages update in real time within the practice.'],
+    ['Phone & fax','Dial E.164 numbers from the browser, retain call history, and send private PDF faxes from a phone thread.'],
+    ['Team Chat','Use internal practice channels for real-time staff collaboration.'],
+    ['Timeclock','Clock in and out and review daily, weekly, and per-shift hours.'],
+    ['Billing','Authorized roles can create invoices, record payments, create and edit claims, and review financial metrics.'],
+    ['Documents','Upload PDFs and images to private storage, open temporary signed links, and delete documents when your role allows it.'],
+    ['E-Signatures','Create PDF envelopes, place fields, send requests, resend, track, void, and retain signing evidence and certificates.'],
+    ['Reports','Review operational counts and, for billing roles, current practice financial metrics.'],
+    ['Support','Submit support tickets to RomyLabs from the CRM and retain the local ticket mirror.'],
+    ['AI','Oculivo AI can help with workflow guidance and summarize information you provide within the authorized practice scope.'],
+    ['Security','Oculivo uses organization-scoped access, role controls, and row-level security to separate practice data.'],
   ]
-  return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'MANUAL DE OCULIVO':'OCULIVO MANUAL'}</span><h1>Manual</h1><p>{lang==='es'?'Guía rápida del producto para el personal del consultorio.':'Quick product guidance for practice staff.'}</p></div></div><div className="manual-grid">{sections.map(([title,body])=><article className="panel manual-card" key={title}><h2>{title}</h2><p>{body}</p></article>)}</div></section>
+  const q=query.trim().toLowerCase()
+  const visible=q?sections.filter(([title,body])=>(title+' '+body).toLowerCase().includes(q)):sections
+  return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'CENTRO DE AYUDA DE OCULIVO':'OCULIVO HELP CENTER'}</span><h1>{lang==='es'?'Manual':'Manual'}</h1><p>{lang==='es'?'Busca instrucciones de los flujos disponibles en Oculivo.':'Search guidance for the workflows available in Oculivo.'}</p></div></div><div className="searchbox" style={{marginBottom:18,maxWidth:620}}><Search size={18}/><input aria-label={lang==='es'?'Buscar en el manual':'Search manual'} value={query} onChange={e=>setQuery(e.target.value)} placeholder={lang==='es'?'Buscar agenda, facturación, fax, firmas…':'Search scheduling, billing, fax, signatures…'}/></div>{visible.length?<div className="manual-grid">{visible.map(([title,body])=><article className="panel manual-card" key={title}><h2>{title}</h2><p>{body}</p></article>)}</div>:<Empty message={lang==='es'?'No se encontraron temas del manual':'No manual topics found'} lang={lang}/>}</section>
 }
 
 export function LiveModulePage({path,title,description,session,lang}:{path:string;title:string;description:string;session:Session;lang:'en'|'es'}) {
@@ -328,7 +367,7 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
         ? supabase.from('communication_threads').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId)
         : Promise.resolve({count:0,error:null}),
       supabase.from('time_entries').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
-      supabase.from('appointments').select('id,patient_id,starts_at,ends_at,status,appointment_type,room').eq('organization_id',org.organizationId).order('starts_at',{ascending:true}).limit(8),
+      supabase.from('appointments').select('id,patient_id,starts_at,ends_at,status,appointment_type,room').eq('organization_id',org.organizationId).gte('starts_at',new Date().toISOString()).order('starts_at',{ascending:true}).limit(8),
       supabase.from('patients').select('id,first_name,last_name').eq('organization_id',org.organizationId).limit(500),
     ])
     const firstError = a.error || p.error || c.error || t.error || arows.error || patients.error
@@ -373,8 +412,10 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
 function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
   const {org,error:orgError,loading:orgLoading} = useOrg(session)
   const [counts,setCounts] = useState<Record<string,number>>({})
+  const [money,setMoney] = useState({invoiced:0,paid:0,claims:0,outstanding:0})
   const [error,setError] = useState('')
 
+  const canReadFinancial=['owner','admin','manager','billing'].includes(org?.role||'')
   const sources = useMemo(()=>{
     const all=[
       [lang==='es'?'Pacientes':'Patients','patients'],
@@ -390,6 +431,7 @@ function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
     return all.filter(([,table])=>{
       if(table==='clinical_records')return ['owner','admin','manager','provider'].includes(org?.role||'')
       if(table==='communication_messages')return ['owner','admin','manager','provider','staff'].includes(org?.role||'')
+      if(['insurance_claims','invoices','payments'].includes(table))return ['owner','admin','manager','billing'].includes(org?.role||'')
       return true
     })
   },[lang,org?.role])
@@ -397,6 +439,7 @@ function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
   useEffect(()=>{
     if(!org)return
     ;(async()=>{
+      setError('')
       const results=await Promise.all(sources.map(async([label,table])=>{
         const r=await supabase.from(table).select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId)
         return [label,r.count||0,r.error?.message||''] as const
@@ -404,10 +447,28 @@ function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
       const bad=results.find(x=>x[2])
       if(bad)setError(bad[2])
       setCounts(Object.fromEntries(results.map(([label,count])=>[label,count])))
+      if(canReadFinancial){
+        const [invoices,payments,claims]=await Promise.all([
+          supabase.from('invoices').select('patient_amount,amount_paid').eq('organization_id',org.organizationId).limit(5000),
+          supabase.from('payments').select('amount').eq('organization_id',org.organizationId).limit(5000),
+          supabase.from('insurance_claims').select('billed_amount').eq('organization_id',org.organizationId).limit(5000),
+        ])
+        const first=invoices.error||payments.error||claims.error
+        if(first){setError(first.message);return}
+        const invoiced=(invoices.data||[]).reduce((sum:any,x:any)=>sum+Number(x.patient_amount||0),0)
+        const paid=(payments.data||[]).reduce((sum:any,x:any)=>sum+Number(x.amount||0),0)
+        const claimTotal=(claims.data||[]).reduce((sum:any,x:any)=>sum+Number(x.billed_amount||0),0)
+        const invoicePaid=(invoices.data||[]).reduce((sum:any,x:any)=>sum+Number(x.amount_paid||0),0)
+        setMoney({invoiced,paid,claims:claimTotal,outstanding:Math.max(0,invoiced-invoicePaid)})
+      }else setMoney({invoiced:0,paid:0,claims:0,outstanding:0})
     })()
-  },[org?.organizationId,sources])
+  },[org?.organizationId,sources,canReadFinancial])
 
-  return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'REPORTES EN VIVO':'LIVE REPORTING'}</span><h1>{lang==='es'?'Reportes':'Reports'}</h1><p>{lang==='es'?'Conteos actuales de registros en los flujos principales de Oculivo.':'Current record counts across core Oculivo workflows.'}</p></div></div>
-    {orgLoading?<div className="live-loading">{lang==='es'?'Cargando reportes…':'Loading reports…'}</div>:orgError?<ErrorBox message={orgError} lang={lang}/>:error?<ErrorBox message={error} lang={lang}/>:<div className="report-grid">{sources.map(([label])=><article className="panel report-card" key={label}><span>{label}</span><strong>{counts[label]??0}</strong></article>)}</div>}
+  const usd=(v:number)=>v.toLocaleString(undefined,{style:'currency',currency:'USD'})
+  return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'REPORTES EN VIVO':'LIVE REPORTING'}</span><h1>{lang==='es'?'Reportes':'Reports'}</h1><p>{lang==='es'?'Conteos actuales y métricas operativas de Oculivo.':'Current Oculivo operational counts and metrics.'}</p></div></div>
+    {orgLoading?<div className="live-loading">{lang==='es'?'Cargando reportes…':'Loading reports…'}</div>:orgError?<ErrorBox message={orgError} lang={lang}/>:error?<ErrorBox message={error} lang={lang}/>:<>
+      {canReadFinancial&&<div className="metric-grid"><article className="metric-card"><div><span>{lang==='es'?'Responsabilidad facturada':'Patient billed'}</span></div><strong>{usd(money.invoiced)}</strong></article><article className="metric-card"><div><span>{lang==='es'?'Pagos registrados':'Payments recorded'}</span></div><strong>{usd(money.paid)}</strong></article><article className="metric-card"><div><span>{lang==='es'?'Saldo pendiente':'Outstanding'}</span></div><strong>{usd(money.outstanding)}</strong></article><article className="metric-card"><div><span>{lang==='es'?'Reclamaciones facturadas':'Claims billed'}</span></div><strong>{usd(money.claims)}</strong></article></div>}
+      <div className="report-grid">{sources.map(([label])=><article className="panel report-card" key={label}><span>{label}</span><strong>{counts[label]??0}</strong></article>)}</div>
+    </>}
   </section>
 }
