@@ -33,7 +33,8 @@ async function resolveScope(admin:any,user:any,b:any){
   return {id:orgId,role:String(membership.role)}
 }
 async function sendInvite(admin:any,scope:any,meta:Meta,signUrl:string){
-  const key=Deno.env.get('BREVO_API_KEY')||'',from=(Deno.env.get('OCULIVO_FROM_EMAIL')||'').trim();if(!key||!from)throw new Error('Oculivo email is not configured')
+  const endpoint=await admin.from('communication_endpoints').select('address').eq('organization_id',scope.id).eq('kind','email').eq('is_active',true).order('is_primary',{ascending:false}).limit(1).maybeSingle()
+  const key=Deno.env.get('BREVO_API_KEY')||'',from=String(endpoint.data?.address||Deno.env.get('OCULIVO_FROM_EMAIL')||'').trim();if(!key||!from)throw new Error('Oculivo email is not configured')
   const res=await fetch('https://api.brevo.com/v3/smtp/email',{method:'POST',headers:{'api-key':key,'Content-Type':'application/json',accept:'application/json'},body:JSON.stringify({sender:{name:'Oculivo',email:from},replyTo:{email:from},to:[{email:meta.signer_email,name:meta.signer_name}],subject:'Signature Requested: '+meta.title,htmlContent:`<p>Hi ${esc(meta.signer_name)},</p><p>Your Oculivo practice has a document ready for review and electronic signature.</p><p><a href="${esc(signUrl)}">Review &amp; Sign Document</a></p><p>This secure link expires in 14 days.</p>`})});if(!res.ok)throw new Error('Email provider rejected the signature request')
 }
 
