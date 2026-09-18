@@ -199,6 +199,7 @@ function SearchOverlay({session,open,onClose,lang,role}:{session:Session;open:bo
 function canAccessPath(path:string,role:string){
   if(path==='/clinical')return ['owner','admin','manager','provider'].includes(role)
   if(path==='/inbox'||path==='/phone'||path==='/esign')return ['owner','admin','manager','provider','staff'].includes(role)
+  if(path==='/billing')return ['owner','admin','manager','billing'].includes(role)
   return true
 }
 
