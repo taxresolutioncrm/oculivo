@@ -3,6 +3,48 @@ begin;
 alter table public.communication_messages
   add column if not exists provider_message_id text;
 
+alter table public.communication_threads
+  add column if not exists patient_id uuid references public.patients(id) on delete set null;
+
+create index if not exists communication_threads_org_patient_idx
+  on public.communication_threads (organization_id, patient_id)
+  where patient_id is not null;
+
+create or replace function public.oculivo_validate_communication_patient()
+returns trigger
+language plpgsql
+set search_path = public
+as $
+begin
+  if new.patient_id is not null and not exists (
+    select 1
+    from public.patients p
+    where p.id = new.patient_id
+      and p.organization_id = new.organization_id
+  ) then
+    raise exception 'Communication patient must belong to the same practice'
+      using errcode = '23514';
+  end if;
+  return new;
+end;
+$;
+
+drop trigger if exists communication_threads_patient_scope on public.communication_threads;
+create trigger communication_threads_patient_scope
+before insert or update of patient_id, organization_id on public.communication_threads
+for each row execute function public.oculivo_validate_communication_patient();
+
+update public.communication_threads t
+set patient_id = p.id
+from public.patients p
+where t.patient_id is null
+  and p.organization_id = t.organization_id
+  and (
+    (t.email_address is not null and p.email is not null and lower(p.email) = lower(t.email_address))
+    or
+    (t.phone_number is not null and p.phone is not null and p.phone = t.phone_number)
+  );
+
 create unique index if not exists communication_messages_provider_message_id_unique
   on public.communication_messages (organization_id, provider_message_id)
   where provider_message_id is not null;
