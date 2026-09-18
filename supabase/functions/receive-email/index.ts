@@ -32,7 +32,9 @@ Deno.serve(async(req:Request)=>{
   for(const item of items){
     const from=mailboxAddress(item?.From),name=mailboxName(item?.From),subject=String(item?.Subject||"").trim();
     const body=String(item?.ExtractedMarkdownMessage||item?.RawTextBody||"").trim();
+    const rawProviderId=String(item?.MessageId||"").trim(),providerMessageId=rawProviderId?"brevo:"+rawProviderId:null;
     if(!validEmail.test(from)||!body)continue;
+    if(providerMessageId){const dupe=await sb.from("communication_messages").select("id").eq("organization_id",org).eq("provider_message_id",providerMessageId).limit(1);if(!dupe.error&&dupe.data?.length)continue;}
     const existing=await sb.from("communication_threads").select("id,organization_id,subject").eq("organization_id",org).eq("channel","email").eq("email_address",from).order("last_message_at",{ascending:false}).limit(1).maybeSingle();
     if(existing.error)continue;
     let thread=existing.data;
@@ -42,7 +44,7 @@ Deno.serve(async(req:Request)=>{
       if(created.error||!created.data)continue;
       thread=created.data;
     }
-    const ins=await sb.from("communication_messages").insert({organization_id:org,thread_id:thread.id,direction:"inbound",sender_name:name||from,sender_address:from,body,is_read:false,sent_by:null,created_at:now});
+    const ins=await sb.from("communication_messages").insert({organization_id:org,thread_id:thread.id,direction:"inbound",sender_name:name||from,sender_address:from,body,is_read:false,sent_by:null,created_at:now,provider_message_id:providerMessageId});
     if(ins.error)continue;
     await sb.from("communication_threads").update({last_message_at:now,status:"open",subject:subject||thread.subject||from}).eq("id",thread.id).eq("organization_id",org);
     received++;
