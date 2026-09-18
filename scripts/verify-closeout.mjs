@@ -113,4 +113,6 @@ check(live.includes("['owner','admin','manager','billing'].includes(org?.role||'
 check(live.includes(".gte('starts_at',new Date().toISOString())"),'Overview upcoming appointments exclude past visits')
 check(!/private conversations|conversaciones privadas/i.test(app),'Team Chat copy does not claim unimplemented private conversations')
 check(!/Website bookings|reservas del sitio web/i.test(live),'Manual does not claim an unproven website-booking integration')
+check(comms.includes("table:'communication_threads'")&&comms.includes("table:'communication_messages'")&&comms.includes('supabase.removeChannel(ch)'),'Inbox subscribes to realtime thread and message changes')
+check(live.includes("table:'team_channels'")&&live.includes("table:'team_messages'")&&live.includes('supabase.removeChannel(ch)'),'Team Chat subscribes to realtime channel and message changes')
 if(process.exitCode)process.exit(process.exitCode)
