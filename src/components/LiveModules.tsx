@@ -280,13 +280,13 @@ function ManualPage({lang}:{lang:'en'|'es'}) {
     ['Primeros pasos','Inicia sesión, elige tu consultorio, revisa el Resumen y usa la navegación izquierda para moverte por los flujos de pacientes y operaciones.'],
     ['Agenda','Usa Agenda para citas y coordinación de proveedores. Las reservas del sitio web y las citas creadas por el personal aparecen en el mismo flujo.'],
     ['Pacientes y clínica','Los registros de pacientes conectan contacto, citas, registros clínicos, documentos, óptica, seguros y facturación.'],
-    ['Comunicaciones','Bandeja, Teléfono y Chat del equipo separan la comunicación con pacientes de la colaboración interna.'],
+    ['Comunicaciones','Bandeja reúne correo y SMS; Teléfono permite llamadas desde el navegador y envío de fax PDF; Chat del equipo mantiene separada la colaboración interna.'],
     ['Seguridad','Oculivo usa acceso por organización y seguridad a nivel de fila en Supabase para separar los datos de cada consultorio.'],
   ] : [
     ['Getting started','Sign in, choose your practice, review the Overview, and use the left navigation to move through patient and office workflows.'],
     ['Scheduling','Use Schedule for appointments and provider coordination. Website bookings and staff-created appointments appear in the same operational flow.'],
     ['Patients & clinical','Patient records connect practice contact information with appointments, clinical records, documents, optical, insurance, and billing workflows.'],
-    ['Communications','Inbox, Phone, and Team Chat separate patient-facing communication from internal staff collaboration.'],
+    ['Communications','Inbox handles email and SMS; Phone supports browser calls and private PDF fax sending; Team Chat keeps internal collaboration separate.'],
     ['Security','Oculivo uses organization-scoped access controls and Supabase row-level security to keep practice data separated.'],
   ]
   return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'MANUAL DE OCULIVO':'OCULIVO MANUAL'}</span><h1>Manual</h1><p>{lang==='es'?'Guía rápida del producto para el personal del consultorio.':'Quick product guidance for practice staff.'}</p></div></div><div className="manual-grid">{sections.map(([title,body])=><article className="panel manual-card" key={title}><h2>{title}</h2><p>{body}</p></article>)}</div></section>
@@ -320,10 +320,13 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
   async function load() {
     if (!org) return
     setLoading(true); setError('')
+    const canReadCommunications=['owner','admin','manager','provider','staff'].includes(org.role)
     const [a,p,c,t,arows,patients] = await Promise.all([
       supabase.from('appointments').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
       supabase.from('patients').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
-      supabase.from('communication_threads').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
+      canReadCommunications
+        ? supabase.from('communication_threads').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId)
+        : Promise.resolve({count:0,error:null}),
       supabase.from('time_entries').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
       supabase.from('appointments').select('id,patient_id,starts_at,ends_at,status,appointment_type,room').eq('organization_id',org.organizationId).order('starts_at',{ascending:true}).limit(8),
       supabase.from('patients').select('id,first_name,last_name').eq('organization_id',org.organizationId).limit(500),
@@ -348,7 +351,7 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
     <div className="metric-grid">
       <Link to="/schedule" className="metric-card metric-link"><div><span>{lang==='es'?'Citas':'Appointments'}</span><CalendarDays size={17}/></div><strong>{orgLoading||loading?'…':stats.appointments}</strong><p>{lang==='es'?'Abrir agenda':'Open schedule'}</p></Link>
       <Link to="/patients" className="metric-card metric-link"><div><span>{lang==='es'?'Pacientes':'Patients'}</span><Users size={17}/></div><strong>{orgLoading||loading?'…':stats.patients}</strong><p>{lang==='es'?'Abrir pacientes':'Open patients'}</p></Link>
-      <Link to="/inbox" className="metric-card metric-link"><div><span>{lang==='es'?'Conversaciones':'Conversations'}</span><MessageSquareText size={17}/></div><strong>{orgLoading||loading?'…':stats.conversations}</strong><p>{lang==='es'?'Abrir bandeja':'Open inbox'}</p></Link>
+      {org&&['owner','admin','manager','provider','staff'].includes(org.role)&&<Link to="/inbox" className="metric-card metric-link"><div><span>{lang==='es'?'Conversaciones':'Conversations'}</span><MessageSquareText size={17}/></div><strong>{orgLoading||loading?'…':stats.conversations}</strong><p>{lang==='es'?'Abrir bandeja':'Open inbox'}</p></Link>}
       <Link to="/timeclock" className="metric-card metric-link"><div><span>{lang==='es'?'Registros de tiempo':'Time entries'}</span><CalendarDays size={17}/></div><strong>{orgLoading||loading?'…':stats.timeEntries}</strong><p>{lang==='es'?'Abrir reloj':'Open timeclock'}</p></Link>
     </div>
     <div className="overview-grid">
@@ -372,11 +375,24 @@ function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
   const [counts,setCounts] = useState<Record<string,number>>({})
   const [error,setError] = useState('')
 
-  const sources = useMemo(()=>[
-    [lang==='es'?'Pacientes':'Patients','patients'],[lang==='es'?'Citas':'Appointments','appointments'],[lang==='es'?'Registros clínicos':'Clinical records','clinical_records'],
-    [lang==='es'?'Órdenes ópticas':'Optical orders','optical_orders'],[lang==='es'?'Reclamaciones':'Claims','insurance_claims'],[lang==='es'?'Facturas':'Invoices','invoices'],
-    [lang==='es'?'Pagos':'Payments','payments'],[lang==='es'?'Mensajes':'Messages','communication_messages'],[lang==='es'?'Tickets de soporte':'Support tickets','support_tickets'],
-  ] as const,[lang])
+  const sources = useMemo(()=>{
+    const all=[
+      [lang==='es'?'Pacientes':'Patients','patients'],
+      [lang==='es'?'Citas':'Appointments','appointments'],
+      [lang==='es'?'Registros clínicos':'Clinical records','clinical_records'],
+      [lang==='es'?'Órdenes ópticas':'Optical orders','optical_orders'],
+      [lang==='es'?'Reclamaciones':'Claims','insurance_claims'],
+      [lang==='es'?'Facturas':'Invoices','invoices'],
+      [lang==='es'?'Pagos':'Payments','payments'],
+      [lang==='es'?'Mensajes':'Messages','communication_messages'],
+      [lang==='es'?'Tickets de soporte':'Support tickets','support_tickets'],
+    ] as const
+    return all.filter(([,table])=>{
+      if(table==='clinical_records')return ['owner','admin','manager','provider'].includes(org?.role||'')
+      if(table==='communication_messages')return ['owner','admin','manager','provider','staff'].includes(org?.role||'')
+      return true
+    })
+  },[lang,org?.role])
 
   useEffect(()=>{
     if(!org)return
@@ -389,7 +405,7 @@ function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
       if(bad)setError(bad[2])
       setCounts(Object.fromEntries(results.map(([label,count])=>[label,count])))
     })()
-  },[org?.organizationId])
+  },[org?.organizationId,sources])
 
   return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'REPORTES EN VIVO':'LIVE REPORTING'}</span><h1>{lang==='es'?'Reportes':'Reports'}</h1><p>{lang==='es'?'Conteos actuales de registros en los flujos principales de Oculivo.':'Current record counts across core Oculivo workflows.'}</p></div></div>
     {orgLoading?<div className="live-loading">{lang==='es'?'Cargando reportes…':'Loading reports…'}</div>:orgError?<ErrorBox message={orgError} lang={lang}/>:error?<ErrorBox message={error} lang={lang}/>:<div className="report-grid">{sources.map(([label])=><article className="panel report-card" key={label}><span>{label}</span><strong>{counts[label]??0}</strong></article>)}</div>}

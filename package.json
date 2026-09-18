@@ -6,14 +6,17 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verify:closeout": "node scripts/verify-closeout.mjs && node scripts/verify-imports.mjs && node scripts/verify-deploy-config.mjs"
   },
   "dependencies": {
+    "@signalwire/js": "4.0.0-rc.2",
     "@supabase/supabase-js": "2.47.0",
     "lucide-react": "0.460.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-router-dom": "6.27.0"
+    "react-router-dom": "6.27.0",
+    "rxjs": "7.8.2"
   },
   "devDependencies": {
     "@types/react": "18.3.12",

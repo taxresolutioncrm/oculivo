@@ -136,25 +136,37 @@ Deno.serve(async (req: Request) => {
         high: 'High',
         urgent: 'Urgent',
       };
+      const subject = String(browserBody.subject ?? '').trim().slice(0, 240);
+      const description = String(browserBody.description ?? '').trim().slice(0, 10000);
+      if (!subject || !description) return json({ error: 'Subject and description are required' }, 400);
       payload = {
         ...trusted,
-        subject: String(browserBody.subject ?? '').slice(0, 240),
-        description: String(browserBody.description ?? '').slice(0, 10000),
+        subject,
+        description,
         category: categoryMap[rawCategory] ?? 'Other',
         priority: priorityMap[rawPriority] ?? 'Normal',
       };
-      if (!payload.subject || !payload.description) return json({ error: 'Subject and description are required' }, 400);
       break;
     }
-    case 'list_tickets':
-      payload = { ...trusted, status_filter: browserBody.status_filter, limit: browserBody.limit, offset: browserBody.offset };
+    case 'list_tickets': {
+      const limit = Math.max(1, Math.min(100, Number(browserBody.limit ?? 50) || 50));
+      const offset = Math.max(0, Number(browserBody.offset ?? 0) || 0);
+      payload = { ...trusted, status_filter: browserBody.status_filter, limit, offset };
       break;
-    case 'get_ticket':
-      payload = { ...trusted, ticket_id: browserBody.ticket_id };
+    }
+    case 'get_ticket': {
+      const ticketId = String(browserBody.ticket_id ?? '').trim().slice(0, 160);
+      if (!ticketId) return json({ error: 'ticket_id is required' }, 400);
+      payload = { ...trusted, ticket_id: ticketId };
       break;
-    case 'add_reply':
-      payload = { ...trusted, ticket_id: browserBody.ticket_id, message: browserBody.message };
+    }
+    case 'add_reply': {
+      const ticketId = String(browserBody.ticket_id ?? '').trim().slice(0, 160);
+      const message = String(browserBody.message ?? '').trim().slice(0, 10000);
+      if (!ticketId || !message) return json({ error: 'ticket_id and message are required' }, 400);
+      payload = { ...trusted, ticket_id: ticketId, message };
       break;
+    }
     default:
       return json({ error: 'Unknown support action' }, 400);
   }
