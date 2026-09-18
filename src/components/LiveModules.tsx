@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
-import { CalendarDays, MessageSquareText, Plus, RefreshCw, Send, Users } from 'lucide-react'
+import { CalendarDays, MessageSquareText, Plus, RefreshCw, Search, Send, Users } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { BillingOps, ClinicalOps, DocumentsOps, OpticalOps, PatientsOps, ScheduleOps, SupportOps, TimeclockOps } from './OperationalModules'
 import { InboxComms, PhoneOps } from './CommunicationsModules'
