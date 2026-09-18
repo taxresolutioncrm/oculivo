@@ -5,8 +5,8 @@ Oculivo is RomyLabs practice management software for optometry, ophthalmology, a
 - Production app: https://app.oculivo.com
 - Marketing: https://oculivo.com
 - Backend: Supabase project `czejdbdwaumbdepiswcu`
-- Deployment target: Cloudflare Pages
-- GitHub Actions: intentionally unused
+- Deployment target: Cloudflare Workers via Git integration
+- GitHub Actions: sandbox-only verification gate; production remains Cloudflare Git deployment
 
 ## Edge Function secrets
 
@@ -33,8 +33,8 @@ Configure these in the Oculivo Supabase project's Edge Function secrets before p
 
 ## Closeout deployment rule
 
-Work and regression-test in `sandbox/oculivo-closeout-20260913` first. Keep the one-commit release candidate on `release/oculivo-closeout-20260917`. Do not move production `main` until the sandbox build, provider-backed actions, route interactions, mobile layout, and Supabase/RLS checks are green. Use one controlled production deploy after closeout to avoid wasting Cloudflare build minutes.
+Work and regression-test in `sandbox/oculivo-left-nav-fix` first. Keep PR #13 draft until the exact sandbox tree passes every code, database, provider, route, and layout gate. Do not move production `main` until the sandbox build, provider-backed actions, route interactions, mobile layout, and Supabase/RLS checks are green. Use one controlled production deploy after closeout to avoid wasting Cloudflare build minutes.
 
 ## Inbound communications
 
-Inbound SMS and email are handled by `receive-sms` and `receive-email`. Both are public provider webhooks with JWT verification disabled at the gateway and an HMAC signature verified in the function before any service-role write. Configure each practice's provider callback URL with its organization ID and the precomputed HMAC of that ID using the corresponding inbound secret. Brevo inbound parsing should POST its structured `items` payload to `receive-email`; SignalWire messaging should POST the standard `From`, `To`, and `Body` form fields to `receive-sms`.
+Inbound SMS and email are handled by `receive-sms` and `receive-email`. Both are public provider webhooks with JWT verification disabled at the gateway and an HMAC signature verified in the function before any service-role write. Configure each practice's provider callback URL with its organization ID and the precomputed HMAC of that ID using the corresponding inbound secret. Brevo inbound parsing should POST its structured `items` payload to `receive-email`; SignalWire messaging should POST the standard `From`, `To`, `Body`, and provider message SID fields to `receive-sms`. Inbound and outbound provider message identifiers are retained for idempotency/audit after the communications integrity migration is applied.
