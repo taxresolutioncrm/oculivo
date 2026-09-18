@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabase'
 type Lang='en'|'es'
 type FieldType='signature'|'initials'|'name'|'date'|'title'|'text'|'checkbox'
 type Field={id:string,type:FieldType,label:string,page:number,x:number,y:number,w:number,h:number,required:boolean}
-type AuditEvent={event:string;at?:string;actor?:string;email?:string;reason?:string|null}\ntype Doc={id:string;title:string;signer_name:string;signer_email:string;status:string;sent_at?:string|null;opened_at?:string|null;signed_at?:string|null;declined_at?:string|null;decline_reason?:string|null;certificate_path?:string|null;audit?:AuditEvent[]}
+type AuditEvent={event:string;at?:string;actor?:string;email?:string;reason?:string|null}
+type Doc={id:string;title:string;signer_name:string;signer_email:string;status:string;sent_at?:string|null;opened_at?:string|null;signed_at?:string|null;declined_at?:string|null;decline_reason?:string|null;certificate_path?:string|null;audit?:AuditEvent[]}
 const placements={bottomLeft:{x:.08,y:.82,w:.30,h:.055},bottomCenter:{x:.35,y:.82,w:.30,h:.055},bottomRight:{x:.62,y:.82,w:.30,h:.055},center:{x:.35,y:.46,w:.30,h:.055}}
 const fieldLabel=(type:FieldType,lang:Lang)=>({
  signature:lang==='es'?'Firma':'Signature',
@@ -34,7 +35,9 @@ export default function ESignaturesPage({lang}:{lang:Lang}){
  async function openDoc(id:string,kind='document'){try{const d=await call({action:'open',document_id:id,kind});window.open(d.url,'_blank','noopener,noreferrer')}catch(e:any){setMessage(e.message)}}
  async function voidDoc(id:string){const reason=window.prompt(lang==='es'?'Motivo para anular este sobre:':'Reason for voiding this envelope:')||'';if(!window.confirm(lang==='es'?'¿Anular esta solicitud de firma?':'Void this signing request?'))return;try{await call({action:'void',document_id:id,reason});await load()}catch(e:any){setMessage(e.message)}}
  async function resend(id:string){setBusy(true);setMessage('');try{await call({action:'resend_invite',document_id:id,origin:window.location.origin});setMessage(lang==='es'?'Solicitud reenviada con un enlace nuevo ✓':'Request resent with a fresh signing link ✓');await load()}catch(e:any){setMessage(e.message)}finally{setBusy(false)}}
- const status=(v:string)=>lang==='es'?({pending:'Pendiente',sent:'Enviado',viewed:'Visto',signed:'Firmado',declined:'Rechazado',voided:'Anulado'} as Record<string,string>)[v]||v:v\n const fmt=(v?:string|null)=>v?new Date(v).toLocaleString():'—'\n const reminderDue=(d:Doc)=>['sent','viewed'].includes(d.status)&&Boolean(d.sent_at)&&Date.now()-new Date(d.sent_at as string).getTime()>=24*60*60*1000
+ const status=(v:string)=>lang==='es'?({pending:'Pendiente',sent:'Enviado',viewed:'Visto',signed:'Firmado',declined:'Rechazado',voided:'Anulado'} as Record<string,string>)[v]||v:v
+ const fmt=(v?:string|null)=>v?new Date(v).toLocaleString():'—'
+ const reminderDue=(d:Doc)=>['sent','viewed'].includes(d.status)&&Boolean(d.sent_at)&&Date.now()-new Date(d.sent_at as string).getTime()>=24*60*60*1000
  return <main style={{padding:24,maxWidth:1200,margin:'0 auto',fontFamily:'Inter,system-ui,sans-serif',color:'#172033'}}>
   <div style={{display:'flex',justifyContent:'space-between',gap:16,alignItems:'end',marginBottom:20,flexWrap:'wrap'}}><div><div style={{fontSize:12,fontWeight:900,letterSpacing:'.1em',textTransform:'uppercase',color:'#7C3AED'}}>Oculivo</div><h1 style={{margin:'5px 0'}}>{lang==='es'?'Firmas electrónicas':'E-Signatures'}</h1><p style={{margin:0,color:'#64748b'}}>{lang==='es'?'Crea, envía, reenvía, rastrea, anula y conserva sobres de firma seguros.':'Create, send, resend, track, void, and retain secure signing envelopes.'}</p></div><div style={{fontSize:12,color:'#475569'}}>{lang==='es'?'Evidencia y auditoría del sobre habilitadas':'Envelope evidence and audit enabled'}</div></div>
   {message&&<div style={{padding:11,borderRadius:8,background:'#eff6ff',marginBottom:14}}>{message}</div>}
