@@ -25,6 +25,40 @@ const requiredFunctions=['oculivo-ai','oculivo-support-api','phone-session','sen
 const allSource=[app,comms,live,esign,publicSign].join('\n')
 
 check(requiredRoutes.every(r=>app.includes(r)),'All required CRM routes are wired')
+check(app.includes('getSession()')&&app.includes('onAuthStateChange')&&app.includes('signInWithPassword'),'Auth/session lifecycle is wired')
+check(app.includes('resetPasswordForEmail')&&app.includes('updateUser({password})'),'Password reset lifecycle is wired')
+check(app.includes('organization_memberships')&&app.includes('oculivo-org-change')&&app.includes('chooseOrg'),'Practice switching is organization-scoped')
+check([
+  ["'/patients'",'<PatientsOps'],
+  ["'/schedule'",'<ScheduleOps'],
+  ["'/clinical'",'<ClinicalOps'],
+  ["'/optical'",'<OpticalOps'],
+  ["'/timeclock'",'<TimeclockOps'],
+  ["'/billing'",'<BillingOps'],
+  ["'/documents'",'<DocumentsOps'],
+  ["'/inbox'",'<InboxComms'],
+  ["'/phone'",'<PhoneOps'],
+  ["'/support'",'<SupportOps'],
+  ["'/team-chat'",'<TeamChat'],
+  ["'/manual'",'<ManualPage'],
+  ["'/reports'",'<ReportsPage']
+].every(([route,component])=>live.includes(`path === ${route}`)&&live.includes(component)),'All primary CRM routes resolve to their intended modules instead of generic fallback')
+check(ops.includes('export function ScheduleOps')&&ops.includes("from('appointments')"),'Schedule module is live-data wired')
+check(ops.includes('export function PatientsOps')&&ops.includes("from('patients')"),'Patients module is live-data wired')
+check(ops.includes('export function ClinicalOps')&&ops.includes('clinical_records'),'Clinical module is live-data wired')
+check(ops.includes('export function OpticalOps')&&ops.includes('optical_orders')&&ops.includes('optical_inventory'),'Optical module is live-data wired')
+check(comms.includes('export function InboxComms')&&comms.includes('communication_threads')&&comms.includes('communication_messages'),'Inbox module is live-data wired')
+check(comms.includes('export function PhoneOps')&&comms.includes("functions.invoke('phone-session'")&&comms.includes('client.dial('),'Phone module is browser-call wired')
+check(comms.includes("functions.invoke('send-fax'")&&comms.includes('oculivo-documents'),'Fax module is private-document wired')
+check(live.includes('function TeamChat')&&live.includes('team_channels')&&live.includes('team_messages'),'Team Chat module is live-data wired')
+check(ops.includes('export function TimeclockOps')&&ops.includes('time_entries'),'Timeclock module is live-data wired')
+check(ops.includes('export function BillingOps')&&ops.includes('invoices')&&ops.includes('insurance_claims')&&ops.includes('payments'),'Billing module covers invoices, claims, and payments')
+check(ops.includes('export function DocumentsOps')&&ops.includes('oculivo-documents'),'Documents module is private-storage wired')
+check(app.includes('<ESignaturesPage')&&esign.includes('universal-esign')&&esign.includes('resend_invite'),'Internal e-signature module is wired')
+check(app.includes('/office-sign/:token')&&publicSign.includes('universal-esign')&&publicSign.includes('consent'),'Public signer route and consent flow are wired')
+check(live.includes('ReportsPage')&&live.includes('clinical_records')&&live.includes('communication_messages'),'Reports module is live-data wired')
+check(live.includes('function ManualPage')&&live.includes('Getting started'),'Manual module is present')
+check(live.includes('<SupportOps')&&ops.includes('oculivo-support-api')&&ops.includes('support_tickets'),'Support module routes to RomyLabs and local audit')
 check(app.includes("onClick={()=>{setOpen(false);navigate(path)}}"),'Left sidebar navigation stays inside React Router')
 check(!app.includes("window.location.assign('/support')")&&!app.includes("window.location.assign('/phone')")&&!app.includes("window.location.assign('/inbox')"),'Internal CRM navigation does not force full-page reloads')
 check(!/\b(TODO|FIXME|HACK|XXX)\b|not implemented|coming soon|mock data|demo data/i.test(allSource),'No incomplete implementation markers remain in primary UI source')
