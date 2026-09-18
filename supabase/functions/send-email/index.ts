@@ -39,8 +39,9 @@ Deno.serve(async(req:Request)=>{
  const subject=(b.subject||thread.subject||"Oculivo message").trim();
  const pr=await fetch("https://api.brevo.com/v3/smtp/email",{method:"POST",headers:{accept:"application/json","api-key":key,"content-type":"application/json"},body:JSON.stringify({sender:{name:"Oculivo",email:from},to:[{email:to}],subject,textContent:body,replyTo:{email:from}})});
  if(!pr.ok){console.error("Brevo",pr.status,await pr.text());return json({error:"Email provider rejected the message"},502)}
- const now=new Date().toISOString(); const ins=await service.from("communication_messages").insert({organization_id:thread.organization_id,thread_id:thread.id,direction:"outbound",sender_name:"Oculivo",sender_address:from,body,is_read:true,sent_by:user.id,created_at:now}).select("id").single();
+ const pdata=await pr.json().catch(()=>({})); const providerId=String(pdata?.messageId||pdata?.message_id||"").trim();
+ const now=new Date().toISOString(); const ins=await service.from("communication_messages").insert({organization_id:thread.organization_id,thread_id:thread.id,direction:"outbound",sender_name:"Oculivo",sender_address:from,body,is_read:true,sent_by:user.id,created_at:now,provider_message_id:providerId?"brevo:"+providerId:null}).select("id").single();
  if(ins.error)return json({error:"Email sent but CRM logging failed"},500);
  await service.from("communication_threads").update({last_message_at:now,subject}).eq("id",thread.id).eq("organization_id",thread.organization_id);
- return json({status:"sent",message_id:ins.data?.id,thread_id:thread.id});
+ return json({status:"sent",message_id:ins.data?.id,provider_id:providerId||null,thread_id:thread.id});
 });
