@@ -34,7 +34,9 @@ Deno.serve(async(req:Request)=>{
  }
  const {data:membership}=await userClient.from("organization_memberships").select("role,is_active").eq("organization_id",thread.organization_id).eq("user_id",user.id).eq("is_active",true).maybeSingle();
  if(!membership||!["owner","admin","manager","provider","staff"].includes(String(membership.role)))return json({error:"Communication permission required"},403);
- const to=(thread.email_address||"").trim(), from=(Deno.env.get("OCULIVO_FROM_EMAIL")||"").trim(), key=Deno.env.get("BREVO_API_KEY")||"";
+ const to=(thread.email_address||"").trim();
+ const endpoint=await service.from("communication_endpoints").select("address").eq("organization_id",thread.organization_id).eq("kind","email").eq("is_active",true).order("is_primary",{ascending:false}).limit(1).maybeSingle();
+ const from=String(endpoint.data?.address||Deno.env.get("OCULIVO_FROM_EMAIL")||"").trim(), key=Deno.env.get("BREVO_API_KEY")||"";
  if(!validEmail.test(to)||!validEmail.test(from))return json({error:"Email addresses are not configured"},409); if(!key)return json({error:"Email provider is not configured"},503);
  const subject=(b.subject||thread.subject||"Oculivo message").trim();
  const pr=await fetch("https://api.brevo.com/v3/smtp/email",{method:"POST",headers:{accept:"application/json","api-key":key,"content-type":"application/json"},body:JSON.stringify({sender:{name:"Oculivo",email:from},to:[{email:to}],subject,textContent:body,replyTo:{email:from}})});
