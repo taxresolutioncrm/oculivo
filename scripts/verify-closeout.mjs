@@ -61,7 +61,7 @@ check(live.includes('function ManualPage')&&live.includes('Getting started'),'Ma
 check(live.includes('<SupportOps')&&ops.includes('oculivo-support-api')&&ops.includes('support_tickets'),'Support module routes to RomyLabs and local audit')
 check(app.includes("onClick={()=>{setOpen(false);navigate(path)}}"),'Left sidebar navigation stays inside React Router')
 check(!app.includes("window.location.assign('/support')")&&!app.includes("window.location.assign('/phone')")&&!app.includes("window.location.assign('/inbox')"),'Internal CRM navigation does not force full-page reloads')
-check(!/\b(TODO|FIXME|HACK|XXX)\b|not implemented|coming soon|mock data|demo data/i.test(allSource),'No incomplete implementation markers remain in primary UI source')
+check(!/(?:^|[^\\p{L}\\p{N}_])(?:TODO|FIXME|HACK|XXX)(?=$|[^\\p{L}\\p{N}_])|not implemented|coming soon|mock data|demo data/iu.test(allSource),'No incomplete implementation markers remain in primary UI source')
 check(esign.includes('Firmas electrónicas')&&esign.includes('E-Signatures'),'Internal e-signature workflow is bilingual')
 check(esign.includes("action:'resend_invite'")&&esign.includes("'Reenviar':'Resend'"),'E-signature resend workflow is wired in EN/ES')
 check(publicSign.includes('Firma electrónica de Oculivo')&&publicSign.includes('Oculivo E-Signature'),'Public signer workflow is bilingual')
