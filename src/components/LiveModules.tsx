@@ -373,8 +373,10 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
 function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
   const {org,error:orgError,loading:orgLoading} = useOrg(session)
   const [counts,setCounts] = useState<Record<string,number>>({})
+  const [money,setMoney] = useState({invoiced:0,paid:0,claims:0,outstanding:0})
   const [error,setError] = useState('')
 
+  const canReadFinancial=['owner','admin','manager','billing'].includes(org?.role||'')
   const sources = useMemo(()=>{
     const all=[
       [lang==='es'?'Pacientes':'Patients','patients'],
@@ -390,6 +392,7 @@ function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
     return all.filter(([,table])=>{
       if(table==='clinical_records')return ['owner','admin','manager','provider'].includes(org?.role||'')
       if(table==='communication_messages')return ['owner','admin','manager','provider','staff'].includes(org?.role||'')
+      if(['insurance_claims','invoices','payments'].includes(table))return ['owner','admin','manager','billing'].includes(org?.role||'')
       return true
     })
   },[lang,org?.role])
@@ -397,6 +400,7 @@ function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
   useEffect(()=>{
     if(!org)return
     ;(async()=>{
+      setError('')
       const results=await Promise.all(sources.map(async([label,table])=>{
         const r=await supabase.from(table).select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId)
         return [label,r.count||0,r.error?.message||''] as const
@@ -404,10 +408,28 @@ function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
       const bad=results.find(x=>x[2])
       if(bad)setError(bad[2])
       setCounts(Object.fromEntries(results.map(([label,count])=>[label,count])))
+      if(canReadFinancial){
+        const [invoices,payments,claims]=await Promise.all([
+          supabase.from('invoices').select('patient_amount,amount_paid').eq('organization_id',org.organizationId).limit(5000),
+          supabase.from('payments').select('amount').eq('organization_id',org.organizationId).limit(5000),
+          supabase.from('insurance_claims').select('billed_amount').eq('organization_id',org.organizationId).limit(5000),
+        ])
+        const first=invoices.error||payments.error||claims.error
+        if(first){setError(first.message);return}
+        const invoiced=(invoices.data||[]).reduce((sum:any,x:any)=>sum+Number(x.patient_amount||0),0)
+        const paid=(payments.data||[]).reduce((sum:any,x:any)=>sum+Number(x.amount||0),0)
+        const claimTotal=(claims.data||[]).reduce((sum:any,x:any)=>sum+Number(x.billed_amount||0),0)
+        const invoicePaid=(invoices.data||[]).reduce((sum:any,x:any)=>sum+Number(x.amount_paid||0),0)
+        setMoney({invoiced,paid,claims:claimTotal,outstanding:Math.max(0,invoiced-invoicePaid)})
+      }else setMoney({invoiced:0,paid:0,claims:0,outstanding:0})
     })()
-  },[org?.organizationId,sources])
+  },[org?.organizationId,sources,canReadFinancial])
 
-  return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'REPORTES EN VIVO':'LIVE REPORTING'}</span><h1>{lang==='es'?'Reportes':'Reports'}</h1><p>{lang==='es'?'Conteos actuales de registros en los flujos principales de Oculivo.':'Current record counts across core Oculivo workflows.'}</p></div></div>
-    {orgLoading?<div className="live-loading">{lang==='es'?'Cargando reportes…':'Loading reports…'}</div>:orgError?<ErrorBox message={orgError} lang={lang}/>:error?<ErrorBox message={error} lang={lang}/>:<div className="report-grid">{sources.map(([label])=><article className="panel report-card" key={label}><span>{label}</span><strong>{counts[label]??0}</strong></article>)}</div>}
+  const usd=(v:number)=>v.toLocaleString(undefined,{style:'currency',currency:'USD'})
+  return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'REPORTES EN VIVO':'LIVE REPORTING'}</span><h1>{lang==='es'?'Reportes':'Reports'}</h1><p>{lang==='es'?'Conteos actuales y métricas operativas de Oculivo.':'Current Oculivo operational counts and metrics.'}</p></div></div>
+    {orgLoading?<div className="live-loading">{lang==='es'?'Cargando reportes…':'Loading reports…'}</div>:orgError?<ErrorBox message={orgError} lang={lang}/>:error?<ErrorBox message={error} lang={lang}/>:<>
+      {canReadFinancial&&<div className="metric-grid"><article className="metric-card"><div><span>{lang==='es'?'Responsabilidad facturada':'Patient billed'}</span></div><strong>{usd(money.invoiced)}</strong></article><article className="metric-card"><div><span>{lang==='es'?'Pagos registrados':'Payments recorded'}</span></div><strong>{usd(money.paid)}</strong></article><article className="metric-card"><div><span>{lang==='es'?'Saldo pendiente':'Outstanding'}</span></div><strong>{usd(money.outstanding)}</strong></article><article className="metric-card"><div><span>{lang==='es'?'Reclamaciones facturadas':'Claims billed'}</span></div><strong>{usd(money.claims)}</strong></article></div>}
+      <div className="report-grid">{sources.map(([label])=><article className="panel report-card" key={label}><span>{label}</span><strong>{counts[label]??0}</strong></article>)}</div>
+    </>}
   </section>
 }
