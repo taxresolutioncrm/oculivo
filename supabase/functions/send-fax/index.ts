@@ -61,7 +61,8 @@ Deno.serve(async(req:Request)=>{
     const pages=String(form.get("NumPages")||"");
     const error=String(form.get("ErrorMessage")||"");
     const summary="Fax "+status+(pages?" · "+pages+" page"+(pages==="1"?"":"s"):"")+(sid?" · "+sid:"")+(error?" · "+error:"");
-    await logFax(service,thread,actorId,summary,Deno.env.get("OCULIVO_FAX_FROM_NUMBER")||"");
+    const endpoint=await service.from("communication_endpoints").select("address").eq("organization_id",org).eq("kind","fax").eq("is_active",true).order("is_primary",{ascending:false}).limit(1).maybeSingle();
+    await logFax(service,thread,actorId,summary,String(endpoint.data?.address||Deno.env.get("OCULIVO_FAX_FROM_NUMBER")||""));
     return json({ok:true});
   }
 
@@ -79,7 +80,9 @@ Deno.serve(async(req:Request)=>{
   if(!membership||!["owner","admin","manager","provider","staff"].includes(String(membership.role)))return json({error:"Communication permission required"},403);
   if(!String(b.storage_path).startsWith(String(thread.organization_id)+"/"))return json({error:"Fax document is outside this practice"},403);
 
-  const to=String(thread.phone_number||"").trim(),from=(Deno.env.get("OCULIVO_FAX_FROM_NUMBER")||"").trim();
+  const to=String(thread.phone_number||"").trim();
+  const endpoint=await service.from("communication_endpoints").select("address").eq("organization_id",thread.organization_id).eq("kind","fax").eq("is_active",true).order("is_primary",{ascending:false}).limit(1).maybeSingle();
+  const from=String(endpoint.data?.address||Deno.env.get("OCULIVO_FAX_FROM_NUMBER")||"").trim();
   if(!e164.test(to)||!e164.test(from))return json({error:"Fax numbers are not configured in E.164 format"},409);
   const project=Deno.env.get("SIGNALWIRE_PROJECT_ID")||"",token=Deno.env.get("SIGNALWIRE_AUTH_TOKEN")||"",space=(Deno.env.get("SIGNALWIRE_SPACE_URL")||"").replace(/^https?:\/\//,"").replace(/\/$/,"");
   if(!project||!token||!space)return json({error:"Fax provider is not configured"},503);
