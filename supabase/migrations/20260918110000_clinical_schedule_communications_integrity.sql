@@ -3,6 +3,29 @@ begin;
 alter table public.communication_messages
   add column if not exists provider_message_id text;
 
+create table if not exists public.communication_endpoints (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  kind text not null check (kind in ('email','sms','voice','fax')),
+  address text not null,
+  is_primary boolean not null default true,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (organization_id, kind, address)
+);
+
+alter table public.communication_endpoints enable row level security;
+
+create unique index if not exists communication_endpoints_one_primary_per_kind
+  on public.communication_endpoints (organization_id, kind)
+  where is_primary and is_active;
+
+create index if not exists communication_endpoints_address_lookup
+  on public.communication_endpoints (kind, lower(address))
+  where is_active;
+
+
 alter table public.communication_threads
   add column if not exists patient_id uuid references public.patients(id) on delete set null;
 
