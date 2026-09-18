@@ -328,7 +328,7 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
         ? supabase.from('communication_threads').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId)
         : Promise.resolve({count:0,error:null}),
       supabase.from('time_entries').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
-      supabase.from('appointments').select('id,patient_id,starts_at,ends_at,status,appointment_type,room').eq('organization_id',org.organizationId).order('starts_at',{ascending:true}).limit(8),
+      supabase.from('appointments').select('id,patient_id,starts_at,ends_at,status,appointment_type,room').eq('organization_id',org.organizationId).gte('starts_at',new Date().toISOString()).order('starts_at',{ascending:true}).limit(8),
       supabase.from('patients').select('id,first_name,last_name').eq('organization_id',org.organizationId).limit(500),
     ])
     const firstError = a.error || p.error || c.error || t.error || arows.error || patients.error
