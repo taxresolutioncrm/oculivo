@@ -11,7 +11,7 @@ const ip=(r:Request)=>r.headers.get('cf-connecting-ip')||r.headers.get('x-forwar
 const safe=(v:string)=>String(v||'document.pdf').replace(/[^a-zA-Z0-9._-]/g,'_').slice(0,180)
 const esc=(v:string)=>String(v||'').replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c))
 const shaText=async(s:string)=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode(s)))].map(x=>x.toString(16).padStart(2,'0')).join('')
-const shaBytes=async(b:Uint8Array)=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',b))].map(x=>x.toString(16).padStart(2,'0')).join('')
+const shaBytes=async(b:Uint8Array)=>{const data=b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength) as ArrayBuffer;return [...new Uint8Array(await crypto.subtle.digest('SHA-256',data))].map(x=>x.toString(16).padStart(2,'0')).join('')}
 function b64ToBytes(v:string){const clean=v.includes(',')?v.slice(v.indexOf(',')+1):v;const bin=atob(clean);const out=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)out[i]=bin.charCodeAt(i);return out}
 function secret(){return [...crypto.getRandomValues(new Uint8Array(32))].map(x=>x.toString(16).padStart(2,'0')).join('')}
 
@@ -53,7 +53,7 @@ Deno.serve(async(req)=>{
    if(action==='load'){if(['sent','viewed'].includes(m.status)){const at=now(),first=m.status==='sent';if(first){m.status='viewed';m.opened_at=at}m.last_viewed_at=at;m.view_count=Number(m.view_count||0)+1;m.audit.push({event:first?'viewed':'revisited',at,ip:ip(req),user_agent:req.headers.get('user-agent')});await writeMeta(admin,m)}const path=m.status==='signed'&&m.signed_path?m.signed_path:m.original_path;const {data,error}=await admin.storage.from(BUCKET).createSignedUrl(path,900);if(error||!data?.signedUrl)return json({error:'Could not open document'},500);return json({ok:true,document:publicMeta(m,data.signedUrl)})}
    if(action==='progress'){
     if(!['sent','viewed'].includes(m.status))return json({error:'Document is not available for progress updates'},409)
-    const allowed=new Set(m.fields.map(f=>f.id)),completed=Array.isArray(b.completed_field_ids)?[...new Set(b.completed_field_ids.map((x:any)=>String(x)).filter((x:string)=>allowed.has(x)))]:[]
+    const allowed=new Set(m.fields.map(f=>f.id)),completed:string[]=Array.isArray(b.completed_field_ids)?Array.from(new Set<string>(b.completed_field_ids.map((x:any)=>String(x)).filter((x:string)=>allowed.has(x)))):[]
     const required=m.fields.filter(f=>f.required!==false),completedRequired=required.filter(f=>completed.includes(f.id)).length
     const missingPages=[...new Set(required.filter(f=>!completed.includes(f.id)).map(f=>Math.max(1,Number(f.page||1))))].sort((a,b)=>a-b)
     const at=now(),next:Progress={completed_field_ids:completed,completed_required:completedRequired,required_total:required.length,missing_pages:missingPages,updated_at:at}
