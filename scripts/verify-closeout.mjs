@@ -139,4 +139,5 @@ check(integrityMigration.includes('appointments_integrity_guard')&&integrityMigr
 check(integrityMigration.includes('communication_messages_provider_message_id_unique'),'Communication provider IDs have a tenant-scoped idempotency index')
 check(ops.includes(".is('signed_at',null)"),'Clinical UI rejects stale edits/sign attempts against already-signed records')
 check(!/booking, availability|contact information, intake|reservas, disponibilidad|contacto, admisión/i.test(app),'CRM module copy does not claim unimplemented booking, availability, or intake workflows')
+check(!/summarize context|resumir contexto|practice context|contexto del consultorio/i.test(read('src/components/AssistantDrawer.tsx')+'\n'+live),'AI copy does not imply automatic access to practice data that is not supplied to the assistant')
 if(process.exitCode)process.exit(process.exitCode)
