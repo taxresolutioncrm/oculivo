@@ -145,6 +145,7 @@ check(ops.includes("scheduleFilter==='upcoming'||scheduleFilter==='today'"),'Upc
 check(integrityMigration.includes('communication_messages_provider_message_id_unique'),'Communication provider IDs have a tenant-scoped idempotency index')
 check(integrityMigration.includes('create table if not exists public.communication_endpoints')&&integrityMigration.includes('communication_endpoints_one_primary_per_kind'),'Practice-scoped communication endpoints are persisted with one primary endpoint per channel')
 check(emailFn.includes('communication_endpoints')&&smsFn.includes('communication_endpoints')&&phoneFn.includes('communication_endpoints')&&faxFn.includes('communication_endpoints'),'Outbound email, SMS, voice, and fax resolve sender identity per practice')
+check(esignFn.includes("communication_endpoints")&&esignFn.includes("kind','email'"),'E-sign invitations use the active practice email identity')
 check(inboundEmailFn.includes('communication_endpoints')&&inboundEmailFn.includes('item?.To'),'Inbound email maps the provider destination back to the signed practice')
 check(inboundSmsFn.includes('communication_endpoints')&&inboundSmsFn.includes('String(endpoint.data.organization_id)!==org'),'Inbound SMS maps the destination number back to the signed practice')
 check(ops.includes(".is('signed_at',null)"),'Clinical UI rejects stale edits/sign attempts against already-signed records')
