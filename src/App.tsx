@@ -3,7 +3,7 @@ import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'reac
 import {
   Bell, CalendarDays, CircleDollarSign, Glasses, Inbox, LayoutDashboard,
   Menu, MessageSquareText, Phone, Search, Stethoscope, TicketCheck,
-  Timer, Users, X, BarChart3, BookOpen, Plus, ChevronDown, LogOut, Files, FileSignature, Sparkles
+  Timer, Users, X, BarChart3, BookOpen, Plus, ChevronDown, LogOut, Files, FileSignature, Sparkles, Eye, EyeOff
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { Session } from '@supabase/supabase-js'
@@ -89,6 +89,7 @@ function Login(){
   const [lang,setLang]=useState<Lang>(()=>(localStorage.getItem('oculivo-lang')==='es'?'es':'en'))
   const [email,setEmail]=useState('')
   const [password,setPassword]=useState('')
+  const [showPassword,setShowPassword]=useState(false)
   const [error,setError]=useState('')
   const [loading,setLoading]=useState(false)
   const navigate=useNavigate()
@@ -111,13 +112,14 @@ function Login(){
 
   return <main className="auth-page">
     <section className="auth-brand"><div className="auth-brand-inner"><Brand/><span className="eyebrow">RomyLabs Core Connect</span><h1>{lang==='es'?'Operaciones modernas para el cuidado de la vista, conectadas.':'Modern eye care operations, connected.'}</h1><p>{lang==='es'?'Agenda, pacientes, flujos clínicos, óptica, facturación, comunicaciones, documentos y operaciones del personal en un solo espacio.':'Scheduling, patients, clinical workflows, optical, billing, communications, documents, and staff operations in one workspace.'}</p></div></section>
-    <section className="auth-form-wrap"><form className="auth-card" onSubmit={signIn}><div className="auth-login-lang"><button type="button" className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button type="button" className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div><div className="brand-mobile"><Brand/></div><h2>{lang==='es'?'Bienvenido de nuevo':'Welcome back'}</h2><p>{lang==='es'?'Inicia sesión en tu espacio de Oculivo.':'Sign in to your Oculivo workspace.'}</p><label>{lang==='es'?'Correo electrónico':'Email'}<input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>{lang==='es'?'Contraseña':'Password'}<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label>{error&&<div className="auth-note">{error}</div>}<button type="submit" className="primary-button" disabled={loading}>{loading?(lang==='es'?'Iniciando sesión…':'Signing in…'):(lang==='es'?'Iniciar sesión':'Sign in')}</button><button className="link-button" type="button" onClick={reset}>{lang==='es'?'¿Olvidaste tu contraseña?':'Forgot password?'}</button></form></section>
+    <section className="auth-form-wrap"><form className="auth-card" onSubmit={signIn}><div className="auth-login-lang"><button type="button" className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button type="button" className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div><div className="brand-mobile"><Brand/></div><h2>{lang==='es'?'Bienvenido de nuevo':'Welcome back'}</h2><p>{lang==='es'?'Inicia sesión en tu espacio de Oculivo.':'Sign in to your Oculivo workspace.'}</p><label>{lang==='es'?'Correo electrónico':'Email'}<input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>{lang==='es'?'Contraseña':'Password'}<div style={{position:'relative'}}><input type={showPassword?'text':'password'} autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required style={{paddingRight:46}}/><button type="button" onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword?(lang==='es'?'Ocultar contraseña':'Hide password'):(lang==='es'?'Mostrar contraseña':'Show password')} aria-pressed={showPassword} style={{position:'absolute',right:7,top:'50%',transform:'translateY(-50%)',width:34,height:34,border:0,background:'transparent',cursor:'pointer',display:'grid',placeItems:'center'}}>{showPassword?<EyeOff size={17}/>:<Eye size={17}/>}</button></div></label>{error&&<div className="auth-note">{error}</div>}<button type="submit" className="primary-button" disabled={loading}>{loading?(lang==='es'?'Iniciando sesión…':'Signing in…'):(lang==='es'?'Iniciar sesión':'Sign in')}</button><button className="link-button" type="button" onClick={reset}>{lang==='es'?'¿Olvidaste tu contraseña?':'Forgot password?'}</button></form></section>
   </main>
 }
 
 function ResetPassword(){
   const [lang,setLang]=useState<Lang>(()=>(localStorage.getItem('oculivo-lang')==='es'?'es':'en'))
   const [password,setPassword]=useState('')
+  const [showPassword,setShowPassword]=useState(false)
   const [message,setMessage]=useState('')
   useEffect(()=>{localStorage.setItem('oculivo-lang',lang);document.documentElement.lang=lang},[lang])
   async function submit(e:React.FormEvent){
@@ -125,7 +127,7 @@ function ResetPassword(){
     const {error}=await supabase.auth.updateUser({password})
     setMessage(error?error.message:(lang==='es'?'Contraseña actualizada. Ya puedes volver a Oculivo.':'Password updated. You can return to Oculivo.'))
   }
-  return <main className="center-page"><form className="auth-card" onSubmit={submit}><div className="auth-login-lang"><button type="button" className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button type="button" className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div><h2>{lang==='es'?'Establecer nueva contraseña':'Set new password'}</h2><label>{lang==='es'?'Nueva contraseña':'New password'}<input type="password" minLength={12} autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label>{message&&<div className="auth-note">{message}</div>}<button type="submit" className="primary-button">{lang==='es'?'Actualizar contraseña':'Update password'}</button></form></main>
+  return <main className="center-page"><form className="auth-card" onSubmit={submit}><div className="auth-login-lang"><button type="button" className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button type="button" className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div><h2>{lang==='es'?'Establecer nueva contraseña':'Set new password'}</h2><label>{lang==='es'?'Nueva contraseña':'New password'}<div style={{position:'relative'}}><input type={showPassword?'text':'password'} minLength={12} autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} required style={{paddingRight:46}}/><button type="button" onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword?(lang==='es'?'Ocultar contraseña':'Hide password'):(lang==='es'?'Mostrar contraseña':'Show password')} aria-pressed={showPassword} style={{position:'absolute',right:7,top:'50%',transform:'translateY(-50%)',width:34,height:34,border:0,background:'transparent',cursor:'pointer',display:'grid',placeItems:'center'}}>{showPassword?<EyeOff size={17}/>:<Eye size={17}/>}</button></div></label>{message&&<div className="auth-note">{message}</div>}<button type="submit" className="primary-button">{lang==='es'?'Actualizar contraseña':'Update password'}</button></form></main>
 }
 
 function safeText(v:unknown){return typeof v==='string'||typeof v==='number'?String(v):''}
