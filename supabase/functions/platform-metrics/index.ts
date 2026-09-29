@@ -1,9 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const CENTRAL_URL='https://mpxgxfqdbquzkrvvejkh.supabase.co'
-const CENTRAL_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1weGd4ZnFkYnF1emtydnZlamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyOTk5MzksImV4cCI6MjA5NDg3NTkzOX0.puvhU1MV5nGOykizeTkwCpRR7NKKaGsVpA8oqjVjmu4'
-const ALLOWED=new Set(['info@romylabs.com','romy@romylabs.com','romy@taxrescrm.net','romy@taxcasereview.org'])
-const cors={'Access-Control-Allow-Origin':'https://admin.romylabs.com','Access-Control-Allow-Methods':'GET,OPTIONS','Access-Control-Allow-Headers':'authorization,content-type'}
+const cors={'Access-Control-Allow-Origin':'https://admin.romylabs.com','Access-Control-Allow-Methods':'GET,OPTIONS','Access-Control-Allow-Headers':'authorization,content-type,x-romylabs-support-secret'}
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json'}})
 
 async function countRows(sb:any, table:string, apply?:(q:any)=>any){
@@ -46,12 +43,9 @@ Deno.serve(async(req:Request)=>{
   if(req.method==='OPTIONS') return new Response(null,{status:204,headers:cors})
   if(req.method!=='GET') return json({ok:false,error:'Method not allowed'},405)
 
-  const auth=req.headers.get('Authorization')||''
-  if(!auth.startsWith('Bearer ')) return json({ok:false,error:'Authentication required'},401)
-  const hub=createClient(CENTRAL_URL,CENTRAL_ANON,{global:{headers:{Authorization:auth}}})
-  const {data:{user},error:authError}=await hub.auth.getUser()
-  if(authError||!user) return json({ok:false,error:'Invalid or expired session'},401)
-  if(!ALLOWED.has(String(user.email||'').toLowerCase())) return json({ok:false,error:'Forbidden'},403)
+  const supplied=req.headers.get('x-romylabs-support-secret')||''
+  const expected=Deno.env.get('OCULIVO_SUPPORT_SECRET')||''
+  if(!expected||supplied!==expected) return json({ok:false,error:'Unauthorized'},401)
 
   const url=Deno.env.get('SUPABASE_URL')
   const key=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
