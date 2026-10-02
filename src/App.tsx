@@ -12,6 +12,7 @@ import { LiveModulePage, LiveOverview } from './components/LiveModules'
 import AssistantDrawer from './components/AssistantDrawer'
 import ESignaturesPage from './pages/ESignaturesPage'
 import PublicSignPage from './pages/PublicSignPage'
+import AIIntelligencePage from './pages/AIIntelligencePage'
 
 type Lang = 'en' | 'es'
 type NavItem = { key:string; path:string; icon:LucideIcon; group:'core'|'communications'|'operations'|'help' }
@@ -26,6 +27,7 @@ const nav:NavItem[] = [
   {key:'optical',path:'/optical',icon:Glasses,group:'core'},
   {key:'inbox',path:'/inbox',icon:Inbox,group:'communications'},
   {key:'phone',path:'/phone',icon:Phone,group:'communications'},
+  {key:'aiIntelligence',path:'/ai-intelligence',icon:Sparkles,group:'communications'},
   {key:'teamChat',path:'/team-chat',icon:MessageSquareText,group:'communications'},
   {key:'timeclock',path:'/timeclock',icon:Timer,group:'operations'},
   {key:'billing',path:'/billing',icon:CircleDollarSign,group:'operations'},
@@ -44,8 +46,8 @@ const navGroups:{key:NavItem['group'];en:string;es:string}[]=[
 ]
 
 const labels:Record<Lang,Record<string,string>> = {
-  en:{overview:'Overview',schedule:'Schedule',patients:'Patients',clinical:'Clinical',optical:'Optical',inbox:'Inbox',phone:'Phone',teamChat:'Team Chat',timeclock:'Timeclock',billing:'Billing',documents:'Documents',eSign:'E-Signatures',reports:'Reports',manual:'Manual',support:'Support',practice:'PRACTICE',yourPractice:'Your practice',needHelp:'Need help?',contactSupport:'Contact RomyLabs support',search:'Search patients, calls, orders, messages...',call:'Call',newPatient:'New patient'},
-  es:{overview:'Resumen',schedule:'Agenda',patients:'Pacientes',clinical:'Clínica',optical:'Óptica',inbox:'Bandeja',phone:'Teléfono',teamChat:'Chat del equipo',timeclock:'Reloj',billing:'Facturación',documents:'Documentos',eSign:'Firmas electrónicas',reports:'Reportes',manual:'Manual',support:'Soporte',practice:'CONSULTORIO',yourPractice:'Tu consultorio',needHelp:'¿Necesitas ayuda?',contactSupport:'Contactar soporte de RomyLabs',search:'Buscar pacientes, llamadas, órdenes, mensajes...',call:'Llamar',newPatient:'Nuevo paciente'}
+  en:{overview:'Overview',schedule:'Schedule',patients:'Patients',clinical:'Clinical',optical:'Optical',inbox:'Inbox',phone:'Phone',aiIntelligence:'AI Intelligence',teamChat:'Team Chat',timeclock:'Timeclock',billing:'Billing',documents:'Documents',eSign:'E-Signatures',reports:'Reports',manual:'Manual',support:'Support',practice:'PRACTICE',yourPractice:'Your practice',needHelp:'Need help?',contactSupport:'Contact RomyLabs support',search:'Search patients, calls, orders, messages...',call:'Call',newPatient:'New patient'},
+  es:{overview:'Resumen',schedule:'Agenda',patients:'Pacientes',clinical:'Clínica',optical:'Óptica',inbox:'Bandeja',phone:'Teléfono',aiIntelligence:'Inteligencia IA',teamChat:'Chat del equipo',timeclock:'Reloj',billing:'Facturación',documents:'Documentos',eSign:'Firmas electrónicas',reports:'Reportes',manual:'Manual',support:'Soporte',practice:'CONSULTORIO',yourPractice:'Tu consultorio',needHelp:'¿Necesitas ayuda?',contactSupport:'Contactar soporte de RomyLabs',search:'Buscar pacientes, llamadas, órdenes, mensajes...',call:'Llamar',newPatient:'Nuevo paciente'}
 }
 
 const moduleCopy:Record<Lang,Record<string,[string,string]>> = {
@@ -258,7 +260,7 @@ function Shell({session}:{session:Session}){
     <div className="app-main">
       <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><button className="searchbox search-trigger" onClick={()=>setSearchOpen(true)}><Search size={18}/><span>{t.search}</span></button><button className="kbd" onClick={()=>setSearchOpen(true)}>⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div>{canAccessPath('/phone',selectedOrg?.role||'')&&<button type="button" className="secondary-action" onClick={()=>window.location.assign('/phone')}><Phone size={16}/>{t.call}</button>}{canAccessPath('/inbox',selectedOrg?.role||'')&&<button type="button" className="icon-action" onClick={()=>window.location.assign('/inbox')} aria-label={lang==='es'?'Abrir bandeja':'Open inbox'} title={lang==='es'?'Abrir bandeja':'Open inbox'}><Bell size={17}/></button>}{canCreatePatient&&<button type="button" className="new-patient" onClick={openNewPatient}><Plus size={17}/>{t.newPatient}</button>}</div></header>
       <div className="context-strip"><div><span>{lang==='es'?'ESPACIO DE TRABAJO':'WORKSPACE'}</span><strong>{currentLabel}</strong></div><div className="context-strip-meta"><span className="context-live-dot"/><span>{selectedOrg?.name||t.yourPractice}</span><span className="context-role">{selectedOrg?.role||'member'}</span></div></div>
-      <Routes><Route path="/" element={<LiveOverview session={session} lang={lang}/>}/><Route path="/esign" element={canAccessPath('/esign',selectedOrg?.role||'')?<ESignaturesPage lang={lang}/>:<Navigate to="/" replace/>}/>{Object.entries(moduleCopy[lang]).map(([path,[title,description]])=><Route key={path} path={path} element={canAccessPath(path,selectedOrg?.role||'')?<LiveModulePage path={path} title={title} description={description} session={session} lang={lang}/>:<Navigate to="/" replace/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>
+      <Routes><Route path="/" element={<LiveOverview session={session} lang={lang}/>}/><Route path="/ai-intelligence" element={<AIIntelligencePage session={session} lang={lang}/>}/><Route path="/esign" element={canAccessPath('/esign',selectedOrg?.role||'')?<ESignaturesPage lang={lang}/>:<Navigate to="/" replace/>}/>{Object.entries(moduleCopy[lang]).map(([path,[title,description]])=><Route key={path} path={path} element={canAccessPath(path,selectedOrg?.role||'')?<LiveModulePage path={path} title={title} description={description} session={session} lang={lang}/>:<Navigate to="/" replace/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>
     </div>
     <SearchOverlay session={session} open={searchOpen} onClose={()=>setSearchOpen(false)} lang={lang} role={selectedOrg?.role||''}/>
     <AssistantDrawer session={session} lang={lang} open={assistantOpen} onClose={()=>setAssistantOpen(false)}/>
