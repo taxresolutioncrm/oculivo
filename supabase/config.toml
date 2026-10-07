@@ -20,3 +20,7 @@ verify_jwt = false
 
 [functions.send-fax]
 verify_jwt = false
+
+# Aggregate RomyLabs metrics validates server/user auth inside the function.
+[functions.platform-metrics]
+verify_jwt = false
