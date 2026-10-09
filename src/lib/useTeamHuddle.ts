@@ -38,7 +38,11 @@ export function useTeamHuddle(prefix:string){
     if(screenRef.current) pc.addTrack(screenRef.current,new MediaStream([screenRef.current]))
     pc.ontrack=(e)=>{
       const t=e.track
-      if(t.kind==='audio') return
+      if(t.kind==='audio'){
+        const s=e.streams[0]||new MediaStream([t])
+        setRemoteStreams(p=>({...p,[peer]:s}))
+        return
+      }
       const isScreen=t.contentHint==='detail'||/screen|window|tab/i.test(t.label||'')||Boolean(remoteCameraRef.current[peer])
       const s=e.streams[0]||new MediaStream([t])
       if(isScreen)setRemoteScreenStreams(p=>({...p,[peer]:s}))
