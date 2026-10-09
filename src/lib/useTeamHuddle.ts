@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useRef, useState, useEffect } from 'react'
 
 const FALLBACK_ICE: RTCConfiguration={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]}
 const MAX_PARTICIPANTS=6
@@ -113,6 +113,8 @@ export function useTeamHuddle(prefix:string){
     localRef.current?.getTracks().forEach(t=>t.stop());localRef.current=null
     setLocalStream(null);setMembers([]);setRemoteStreams({});setRemoteScreenStreams({});setJoined(false)
   },[])
+
+  useEffect(() => () => { void leave() }, [leave])
 
   const toggleMic=async()=>{
     let stream=localRef.current
