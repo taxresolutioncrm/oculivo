@@ -315,6 +315,7 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
 
   return <section className="page">
     <div className="page-head"><div><span className="date-kicker">{lang==='es'?'CHAT DEL EQUIPO EN VIVO':'LIVE TEAM CHAT'}</span><h1>{lang==='es'?'Chat del equipo':'Team Chat'}</h1><p>{lang==='es'?'Canales del consultorio y conversaciones internas del personal.':'Practice channels and internal staff conversations.'}</p></div><div style={{display:'flex',gap:8}}><button className="refresh-button" onClick={()=>void openHuddle()} disabled={!channelId}>🎧 {Object.values(presenceMeta).filter(p=>p.activity==='huddle'&&p.roomId===channelId).length ? Object.values(presenceMeta).filter(p=>p.activity==='huddle'&&p.roomId===channelId).length+' '+(lang==='es'?'en Huddle':'in huddle') : 'Huddle'}</button><button className="refresh-button" onClick={()=>void loadMessages()}><RefreshCw size={15}/>{lang==='es'?'Actualizar':'Refresh'}</button></div></div>
+    {Object.values(presenceMeta).some(p=>p.activity==='huddle')&&<div className="org-context"><strong>🎧 {lang==='es'?'En Huddle':'In huddle'}</strong><span>{Object.values(presenceMeta).filter(p=>p.activity==='huddle').map(p=>p.name).join(', ')}</span></div>}
     {orgLoading ? <div className="live-loading">{lang==='es'?'Cargando chat del equipo…':'Loading team chat…'}</div> : orgError ? <ErrorBox message={orgError} lang={lang}/> :
     <div className="chat-layout">
       <aside className="chat-channels">
