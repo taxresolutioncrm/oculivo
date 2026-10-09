@@ -210,6 +210,7 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
   const [newChannel,setNewChannel] = useState('')
   const [presenceMeta,setPresenceMeta] = useState<Record<string,{name:string;activity:'online'|'huddle';roomId:string|null}>>({})
   const [showHuddle,setShowHuddle] = useState(false)
+  const [huddleRoomId,setHuddleRoomId] = useState<string|null>(null)
   const presenceRef=useRef<ReturnType<typeof supabase.channel>|null>(null)
   const huddle=useTeamHuddle('oculivo-huddle')
   const displayName=text(session.user.user_metadata?.full_name)||text(session.user.user_metadata?.name)||session.user.email?.split('@')[0]||'Team member'
@@ -254,8 +255,8 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
   useEffect(()=>{
     const ch=presenceRef.current
     if(!ch)return
-    void ch.track({name:displayName,activity:huddle.joined?'huddle':'online',room_id:huddle.joined?channelId:null,online_at:new Date().toISOString()})
-  },[displayName,huddle.joined,channelId])
+    void ch.track({name:displayName,activity:huddle.joined?'huddle':'online',room_id:huddle.joined?huddleRoomId:null,online_at:new Date().toISOString()})
+  },[displayName,huddle.joined,huddleRoomId])
 
   useEffect(()=>{
     if(!org?.organizationId||!channelId)return
@@ -267,13 +268,16 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
 
   async function openHuddle(){
     if(!channelId)return
-    if(!huddle.joined){
-      const ok=await huddle.join(channelId,displayName)
-      if(!ok){setError(huddle.error||(lang==='es'?'No se pudo iniciar el Huddle.':'Could not join huddle.'));return}
+    if(huddle.joined){
+      if(huddleRoomId!==channelId){setError(lang==='es'?'Sal del Huddle actual antes de entrar a otro canal.':'Leave your current huddle before joining a different channel.');return}
+      setShowHuddle(true);return
     }
+    setHuddleRoomId(channelId)
+    const ok=await huddle.join(channelId,displayName)
+    if(!ok){setHuddleRoomId(null);setError(huddle.error||(lang==='es'?'No se pudo iniciar el Huddle.':'Could not join huddle.'));return}
     setShowHuddle(true)
   }
-  async function leaveHuddle(){await huddle.leave();setShowHuddle(false)}
+  async function leaveHuddle(){await huddle.leave();setShowHuddle(false);setHuddleRoomId(null)}
 
   async function createChannel(name='general') {
     if (!org || !['owner','admin'].includes(org?.role||'')) return
