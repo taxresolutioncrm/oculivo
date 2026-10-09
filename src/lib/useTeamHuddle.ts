@@ -17,29 +17,32 @@ export function useTeamHuddle(prefix:string){
   const localRef=useRef<MediaStream|null>(null)
   const screenRef=useRef<MediaStreamTrack|null>(null)
   const peers=useRef<Record<string,RTCPeerConnection>>({})
+  const remoteCameraRef=useRef<Record<string,boolean>>({})
   const channelRef=useRef<any>(null)
   const myName=useRef('')
   const iceRef=useRef<RTCConfiguration>(FALLBACK_ICE)
   const fullyJoined=useRef(false)
 
   const closePeer=(name:string)=>{
-    peers.current[name]?.close(); delete peers.current[name]
+    peers.current[name]?.close(); delete peers.current[name]; delete remoteCameraRef.current[name]
     setRemoteStreams(p=>{const n={...p};delete n[name];return n})
     setRemoteScreenStreams(p=>{const n={...p};delete n[name];return n})
   }
 
   const createPC=(peer:string)=>{
-    closePeer(peer)
+    const existing=peers.current[peer]
+    if(existing&&existing.connectionState!=='closed')return existing
+    if(existing)closePeer(peer)
     const pc=new RTCPeerConnection(iceRef.current); peers.current[peer]=pc
     localRef.current?.getTracks().forEach(t=>pc.addTrack(t,localRef.current!))
     if(screenRef.current) pc.addTrack(screenRef.current,new MediaStream([screenRef.current]))
     pc.ontrack=(e)=>{
       const t=e.track
       if(t.kind==='audio') return
-      const isScreen=t.contentHint==='detail'||/screen|window|tab/i.test(t.label||'')||Boolean(remoteStreams[peer])
+      const isScreen=t.contentHint==='detail'||/screen|window|tab/i.test(t.label||'')||Boolean(remoteCameraRef.current[peer])
       const s=e.streams[0]||new MediaStream([t])
       if(isScreen)setRemoteScreenStreams(p=>({...p,[peer]:s}))
-      else setRemoteStreams(p=>({...p,[peer]:s}))
+      else{remoteCameraRef.current[peer]=true;setRemoteStreams(p=>({...p,[peer]:s}))}
     }
     pc.onicecandidate=e=>{if(e.candidate)channelRef.current?.send({type:'broadcast',event:'signal',payload:{from:myName.current,to:peer,type:'ice',candidate:e.candidate}})}
     return pc
@@ -76,10 +79,13 @@ export function useTeamHuddle(prefix:string){
     }).catch(()=>{})
     const ch=supabase.channel(`${prefix}:${roomId}`,{config:{broadcast:{self:false},presence:{key:name}}});channelRef.current=ch
     ch.on('broadcast',{event:'signal'},({payload}:any)=>void signal(payload))
-    ch.on('presence',{event:'sync'},()=>setMembers(Object.keys(ch.presenceState())))
+    let resolveFirstSync:()=>void=()=>{}
+    const firstSync=new Promise<void>(resolve=>{resolveFirstSync=resolve})
+    ch.on('presence',{event:'sync'},()=>{setMembers(Object.keys(ch.presenceState()));resolveFirstSync()})
     ch.on('presence',{event:'join'},({key}:any)=>{setMembers(m=>m.includes(key)?m:[...m,key]);if(key!==name&&fullyJoined.current)void offer(key)})
     ch.on('presence',{event:'leave'},({key}:any)=>{setMembers(m=>m.filter(x=>x!==key));closePeer(key)})
     await new Promise<void>(r=>ch.subscribe((s:string)=>{if(s==='SUBSCRIBED')r()}))
+    await Promise.race([firstSync,new Promise<void>(r=>setTimeout(r,3000))])
     if(Object.keys(ch.presenceState()).length>=MAX_PARTICIPANTS){await supabase.removeChannel(ch);setError('This huddle is full (6 people max).');return false}
     let stream:MediaStream
     try{stream=await navigator.mediaDevices.getUserMedia({audio:true,video:true})}
@@ -89,7 +95,10 @@ export function useTeamHuddle(prefix:string){
     }
     localRef.current=stream;setLocalStream(stream);await icePromise
     await ch.track({name,activity:'huddle',room_id:roomId})
-    fullyJoined.current=true;setJoined(true);setMembers(m=>m.includes(name)?m:[...m,name]);return true
+    fullyJoined.current=true;setJoined(true);setMembers(m=>m.includes(name)?m:[...m,name])
+    const existing=Object.keys(ch.presenceState()).filter(peer=>peer!==name)
+    for(const peer of existing){if(name.localeCompare(peer)<0&&!peers.current[peer])await offer(peer)}
+    return true
   },[prefix])
 
   const leave=useCallback(async()=>{
