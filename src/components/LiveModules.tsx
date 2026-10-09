@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { CalendarDays, MessageSquareText, Plus, RefreshCw, Send, Users } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { useTeamHuddle } from '../lib/useTeamHuddle'
 import { BillingOps, ClinicalOps, DocumentsOps, OpticalOps, PatientsOps, ScheduleOps, SupportOps, TimeclockOps } from './OperationalModules'
 import { InboxComms, PhoneOps } from './CommunicationsModules'
 
@@ -187,6 +188,17 @@ function GenericLivePage({path,title,description,session,lang}:{path:string;titl
   </section>
 }
 
+function OculivoHuddleTile({name,stream,muted=false}:{name:string;stream:MediaStream|null|undefined;muted?:boolean}) {
+  const ref=useRef<HTMLVideoElement>(null)
+  useEffect(()=>{if(ref.current)ref.current.srcObject=stream||null},[stream])
+  const hasVideo=Boolean(stream?.getVideoTracks().length)
+  return <div style={{position:'relative',minHeight:210,borderRadius:14,overflow:'hidden',background:'#07131f',border:'1px solid rgba(255,255,255,.14)',display:'grid',placeItems:'center'}}>
+    {stream&&<video ref={ref} autoPlay playsInline muted={muted} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',opacity:hasVideo?1:0}}/>}
+    {!hasVideo&&<div style={{width:74,height:74,borderRadius:'50%',background:'#245f7a',display:'grid',placeItems:'center',color:'#fff',fontSize:24,fontWeight:800}}>{name.split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]?.toUpperCase()).join('')}</div>}
+    <div style={{position:'absolute',left:10,bottom:10,padding:'4px 8px',borderRadius:8,background:'rgba(0,0,0,.64)',color:'#fff',fontSize:12,fontWeight:700}}>{name}</div>
+  </div>
+}
+
 function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
   const {org,error:orgError,loading:orgLoading} = useOrg(session)
   const [channels,setChannels] = useState<Row[]>([])
@@ -196,6 +208,12 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
   const [error,setError] = useState('')
   const [busy,setBusy] = useState(false)
   const [newChannel,setNewChannel] = useState('')
+  const [presenceMeta,setPresenceMeta] = useState<Record<string,{name:string;activity:'online'|'huddle';roomId:string|null}>>({})
+  const [showHuddle,setShowHuddle] = useState(false)
+  const [huddleRoomId,setHuddleRoomId] = useState<string|null>(null)
+  const presenceRef=useRef<ReturnType<typeof supabase.channel>|null>(null)
+  const huddle=useTeamHuddle('oculivo-huddle')
+  const displayName=text(session.user.user_metadata?.full_name)||text(session.user.user_metadata?.name)||session.user.email?.split('@')[0]||'Team member'
 
   async function loadChannels() {
     if (!org) return
@@ -215,6 +233,40 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
 
   useEffect(()=>{setChannelId('');setMessages([]);void loadChannels()},[org?.organizationId])
   useEffect(()=>{void loadMessages(channelId)},[channelId,org?.organizationId])
+
+  useEffect(()=>{
+    if(!org?.organizationId)return
+    const ch=supabase.channel('oculivo-team-presence:'+org.organizationId,{config:{presence:{key:session.user.id}}})
+    presenceRef.current=ch
+    const sync=()=>{
+      const state=ch.presenceState()
+      const next:Record<string,{name:string;activity:'online'|'huddle';roomId:string|null}>={}
+      Object.entries(state).forEach(([id,entries]:any)=>{const latest=Array.isArray(entries)?entries[entries.length-1]:null;next[id]={name:String(latest?.name||id),activity:latest?.activity==='huddle'?'huddle':'online',roomId:latest?.room_id?String(latest.room_id):null}})
+      setPresenceMeta(next)
+    }
+    ch.on('presence',{event:'sync'},sync).on('presence',{event:'join'},sync).on('presence',{event:'leave'},sync)
+      .subscribe(async status=>{if(status==='SUBSCRIBED')await ch.track({name:displayName,activity:'online',room_id:null,online_at:new Date().toISOString()})})
+    return()=>{presenceRef.current=null;void supabase.removeChannel(ch)}
+  },[org?.organizationId,session.user.id,displayName])
+
+  useEffect(()=>{const ch=presenceRef.current;if(!ch)return;void ch.track({name:displayName,activity:huddle.joined?'huddle':'online',room_id:huddle.joined?huddleRoomId:null,online_at:new Date().toISOString()})},[displayName,huddle.joined,huddleRoomId])
+
+  useEffect(()=>{
+    if(!org?.organizationId||!channelId)return
+    const ch=supabase.channel('oculivo-team-chat:'+org.organizationId+':'+channelId)
+      .on('postgres_changes',{event:'*',schema:'public',table:'team_messages',filter:'channel_id=eq.'+channelId},()=>void loadMessages(channelId)).subscribe()
+    return()=>{void supabase.removeChannel(ch)}
+  },[org?.organizationId,channelId])
+
+  async function openHuddle(){
+    if(!channelId)return
+    if(huddle.joined){if(huddleRoomId!==channelId){setError(lang==='es'?'Sal del Huddle actual antes de entrar a otro canal.':'Leave your current huddle before joining a different channel.');return}setShowHuddle(true);return}
+    setHuddleRoomId(channelId)
+    const ok=await huddle.join(channelId,displayName)
+    if(!ok){setHuddleRoomId(null);setError(huddle.error||(lang==='es'?'No se pudo iniciar el Huddle.':'Could not join huddle.'));return}
+    setShowHuddle(true)
+  }
+  async function leaveHuddle(){await huddle.leave();setShowHuddle(false);setHuddleRoomId(null)}
 
   async function createChannel(name='general') {
     if (!org || !['owner','admin'].includes(org?.role||'')) return
@@ -255,7 +307,8 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
   }
 
   return <section className="page">
-    <div className="page-head"><div><span className="date-kicker">{lang==='es'?'CHAT DEL EQUIPO EN VIVO':'LIVE TEAM CHAT'}</span><h1>{lang==='es'?'Chat del equipo':'Team Chat'}</h1><p>{lang==='es'?'Canales del consultorio y conversaciones internas del personal.':'Practice channels and internal staff conversations.'}</p></div><button className="refresh-button" onClick={()=>void loadMessages()}><RefreshCw size={15}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>
+    <div className="page-head"><div><span className="date-kicker">{lang==='es'?'CHAT DEL EQUIPO EN VIVO':'LIVE TEAM CHAT'}</span><h1>{lang==='es'?'Chat del equipo':'Team Chat'}</h1><p>{lang==='es'?'Canales del consultorio y conversaciones internas del personal.':'Practice channels and internal staff conversations.'}</p></div><div style={{display:'flex',gap:8}}><button className="refresh-button" onClick={()=>void openHuddle()} disabled={!channelId}>🎧 {Object.values(presenceMeta).filter(p=>p.activity==='huddle'&&p.roomId===channelId).length ? Object.values(presenceMeta).filter(p=>p.activity==='huddle'&&p.roomId===channelId).length+' '+(lang==='es'?'en Huddle':'in huddle') : 'Huddle'}</button><button className="refresh-button" onClick={()=>void loadMessages()}><RefreshCw size={15}/>{lang==='es'?'Actualizar':'Refresh'}</button></div></div>
+    {Object.values(presenceMeta).some(p=>p.activity==='huddle')&&<div className="org-context"><strong>🎧 {lang==='es'?'En Huddle':'In huddle'}</strong><span>{Object.values(presenceMeta).filter(p=>p.activity==='huddle').map(p=>p.name).join(', ')}</span></div>}
     {orgLoading ? <div className="live-loading">{lang==='es'?'Cargando chat del equipo…':'Loading team chat…'}</div> : orgError ? <ErrorBox message={orgError} lang={lang}/> :
     <div className="chat-layout">
       <aside className="chat-channels">
@@ -271,6 +324,12 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
           {org?.role==='read_only'?<div className="inbox-readonly-note">{lang==='es'?'Tu rol tiene acceso de solo lectura.':'Your role has read-only access.'}</div>:<form className="chat-compose" onSubmit={sendMessage}><input value={body} onChange={e=>setBody(e.target.value)} placeholder={lang==='es'?'Mensaje al equipo…':'Message the team…'} /><button type="submit" disabled={busy || !body.trim()}><Send size={16}/>{lang==='es'?'Enviar':'Send'}</button></form>}
         </>}
       </section>
+    {huddle.joined&&showHuddle&&<div style={{position:'fixed',inset:0,zIndex:12000,background:'linear-gradient(135deg,#07131f,#17384b)',display:'flex',flexDirection:'column',color:'#fff'}}>
+      <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px 18px',borderBottom:'1px solid rgba(255,255,255,.12)'}}><span style={{width:9,height:9,borderRadius:'50%',background:'#22c55e'}}/><strong>Oculivo Huddle</strong><span style={{fontSize:12,opacity:.7}}>{huddle.members.length} connected</span><button onClick={()=>setShowHuddle(false)} style={{marginLeft:'auto'}}>Minimize</button></div>
+      <div style={{flex:1,overflowY:'auto',display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:14,padding:18,alignContent:'center'}}><OculivoHuddleTile name={displayName+' (You)'} stream={huddle.localStream} muted/>{Object.entries(huddle.remoteStreams).map(([name,stream])=><OculivoHuddleTile key={name} name={name} stream={stream}/>)}{Object.entries(huddle.remoteScreenStreams).map(([name,stream])=><OculivoHuddleTile key={'screen-'+name} name={name+' · Screen'} stream={stream}/>)}</div>
+      {huddle.error&&<div style={{padding:'0 18px 10px',color:'#fbbf24',fontSize:12}}>{huddle.error}</div>}
+      <div style={{display:'flex',justifyContent:'center',flexWrap:'wrap',gap:10,padding:14,borderTop:'1px solid rgba(255,255,255,.12)'}}><button onClick={()=>void huddle.toggleMic()}>{huddle.micOn?'🎙 Mute':'🔇 Unmute'}</button><button onClick={()=>void huddle.toggleCamera()}>{huddle.cameraOn?'📷 Stop camera':'📷 Start camera'}</button><button onClick={()=>void(huddle.sharingScreen?huddle.stopScreenShare():huddle.startScreenShare())}>{huddle.sharingScreen?'🖥 Stop sharing':'🖥 Share screen'}</button><button onClick={()=>void leaveHuddle()} style={{background:'#b91c1c',color:'#fff'}}>☎ Leave</button></div>
+    </div>}
     </div>}
   </section>
 }
