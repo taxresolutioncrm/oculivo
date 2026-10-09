@@ -50,6 +50,15 @@ export function useTeamHuddle(prefix:string){
     await channelRef.current?.send({type:'broadcast',event:'signal',payload:{from:myName.current,to:peer,type:'offer',sdp:o.sdp}})
   }
 
+  const renegotiate=async(peer:string)=>{
+    const pc=peers.current[peer]
+    if(!pc||pc.signalingState!=='stable')return
+    try{
+      const o=await pc.createOffer();await pc.setLocalDescription(o)
+      await channelRef.current?.send({type:'broadcast',event:'signal',payload:{from:myName.current,to:peer,type:'offer',sdp:o.sdp}})
+    }catch{}
+  }
+
   const signal=async(p:any)=>{
     if(p?.to!==myName.current)return
     if(p.type==='offer'){
@@ -92,16 +101,57 @@ export function useTeamHuddle(prefix:string){
     setLocalStream(null);setMembers([]);setRemoteStreams({});setRemoteScreenStreams({});setJoined(false)
   },[])
 
-  const toggleMic=()=>{const t=localRef.current?.getAudioTracks()[0];if(t){t.enabled=!t.enabled;setMicOn(t.enabled)}}
-  const toggleCamera=()=>{const t=localRef.current?.getVideoTracks()[0];if(t){t.enabled=!t.enabled;setCameraOn(t.enabled)}}
+  const toggleMic=async()=>{
+    let stream=localRef.current
+    let t=stream?.getAudioTracks()[0]
+    if(!t){
+      try{
+        const mic=await navigator.mediaDevices.getUserMedia({audio:true,video:false});t=mic.getAudioTracks()[0]
+        if(!t)return
+        if(!stream){stream=new MediaStream();localRef.current=stream}
+        stream.addTrack(t);setLocalStream(new MediaStream(stream.getTracks()));setMicOn(true);setError('')
+        for(const [peer,pc] of Object.entries(peers.current)){pc.addTrack(t,stream);await renegotiate(peer)}
+        t.onended=()=>setMicOn(false)
+      }catch{setError('Microphone unavailable — check browser permission and device access.');setMicOn(false)}
+      return
+    }
+    t.enabled=!t.enabled;setMicOn(t.enabled)
+  }
+  const toggleCamera=async()=>{
+    let stream=localRef.current
+    let t=stream?.getVideoTracks()[0]
+    if(!t){
+      try{
+        const cam=await navigator.mediaDevices.getUserMedia({audio:false,video:true});t=cam.getVideoTracks()[0]
+        if(!t)return
+        if(!stream){stream=new MediaStream();localRef.current=stream}
+        stream.addTrack(t);setLocalStream(new MediaStream(stream.getTracks()));setCameraOn(true);setError('')
+        for(const [peer,pc] of Object.entries(peers.current)){pc.addTrack(t,stream);await renegotiate(peer)}
+        t.onended=()=>setCameraOn(false)
+      }catch{setError('Camera unavailable — check browser permission and device access.');setCameraOn(false)}
+      return
+    }
+    t.enabled=!t.enabled;setCameraOn(t.enabled)
+  }
   const startScreenShare=async()=>{
+    if(!joined||sharingScreen)return
     try{
       const s=await navigator.mediaDevices.getDisplayMedia({video:true,audio:false}),t=s.getVideoTracks()[0]
+      if(!t)return
       t.contentHint='detail';screenRef.current=t;setSharingScreen(true)
-      for(const pc of Object.values(peers.current))pc.addTrack(t,s)
-      t.onended=()=>{screenRef.current=null;setSharingScreen(false);setRemoteScreenStreams(p=>p)}
+      for(const [peer,pc] of Object.entries(peers.current)){pc.addTrack(t,s);await renegotiate(peer)}
+      t.onended=()=>{void stopScreenShare()}
     }catch{setError('Screen sharing was cancelled or blocked.')}
   }
-  const stopScreenShare=()=>{screenRef.current?.stop();screenRef.current=null;setSharingScreen(false)}
+  const stopScreenShare=async()=>{
+    const t=screenRef.current
+    if(!t){setSharingScreen(false);return}
+    for(const [peer,pc] of Object.entries(peers.current)){
+      const sender=pc.getSenders().find(s=>s.track?.id===t.id)
+      if(sender){try{pc.removeTrack(sender)}catch{};await renegotiate(peer)}
+    }
+    try{t.stop()}catch{}
+    screenRef.current=null;setSharingScreen(false)
+  }
   return{members,remoteStreams,remoteScreenStreams,localStream,micOn,cameraOn,joined,sharingScreen,error,join,leave,toggleMic,toggleCamera,startScreenShare,stopScreenShare}
 }
