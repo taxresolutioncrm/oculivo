@@ -24,7 +24,13 @@ export default function AssistantDrawer({session,lang,open,onClose,organizationI
         setError(lang==='es'?'Selecciona un consultorio antes de usar Oculivo AI.':'Select a practice before using Oculivo AI.')
         return
       }
-      const {data,error}=await supabase.functions.invoke('oculivo-ai',{body:{
+      const {data:authState}=await supabase.auth.getSession()
+      const accessToken=authState.session?.access_token || session.access_token
+      if (!accessToken) {
+        setError(lang==='es'?'La sesión ha expirado. Inicia sesión de nuevo.':'Session expired. Please sign in again.')
+        return
+      }
+      const {data,error}=await supabase.functions.invoke('oculivo-ai',{headers:{Authorization:`Bearer ${accessToken}`},body:{
         message:prompt,
         organization_id:orgId,
         route:window.location.pathname,
@@ -49,13 +55,16 @@ export default function AssistantDrawer({session,lang,open,onClose,organizationI
           : 'AI request failed'
         setError(`${description}${status ? ` (HTTP ${status})` : ''}${code ? `: ${code}` : ''}`)
         console.error('Oculivo AI request failed', {status, message:error.message})
+      }else if (data?.error) {
+        setError(String(data.error).slice(0,180))
       }else{
         const answer=String(data?.answer||data?.message||data?.content||'').trim()
         if(answer)setMessages(v=>[...v,{role:'assistant',content:answer}])
         else setError(lang==='es'?'El asistente no devolvió una respuesta.':'The assistant returned no response.')
       }
-    } catch {
-      setError(lang==='es'?'Error de conexión. Inténtalo de nuevo.':'Connection error. Please try again.')
+    } catch (err) {
+      const message = err instanceof Error ? err.message.slice(0,150) : ''
+      setError(`${lang==='es'?'Error de conexión':'Connection error'}${message ? `: ${message}` : ''}`)
     } finally {
       setBusy(false)
     }
