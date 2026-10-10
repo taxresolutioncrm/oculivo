@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase'
 type Lang='en'|'es'
 type Msg={role:'user'|'assistant';content:string}
 
-export default function AssistantDrawer({session,lang,open,onClose}:{session:Session;lang:Lang;open:boolean;onClose:()=>void}){
+export default function AssistantDrawer({session,lang,open,onClose,organizationId}:{session:Session;lang:Lang;open:boolean;onClose:()=>void;organizationId:string}){
   const [messages,setMessages]=useState<Msg[]>([]),[text,setText]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
   const end=useRef<HTMLDivElement|null>(null)
   useEffect(()=>{end.current?.scrollIntoView({behavior:'smooth'})},[messages,busy])
@@ -16,7 +16,7 @@ export default function AssistantDrawer({session,lang,open,onClose}:{session:Ses
     e.preventDefault()
     const prompt=text.trim()
     if(!prompt||busy)return
-    const orgId=localStorage.getItem('oculivo-org-id')||''
+    const orgId=organizationId
     const next=[...messages,{role:'user' as const,content:prompt}]
     setMessages(next);setText('');setBusy(true);setError('')
     try {
@@ -32,10 +32,23 @@ export default function AssistantDrawer({session,lang,open,onClose}:{session:Ses
         history:messages.slice(-10)
       }})
       if(error){
-        const status = (error as {context?:Response}).context?.status
-        setError(status===404
-          ? (lang==='es'?'El servicio de IA todavía no está instalado. Contacta al administrador.':'AI service is not deployed yet. Contact your administrator.')
-          : (lang==='es'?'No se pudo conectar con Oculivo AI. Inténtalo de nuevo.':'Unable to connect to Oculivo AI. Please try again.'))
+        const context = (error as {context?:Response}).context
+        const status = context?.status
+        let code = ''
+        try {
+          if (context && typeof context.clone === 'function') {
+            const detail = await context.clone().json() as {error?:unknown;code?:unknown}
+            code = String(detail?.error || detail?.code || '').slice(0,160)
+          }
+        } catch { /* The gateway may return non-JSON. */ }
+        const description = status === 401 ? 'Authentication rejected'
+          : status === 403 ? 'Practice access denied'
+          : status === 404 ? 'AI service endpoint not found'
+          : status === 502 ? 'AI provider request failed'
+          : status === 503 ? 'AI provider not configured'
+          : 'AI request failed'
+        setError(`${description}${status ? ` (HTTP ${status})` : ''}${code ? `: ${code}` : ''}`)
+        console.error('Oculivo AI request failed', {status, message:error.message})
       }else{
         const answer=String(data?.answer||data?.message||data?.content||'').trim()
         if(answer)setMessages(v=>[...v,{role:'assistant',content:answer}])
