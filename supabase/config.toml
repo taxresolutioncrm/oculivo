@@ -1,7 +1,9 @@
 project_id = "czejdbdwaumbdepiswcu"
 
+# Auth is validated inside the function with supabase.auth.getUser().
+# Gateway legacy JWT verification can reject newer signing-key tokens before invocation.
 [functions.oculivo-ai]
-verify_jwt = true
+verify_jwt = false
 
 [functions.oculivo-support-api]
 verify_jwt = true
