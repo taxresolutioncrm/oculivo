@@ -15,9 +15,16 @@ Deno.serve(async(req:Request)=>{
  const system="You are Oculivo AI, an assistant inside an eye-care practice CRM. Help with workflow guidance, summaries, scheduling, billing, communications, optical and operational questions. Never claim to change passwords or payroll. Never expose data from another organization. Do not diagnose medical conditions or replace clinician judgment.";
  const history=Array.isArray(b.history)?b.history.slice(-10):[];
  const input=[{role:"system",content:system},...history.map((m:any)=>({role:m?.role==="assistant"?"assistant":"user",content:String(m?.content||"").slice(0,4000)})).filter((m:any)=>m.content.trim()),{role:"user",content:message}];
- const pr=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:"Bearer "+key,"Content-Type":"application/json"},body:JSON.stringify({model:Deno.env.get("OCULIVO_AI_MODEL")||"gpt-5-mini",input,reasoning:{effort:"low"},max_output_tokens:1800})});
- if(!pr.ok){console.error("AI",pr.status,await pr.text());return json({error:"AI provider request failed"},502)}
- const d=await pr.json();
+ let pr:Response;
+ try {
+  pr=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:"Bearer "+key,"Content-Type":"application/json"},body:JSON.stringify({model:Deno.env.get("OCULIVO_AI_MODEL")||"gpt-5-mini",input,max_output_tokens:1800}),signal:AbortSignal.timeout(25000)});
+ } catch(err) {
+  console.error("oculivo-ai provider transport",err instanceof Error?err.message:"unknown");
+  return json({error:"AI provider connection timed out or failed"},504);
+ }
+ if(!pr.ok){const detail=await pr.text();console.error("oculivo-ai provider",pr.status,detail.slice(0,500));return json({error:pr.status===429?"AI provider rate limit reached":pr.status===401?"AI provider API key rejected":"AI provider request failed",upstream_status:pr.status},502)}
+ let d:any;
+ try {d=await pr.json()}catch{return json({error:"AI provider returned an invalid response"},502)}
  const answer=String(d?.output_text||((d?.output||[]).flatMap((o:any)=>o?.content||[]).find((x:any)=>x?.type==="output_text")?.text)||"").trim();
  return answer?json({answer}):json({error:"AI provider returned no response"},502);
 });
