@@ -216,6 +216,39 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
   useEffect(()=>{setChannelId('');setMessages([]);void loadChannels()},[org?.organizationId])
   useEffect(()=>{void loadMessages(channelId)},[channelId,org?.organizationId])
 
+  // Live updates are scoped to the active practice and channel.
+  // PostgreSQL RLS remains the authoritative authorization boundary.
+  useEffect(()=>{
+    if (!org?.organizationId || !channelId) return
+    let active = true
+    const subscription = supabase
+      .channel(`oculivo-team-messages-${org.organizationId}-${channelId}`)
+      .on('postgres_changes',{
+        event:'*',
+        schema:'public',
+        table:'team_messages',
+        filter:`channel_id=eq.${channelId}`
+      },()=>{
+        if (active) void loadMessages(channelId)
+      })
+      .subscribe()
+    return ()=>{
+      active = false
+      void supabase.removeChannel(subscription)
+    }
+  },[org?.organizationId,channelId])
+
+  // Channel memberships may change between visits. Reload the accessible
+  // channel inventory when the tab regains focus without requiring an
+  // additional publication on team_channels.
+  useEffect(()=>{
+    if (!org?.organizationId) return
+    const refresh = ()=>{ if (document.visibilityState === 'visible') void loadChannels() }
+    document.addEventListener('visibilitychange',refresh)
+    return ()=>document.removeEventListener('visibilitychange',refresh)
+  },[org?.organizationId])
+
+
   async function createChannel(name='general') {
     if (!org || !['owner','admin'].includes(org?.role||'')) return
     const clean=name.trim().toLowerCase().replace(/[^a-z0-9-_ ]+/g,'').replace(/\s+/g,'-').slice(0,40)
