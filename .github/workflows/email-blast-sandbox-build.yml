@@ -1,5 +1,7 @@
 name: Email Blast Sandbox Build Diagnostic
 on:
+  push:
+    branches: [sandbox/email-blast-20261010]
   pull_request:
     branches: [main]
 permissions:
