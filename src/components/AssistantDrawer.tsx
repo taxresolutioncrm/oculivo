@@ -19,21 +19,33 @@ export default function AssistantDrawer({session,lang,open,onClose}:{session:Ses
     const orgId=localStorage.getItem('oculivo-org-id')||''
     const next=[...messages,{role:'user' as const,content:prompt}]
     setMessages(next);setText('');setBusy(true);setError('')
-    const {data,error}=await supabase.functions.invoke('oculivo-ai',{body:{
-      message:prompt,
-      organization_id:orgId,
-      route:window.location.pathname,
-      language:lang,
-      history:messages.slice(-10)
-    }})
-    if(error){
-      setError(lang==='es'?'El asistente de Oculivo no está disponible en este momento.':'Oculivo AI is unavailable right now.')
-    }else{
-      const answer=String(data?.answer||data?.message||data?.content||'').trim()
-      if(answer)setMessages(v=>[...v,{role:'assistant',content:answer}])
-      else setError(lang==='es'?'El asistente no devolvió una respuesta.':'The assistant returned no response.')
+    try {
+      if (!orgId) {
+        setError(lang==='es'?'Selecciona un consultorio antes de usar Oculivo AI.':'Select a practice before using Oculivo AI.')
+        return
+      }
+      const {data,error}=await supabase.functions.invoke('oculivo-ai',{body:{
+        message:prompt,
+        organization_id:orgId,
+        route:window.location.pathname,
+        language:lang,
+        history:messages.slice(-10)
+      }})
+      if(error){
+        const status = (error as {context?:Response}).context?.status
+        setError(status===404
+          ? (lang==='es'?'El servicio de IA todavía no está instalado. Contacta al administrador.':'AI service is not deployed yet. Contact your administrator.')
+          : (lang==='es'?'No se pudo conectar con Oculivo AI. Inténtalo de nuevo.':'Unable to connect to Oculivo AI. Please try again.'))
+      }else{
+        const answer=String(data?.answer||data?.message||data?.content||'').trim()
+        if(answer)setMessages(v=>[...v,{role:'assistant',content:answer}])
+        else setError(lang==='es'?'El asistente no devolvió una respuesta.':'The assistant returned no response.')
+      }
+    } catch {
+      setError(lang==='es'?'Error de conexión. Inténtalo de nuevo.':'Connection error. Please try again.')
+    } finally {
+      setBusy(false)
     }
-    setBusy(false)
   }
 
   return <>
