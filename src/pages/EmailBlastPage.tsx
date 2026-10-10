@@ -7,7 +7,7 @@ const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms))
 const emailOk=(value:unknown)=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value??'').trim())
 const suppressed=(row:Patient)=>Boolean(row.email_opt_out||row.marketing_opt_out||row.do_not_email||row.unsubscribed||row.email_suppressed)
 const nameOf=(row:Patient)=>[row.first_name,row.last_name].filter(Boolean).join(' ').trim()||String(row.email||'Patient')
-function merge(value:string,row:Patient){const name=nameOf(row);return value.replaceAll('{{name}}',name).replaceAll('{{first_name}}',String(row.first_name||name.split(/\s+/)[0]||'')).replaceAll('{{last_name}}',String(row.last_name||'')).replaceAll('{{email}}',String(row.email||''))}
+function merge(value:string,row:Patient){const name=nameOf(row);return value.split('{{name}}').join(name).split('{{first_name}}').join(String(row.first_name||name.split(/\s+/)[0]||'')).split('{{last_name}}').join(String(row.last_name||'')).split('{{email}}').join(String(row.email||''))}
 
 export default function EmailBlastPage({lang}:{lang:'en'|'es'}){
   const orgId=localStorage.getItem('oculivo-org-id')||''
