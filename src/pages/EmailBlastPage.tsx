@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Send, TestTube2 } from 'lucide-react'
+import { Send } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 type Patient={id:string;first_name:string|null;last_name:string|null;email:string|null;[key:string]:unknown}
@@ -87,7 +87,7 @@ export default function EmailBlastPage({lang}:{lang:'en'|'es'}){
           <label style={{display:'grid',gap:6,marginBottom:14}}><strong>{lang==='es'?'Asunto':'Subject'}</strong><input value={subject} onChange={e=>setSubject(e.target.value)} placeholder={lang==='es'?'Asunto — admite variables':'Subject — supports merge fields'}/></label>
           <label style={{display:'grid',gap:6}}><strong>{lang==='es'?'Mensaje':'Message'}</strong><textarea rows={14} value={message} onChange={e=>setMessage(e.target.value)} placeholder={'Hi {{first_name}},\n\nYour message here…'}/></label>
           <p className="inbox-readonly-note">{lang==='es'?'Variables: {{first_name}}, {{last_name}}, {{name}}, {{email}}. No incluyas datos clínicos ni otra PHI en correos de marketing.':'Merge fields: {{first_name}}, {{last_name}}, {{name}}, {{email}}. Do not include clinical details or other PHI in marketing email.'}</p>
-          <div style={{display:'flex',gap:8,marginTop:14}}><input style={{flex:1}} value={testEmail} onChange={e=>setTestEmail(e.target.value)} placeholder={lang==='es'?'Correo de prueba':'Test email address'}/><button className="refresh-button" disabled={sending} onClick={()=>void sendTest()}><TestTube2 size={14}/>{lang==='es'?'Prueba':'Test'}</button><button className="wf-primary" disabled={sending||!selected.size} onClick={()=>void sendBlast()}><Send size={15}/>{sending?(lang==='es'?'Enviando…':'Sending…'):(lang==='es'?'Enviar':'Send Blast')}</button></div>
+          <div style={{display:'flex',gap:8,marginTop:14}}><input style={{flex:1}} value={testEmail} onChange={e=>setTestEmail(e.target.value)} placeholder={lang==='es'?'Correo de prueba':'Test email address'}/><button className="refresh-button" disabled={sending} onClick={()=>void sendTest()}><Send size={14}/>{lang==='es'?'Prueba':'Test'}</button><button className="wf-primary" disabled={sending||!selected.size} onClick={()=>void sendBlast()}><Send size={15}/>{sending?(lang==='es'?'Enviando…':'Sending…'):(lang==='es'?'Enviar':'Send Blast')}</button></div>
         </div>
       </div>
     </div>
