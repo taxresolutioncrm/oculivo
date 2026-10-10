@@ -431,3 +431,25 @@ body{font-size:var(--crm-body-font)}
 .ai-compose button{border-radius:11px;min-height:46px;cursor:pointer}
 .ai-compose button:not(:disabled):hover{background:#8865ed}
 @media(max-width:760px){.ai-drawer{width:calc(100vw - 16px)}}
+
+
+/* Oculivo CRM readability pass — preserve existing colors, layout and identity. */
+.sidebar .practice-switch span,.sidebar .help-card small,.sidebar .user-chip span{font-size:11px;line-height:1.4}
+.sidebar .practice-switch strong,.sidebar .help-card strong,.sidebar .user-chip strong{font-size:13px;line-height:1.45}
+.sidebar .nav-section-label{font-size:11px;line-height:1.4}
+.topbar .lang-toggle button{font-size:12px}
+.topbar .secondary-action,.topbar .new-patient{font-size:13px}
+.page .date-kicker{font-size:11px;line-height:1.5}
+.page .location-button{font-size:12px}
+.page .metric-card p,.page .panel-title-row p,.page .inbox-empty p{font-size:12px;line-height:1.55}
+.page .panel-title-row h2,.page .inbox-empty strong{font-size:15px}
+.page .table-head,.page .tiny-count,.page .panel-title-row a{font-size:11px}
+.page .empty-row,.page .patient-empty strong{font-size:13px}
+.page .patient-empty p{font-size:12px}
+.page .ready-pill{font-size:11px}
+.ai-launcher{font-size:13px}
+.ai-drawer :is(button,textarea){font-family:inherit}
+@media(max-width:760px){
+ .sidebar .practice-switch strong,.sidebar .user-chip strong{font-size:13px}
+ .topbar .new-patient{font-size:0}
+}
