@@ -263,7 +263,7 @@ function Shell({session}:{session:Session}){
       <Routes><Route path="/" element={<LiveOverview session={session} lang={lang}/>}/><Route path="/email-blast" element={canAccessPath('/email-blast',selectedOrg?.role||'')?<EmailBlastPage lang={lang}/>:<Navigate to="/" replace/>}/><Route path="/esign" element={canAccessPath('/esign',selectedOrg?.role||'')?<ESignaturesPage lang={lang}/>:<Navigate to="/" replace/>}/>{Object.entries(moduleCopy[lang]).map(([path,[title,description]])=><Route key={path} path={path} element={canAccessPath(path,selectedOrg?.role||'')?<LiveModulePage path={path} title={title} description={description} session={session} lang={lang}/>:<Navigate to="/" replace/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>
     </div>
     <SearchOverlay session={session} open={searchOpen} onClose={()=>setSearchOpen(false)} lang={lang} role={selectedOrg?.role||''}/>
-    <AssistantDrawer session={session} lang={lang} open={assistantOpen} onClose={()=>setAssistantOpen(false)}/>
+    <AssistantDrawer session={session} lang={lang} open={assistantOpen} organizationId={selectedOrg?.id || ""} onClose={()=>setAssistantOpen(false)}/>
     {open&&<div className="overlay" onClick={()=>setOpen(false)}/>}
   </div>
 }
