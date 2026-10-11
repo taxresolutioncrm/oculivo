@@ -216,6 +216,43 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
   useEffect(()=>{setChannelId('');setMessages([]);void loadChannels()},[org?.organizationId])
   useEffect(()=>{void loadMessages(channelId)},[channelId,org?.organizationId])
 
+  // Live updates are scoped to the active practice and channel.
+  // PostgreSQL RLS remains the authoritative authorization boundary.
+  useEffect(()=>{
+    if (!org?.organizationId || !channelId) return
+    let active = true
+    let refreshTimer:ReturnType<typeof setTimeout>|undefined
+    const subscription = supabase
+      .channel(`oculivo-team-messages-${org.organizationId}-${channelId}`)
+      .on('postgres_changes',{
+        event:'*',
+        schema:'public',
+        table:'team_messages',
+        filter:`channel_id=eq.${channelId}`
+      },()=>{
+        if (!active) return
+        if (refreshTimer) clearTimeout(refreshTimer)
+        refreshTimer=setTimeout(()=>{if(active)void loadMessages(channelId)},180)
+      })
+      .subscribe()
+    return ()=>{
+      active = false
+      if (refreshTimer) clearTimeout(refreshTimer)
+      void supabase.removeChannel(subscription)
+    }
+  },[org?.organizationId,channelId])
+
+  // Channel memberships may change between visits. Reload the accessible
+  // channel inventory when the tab regains focus without requiring an
+  // additional publication on team_channels.
+  useEffect(()=>{
+    if (!org?.organizationId) return
+    const refresh = ()=>{ if (document.visibilityState === 'visible') void loadChannels() }
+    document.addEventListener('visibilitychange',refresh)
+    return ()=>document.removeEventListener('visibilitychange',refresh)
+  },[org?.organizationId])
+
+
   async function createChannel(name='general') {
     if (!org || !['owner','admin'].includes(org?.role||'')) return
     const clean=name.trim().toLowerCase().replace(/[^a-z0-9-_ ]+/g,'').replace(/\s+/g,'-').slice(0,40)
@@ -318,19 +355,20 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
   const [error,setError] = useState('')
 
   async function load() {
-    if (!org) return
+    if (!org) {setLoading(false);return}
     setLoading(true); setError('')
     const canReadCommunications=['owner','admin','manager','provider','staff'].includes(org.role)
-    const [a,p,c,t,arows,patients] = await Promise.all([
+    const [a,p,c,t,arows] = await Promise.all([
       supabase.from('appointments').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
       supabase.from('patients').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
       canReadCommunications
         ? supabase.from('communication_threads').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId)
         : Promise.resolve({count:0,error:null}),
       supabase.from('time_entries').select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId),
-      supabase.from('appointments').select('id,patient_id,starts_at,ends_at,status,appointment_type,room').eq('organization_id',org.organizationId).order('starts_at',{ascending:true}).limit(8),
-      supabase.from('patients').select('id,first_name,last_name').eq('organization_id',org.organizationId).limit(500),
+      supabase.from('appointments').select('id,patient_id,starts_at,ends_at,status,appointment_type,room').eq('organization_id',org.organizationId).gte('starts_at',new Date().toISOString()).order('starts_at',{ascending:true}).limit(8),
     ])
+    const ids = [...new Set((arows.data||[]).map((row:any)=>String(row.patient_id||'')).filter(Boolean))]
+    const patients = ids.length ? await supabase.from('patients').select('id,first_name,last_name').eq('organization_id',org.organizationId).in('id',ids) : {data:[],error:null}
     const firstError = a.error || p.error || c.error || t.error || arows.error || patients.error
     if (firstError) setError(firstError.message)
     setStats({appointments:a.count||0,patients:p.count||0,conversations:c.count||0,timeEntries:t.count||0})
