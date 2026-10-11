@@ -151,7 +151,8 @@ function SearchOverlay({session,open,onClose,lang,role}:{session:Session;open:bo
 
   useEffect(()=>{if(!open){setQuery('');setHits([]);setError('')}},[open])
   useEffect(()=>{
-    if(!open||query.trim().length<2){setHits([]);return}
+    let active=true
+    if(!open||query.trim().length<2){setHits([]);setLoading(false);return}
     const handle=setTimeout(async()=>{
       setLoading(true);setError('')
       const memberships=await supabase.from('organization_memberships').select('organization_id,is_active').eq('user_id',session.user.id).eq('is_active',true)
@@ -191,7 +192,7 @@ function SearchOverlay({session,open,onClose,lang,role}:{session:Session;open:bo
       setHits(results.flatMap(x=>x.hits).slice(0,30))
       setLoading(false)
     },250)
-    return()=>clearTimeout(handle)
+    return()=>{active=false;clearTimeout(handle)}
   },[query,open,session.user.id,role,lang])
 
   if(!open)return null
