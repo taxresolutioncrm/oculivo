@@ -351,7 +351,7 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
   const [error,setError] = useState('')
 
   async function load() {
-    if (!org) return
+    if (!org) {setLoading(false);return}
     setLoading(true); setError('')
     const canReadCommunications=['owner','admin','manager','provider','staff'].includes(org.role)
     const [a,p,c,t,arows] = await Promise.all([
