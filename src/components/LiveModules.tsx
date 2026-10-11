@@ -221,6 +221,7 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
   useEffect(()=>{
     if (!org?.organizationId || !channelId) return
     let active = true
+    let refreshTimer:ReturnType<typeof setTimeout>|undefined
     const subscription = supabase
       .channel(`oculivo-team-messages-${org.organizationId}-${channelId}`)
       .on('postgres_changes',{
@@ -229,11 +230,14 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
         table:'team_messages',
         filter:`channel_id=eq.${channelId}`
       },()=>{
-        if (active) void loadMessages(channelId)
+        if (!active) return
+        if (refreshTimer) clearTimeout(refreshTimer)
+        refreshTimer=setTimeout(()=>{if(active)void loadMessages(channelId)},180)
       })
       .subscribe()
     return ()=>{
       active = false
+      if (refreshTimer) clearTimeout(refreshTimer)
       void supabase.removeChannel(subscription)
     }
   },[org?.organizationId,channelId])
