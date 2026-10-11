@@ -173,6 +173,7 @@ function SearchOverlay({session,open,onClose,lang,role}:{session:Session;open:bo
         supabase.from('documents').select('id,file_name,document_type,created_at').eq('organization_id',org).limit(60),
         supabase.from('support_tickets').select('id,subject,category,priority,status,created_at').eq('organization_id',org).limit(60)
       ])
+      if(!active)return
       const packs=[
         {table:'patients',route:'/patients',label:lang==='es'?'Pacientes':'Patients',result:patients},
         {table:'appointments',route:'/schedule',label:lang==='es'?'Agenda':'Schedule',result:appointments},
