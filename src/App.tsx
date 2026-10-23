@@ -10,6 +10,8 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { LiveModulePage, LiveOverview } from './components/LiveModules'
 import AssistantDrawer from './components/AssistantDrawer'
+import ReleaseHistory from './components/ReleaseHistory'
+import { release } from './release'
 import ESignaturesPage from './pages/ESignaturesPage'
 import PublicSignPage from './pages/PublicSignPage'
 import EmailBlastPage from './pages/EmailBlastPage'
@@ -210,6 +212,7 @@ function Shell({session}:{session:Session}){
   const [open,setOpen]=useState(false)
   const [searchOpen,setSearchOpen]=useState(false)
   const [assistantOpen,setAssistantOpen]=useState(false)
+  const [releaseOpen,setReleaseOpen]=useState(false)
   const [orgMenuOpen,setOrgMenuOpen]=useState(false)
   const [orgs,setOrgs]=useState<OrgOption[]>([])
   const [selectedOrgId,setSelectedOrgId]=useState(()=>localStorage.getItem('oculivo-org-id')||'')
@@ -257,6 +260,7 @@ function Shell({session}:{session:Session}){
       <div className="sidebar-spacer"/>
       <button className="sidebar-ai" onClick={()=>setAssistantOpen(true)}><Sparkles size={16}/><div><strong>{lang==='es'?'Preguntar a Oculivo':'Ask Oculivo'}</strong><small>{lang==='es'?'Asistente de IA':'AI practice assistant'}</small></div></button>
       <button type="button" className="help-card" onClick={()=>navigate('/support')}><span>?</span><div><strong>{t.needHelp}</strong><small>{t.contactSupport}</small></div></button>
+      <button type="button" className="oculivo-version" onClick={()=>setReleaseOpen(true)} aria-label="Open Oculivo release history">{release.product} · v{release.version}</button>
       <div className="sidebar-foot"><div className="user-chip"><div className="avatar">{name.slice(0,1).toUpperCase()}</div><div><strong>{session.user.email||'Practice owner'}</strong><span>{selectedOrg?.role|| (lang==='es'?'Usuario autenticado':'Authenticated user')}</span></div></div><button className="logout-button" onClick={()=>void signOut()} aria-label={lang==='es'?'Cerrar sesión':'Sign out'} title={lang==='es'?'Cerrar sesión':'Sign out'}><LogOut size={16}/></button></div>
     </aside>
     <div className="app-main">
@@ -265,6 +269,7 @@ function Shell({session}:{session:Session}){
       <Routes><Route path="/" element={<LiveOverview session={session} lang={lang}/>}/><Route path="/email-blast" element={canAccessPath('/email-blast',selectedOrg?.role||'')?<EmailBlastPage lang={lang}/>:<Navigate to="/" replace/>}/><Route path="/esign" element={canAccessPath('/esign',selectedOrg?.role||'')?<ESignaturesPage lang={lang}/>:<Navigate to="/" replace/>}/>{Object.entries(moduleCopy[lang]).map(([path,[title,description]])=><Route key={path} path={path} element={canAccessPath(path,selectedOrg?.role||'')?<LiveModulePage path={path} title={title} description={description} session={session} lang={lang}/>:<Navigate to="/" replace/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>
     </div>
     <SearchOverlay session={session} open={searchOpen} onClose={()=>setSearchOpen(false)} lang={lang} role={selectedOrg?.role||''}/>
+    <ReleaseHistory open={releaseOpen} onClose={()=>setReleaseOpen(false)}/>
     <AssistantDrawer session={session} lang={lang} open={assistantOpen} organizationId={selectedOrg?.id || ""} onClose={()=>setAssistantOpen(false)}/>
     {open&&<div className="overlay" onClick={()=>setOpen(false)}/>}
   </div>
