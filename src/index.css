@@ -478,3 +478,18 @@ body{font-size:var(--crm-body-font)}
 .ai-compose textarea{font-size:15px!important;line-height:1.45!important;min-height:52px!important;max-height:136px;resize:vertical;border-radius:12px!important}
 .ai-compose button{min-height:52px!important;height:52px!important;width:48px!important;border-radius:12px!important}
 @media(max-width:520px){.ai-drawer{width:100vw!important;max-width:100vw!important}.ai-thread{padding:18px 15px!important}.ai-compose{padding:12px!important}}
+
+/* Version history — fixed viewport portal, outside the sidebar stacking context. */
+.oculivo-version{display:block;width:100%;border:0;background:transparent;color:#aeb5cb;text-align:left;padding:10px 17px;cursor:pointer;font-size:11px;line-height:1.4;flex:0 0 auto}
+.oculivo-version:hover,.oculivo-version:focus-visible{color:#fff;text-decoration:underline}
+.oculivo-release-overlay{position:fixed;inset:0;z-index:2147483647;background:rgba(8,12,29,.76);display:flex;align-items:center;justify-content:center;padding:18px}
+.oculivo-release-dialog{background:#fff;color:#1d2635;width:min(530px,100%);max-height:min(85vh,720px);overflow-y:auto;border-radius:16px;box-shadow:0 20px 90px rgba(0,0,0,.38)}
+.oculivo-release-header{padding:22px 24px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:18px;border-bottom:1px solid #e8ebf2}
+.oculivo-release-header h2{margin:8px 0 0;font-size:22px;line-height:1.25}
+.oculivo-release-header button{width:38px;height:38px;border:0;border-radius:9px;background:#f0f2f7;color:#293148;cursor:pointer;display:grid;place-items:center;flex-shrink:0}
+.oculivo-release-eyebrow{font-size:10px;font-weight:800;letter-spacing:.09em;color:#6454a3}
+.oculivo-release-content{padding:18px 24px 26px}
+.oculivo-release-content p{font-weight:700;font-size:15px;margin:0 0 6px}
+.oculivo-release-date{color:#6a7283;font-size:12px}
+.oculivo-release-content ul{padding-left:22px;margin:19px 0 0;display:grid;gap:11px;font-size:14px;line-height:1.5}
+@media(max-width:520px){.oculivo-release-header{padding:18px}.oculivo-release-content{padding:18px}}
