@@ -64,67 +64,62 @@ function rowMeta(row: Row) {
   return bits.join(' · ')
 }
 
-function useOrg(session: Session) {
-  const [org,setOrg] = useState<OrgContext | null>(null)
-  const [error,setError] = useState('')
-  const [loading,setLoading] = useState(true)
-  const [selectionVersion,setSelectionVersion] = useState(0)
-
-  useEffect(() => {
-    const onOrgChange = () => setSelectionVersion((v) => v + 1)
-    window.addEventListener('oculivo-org-change', onOrgChange)
-    return () => window.removeEventListener('oculivo-org-change', onOrgChange)
-  }, [])
-
-  useEffect(() => {
-    let active = true
-    ;(async () => {
-      setLoading(true)
-      setError('')
-      const memberships = await supabase
-        .from('organization_memberships')
-        .select('organization_id,role,is_active')
-        .eq('user_id', session.user.id)
-        .eq('is_active', true)
-
-      if (!active) return
-      if (memberships.error || !memberships.data?.length) {
-        setOrg(null)
-        setError(memberships.error?.message || (document.documentElement.lang==='es'?'No se encontró una membresía activa de Oculivo para esta cuenta.':'No active Oculivo organization membership was found for this account.'))
-        setLoading(false)
-        return
-      }
-
-      const preferred = localStorage.getItem('oculivo-org-id') || ''
-      const selected = memberships.data.find((m) => String(m.organization_id) === preferred) || memberships.data[0]
-      const organizationId = String(selected.organization_id)
-
-      if (preferred !== organizationId) localStorage.setItem('oculivo-org-id', organizationId)
-
-      const organization = await supabase
-        .from('organizations')
-        .select('name')
-        .eq('id', organizationId)
-        .maybeSingle()
-
-      if (!active) return
-      if (organization.error) {
-        setError(organization.error.message)
-        setLoading(false)
-        return
-      }
-
-      setError('')
-      setOrg({
-        organizationId,
-        role: text(selected.role) || 'member',
-        organizationName: text(organization.data?.name) || (document.documentElement.lang==='es'?'Tu consultorio':'Your practice'),
-      })
-      setLoading(false)
-    })()
-    return () => { active = false }
-  }, [session.user.id, selectionVersion])
-
+// Practice metadata is shared across routed pages. In-flight requests are coalesced,
+// while office switches invalidate the cache; never share entries between users.
+const practiceCache = new Map<string,{value:OrgContext;cachedAt:number}>()
+const practiceInflight = new Map<string,Promise<OrgContext>>()
+const PRACTICE_TTL_MS = 120_000
+async function resolvePractice(userId:string,preferred:string):Promise<OrgContext>{
+  const key=userId+':'+preferred
+  const cached=practiceCache.get(key)
+  if(cached && Date.now()-cached.cachedAt<PRACTICE_TTL_MS)return cached.value
+  const pending=practiceInflight.get(key)
+  if(pending)return pending
+  const request=(async()=>{
+    const memberships=await supabase.from('organization_memberships')
+      .select('organization_id,role,is_active').eq('user_id',userId).eq('is_active',true)
+    if(memberships.error)throw new Error(memberships.error.message)
+    if(!memberships.data?.length)throw new Error('No active Oculivo organization membership was found for this account.')
+    const selected=memberships.data.find(m=>String(m.organization_id)===preferred)||memberships.data[0]
+    const organizationId=String(selected.organization_id)
+    const organization=await supabase.from('organizations').select('name').eq('id',organizationId).maybeSingle()
+    if(organization.error)throw new Error(organization.error.message)
+    const value:OrgContext={organizationId,role:text(selected.role)||'member',organizationName:text(organization.data?.name)||'Your practice'}
+    practiceCache.set(key,{value,cachedAt:Date.now()})
+    return value
+  })()
+  practiceInflight.set(key,request)
+  try{return await request}finally{practiceInflight.delete(key)}
+}
+function useOrg(session:Session){
+  const [selectionVersion,setSelectionVersion]=useState(0)
+  const preferred=localStorage.getItem('oculivo-org-id')||''
+  const cacheKey=session.user.id+':'+preferred
+  const initial=practiceCache.get(cacheKey)
+  const [org,setOrg]=useState<OrgContext|null>(initial?.value||null)
+  const [error,setError]=useState('')
+  const [loading,setLoading]=useState(!initial)
+  useEffect(()=>{
+    const change=()=>{practiceCache.clear();setOrg(null);setSelectionVersion(v=>v+1)}
+    window.addEventListener('oculivo-org-change',change)
+    return()=>window.removeEventListener('oculivo-org-change',change)
+  },[])
+  useEffect(()=>{
+    let active=true
+    const wanted=localStorage.getItem('oculivo-org-id')||''
+    const cache=practiceCache.get(session.user.id+':'+wanted)
+    if(cache&&Date.now()-cache.cachedAt<PRACTICE_TTL_MS){setOrg(cache.value);setError('');setLoading(false);return()=>{active=false}}
+    setLoading(true);setError('')
+    void resolvePractice(session.user.id,wanted).then(value=>{
+      if(!active)return
+      if(wanted!==value.organizationId)localStorage.setItem('oculivo-org-id',value.organizationId)
+      setOrg(value);setLoading(false)
+    }).catch(err=>{
+      if(!active)return
+      setOrg(null);setError(err instanceof Error?err.message:'Practice unavailable');setLoading(false)
+    })
+    return()=>{active=false}
+  },[session.user.id,selectionVersion])
   return {org,error,loading}
 }
 
