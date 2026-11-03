@@ -15,30 +15,114 @@ const localized=(v:any,lang:Lang)=>{
  return m[k]||raw
 }
 
+// Resolve active practice membership once per user/office; do not reuse a
+// previous office's permissions while a different practice is being validated.
+const accessCache=new Map<string,{role:string;at:number}>()
+const accessInflight=new Map<string,Promise<{orgId:string;role:string}>>()
+const ACCESS_TTL=60_000
+async function resolveCommsAccess(userId:string,requested:string){
+  const cacheKey=userId+':'+requested
+  const cached=accessCache.get(cacheKey)
+  if(requested&&cached&&Date.now()-cached.at<ACCESS_TTL)return {orgId:requested,role:cached.role}
+  const inflight=accessInflight.get(cacheKey)
+  if(inflight)return inflight
+  const request=(async()=>{
+    const query=supabase.from('organization_memberships').select('organization_id,role,is_active').eq('user_id',userId).eq('is_active',true)
+    const result=requested?await query.eq('organization_id',requested).maybeSingle():await query.limit(1).maybeSingle()
+    if(result.error)throw new Error(result.error.message)
+    if(!result.data?.organization_id)throw new Error('No active practice membership is available for this account.')
+    const orgId=String(result.data.organization_id),role=String(result.data.role||'')
+    accessCache.set(userId+':'+orgId,{role,at:Date.now()})
+    return {orgId,role}
+  })()
+  accessInflight.set(cacheKey,request)
+  try{return await request}finally{accessInflight.delete(cacheKey)}
+}
 function useOrgAccess(session:Session){
-  const [orgId,setOrgId]=useState(localStorage.getItem('oculivo-org-id')||'')
-  const [role,setRole]=useState('')
-  useEffect(()=>{const f=(e:any)=>setOrgId(String(e?.detail||localStorage.getItem('oculivo-org-id')||''));window.addEventListener('oculivo-org-change',f);return()=>window.removeEventListener('oculivo-org-change',f)},[])
-  useEffect(()=>{let active=true;(async()=>{const q=supabase.from('organization_memberships').select('organization_id,role,is_active').eq('user_id',session.user.id).eq('is_active',true);const r=orgId?await q.eq('organization_id',orgId).maybeSingle():await q.limit(1).maybeSingle();if(!active)return;if(r.data?.organization_id){const id=String(r.data.organization_id);localStorage.setItem('oculivo-org-id',id);setOrgId(id);setRole(String(r.data.role||''))}else setRole('')})();return()=>{active=false}},[session.user.id,orgId])
-  return {orgId,role,canCommunicate:['owner','admin','manager','provider','staff'].includes(role)}
+  const [requested,setRequested]=useState(localStorage.getItem('oculivo-org-id')||'')
+  const [resolved,setResolved]=useState<{orgId:string;role:string}>({orgId:'',role:''})
+  const [accessError,setAccessError]=useState('')
+  useEffect(()=>{
+    const change=(e:Event)=>{
+      const next=String((e as CustomEvent<string>).detail||localStorage.getItem('oculivo-org-id')||'')
+      accessCache.clear()
+      setResolved({orgId:'',role:''})
+      setRequested(next)
+    }
+    window.addEventListener('oculivo-org-change',change)
+    return()=>window.removeEventListener('oculivo-org-change',change)
+  },[])
+  useEffect(()=>{
+    let alive=true
+    setResolved({orgId:'',role:''});setAccessError('')
+    void resolveCommsAccess(session.user.id,requested).then(value=>{
+      if(!alive)return
+      if(!requested)localStorage.setItem('oculivo-org-id',value.orgId)
+      setResolved(value)
+    }).catch(err=>{
+      if(alive){setResolved({orgId:'',role:''});setAccessError(err instanceof Error?err.message:'Practice access unavailable')}
+    })
+    return()=>{alive=false}
+  },[session.user.id,requested])
+  return {orgId:resolved.orgId,role:resolved.role,accessError,canCommunicate:['owner','admin','manager','provider','staff'].includes(resolved.role)}
 }
 
 export function InboxComms({session,lang}:{session:Session;lang:Lang}){
- const {orgId,canCommunicate}=useOrgAccess(session),[threads,setThreads]=useState<Row[]>([]),[threadId,setThreadId]=useState(''),[messages,setMessages]=useState<Row[]>([]),[body,setBody]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
- async function loadThreads(){if(!orgId)return;const r=await supabase.from('communication_threads').select('*').eq('organization_id',orgId).order('last_message_at',{ascending:false,nullsFirst:false}).limit(200);if(r.error){setError(r.error.message);return}setThreads(r.data||[]);if(!threadId&&r.data?.[0]?.id)setThreadId(String(r.data[0].id))}
- async function loadMessages(id=threadId){if(!orgId||!id){setMessages([]);return}const r=await supabase.from('communication_messages').select('*').eq('organization_id',orgId).eq('thread_id',id).order('created_at',{ascending:true}).limit(500);if(r.error){setError(r.error.message);return}setMessages(r.data||[]);const unread=(r.data||[]).filter(x=>x.direction==='inbound'&&!x.is_read).map(x=>x.id);if(canCommunicate&&unread.length)await supabase.from('communication_messages').update({is_read:true}).eq('organization_id',orgId).in('id',unread)}
- useEffect(()=>{void loadThreads()},[orgId])
- useEffect(()=>{void loadMessages(threadId)},[threadId,orgId])
+ const {orgId,canCommunicate,accessError}=useOrgAccess(session),[threads,setThreads]=useState<Row[]>([]),[threadId,setThreadId]=useState(''),[messages,setMessages]=useState<Row[]>([]),[body,setBody]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
+ const scopeRef=useRef(orgId),threadsRequest=useRef(0),messagesRequest=useRef(0)
+ scopeRef.current=orgId
+ async function loadThreads(){
+  const scope=orgId,request=++threadsRequest.current
+  if(!scope){setThreads([]);setThreadId('');return}
+  const r=await supabase.from('communication_threads').select('*').eq('organization_id',scope).order('last_message_at',{ascending:false,nullsFirst:false}).limit(200)
+  if(scopeRef.current!==scope||request!==threadsRequest.current)return
+  if(r.error){setError(r.error.message);return}
+  const next=r.data||[]
+  setError('');setThreads(next)
+  setThreadId(current=>next.some(x=>String(x.id)===current)?current:String(next[0]?.id||''))
+ }
+ async function loadMessages(id=threadId){
+  const scope=orgId,request=++messagesRequest.current
+  if(!scope||!id){setMessages([]);return}
+  const r=await supabase.from('communication_messages').select('*').eq('organization_id',scope).eq('thread_id',id).order('created_at',{ascending:true}).limit(500)
+  if(scopeRef.current!==scope||request!==messagesRequest.current)return
+  if(r.error){setError(r.error.message);return}
+  setError('');setMessages(r.data||[])
+  const unread=(r.data||[]).filter(x=>x.direction==='inbound'&&!x.is_read).map(x=>x.id)
+  if(canCommunicate&&unread.length)await supabase.from('communication_messages').update({is_read:true}).eq('organization_id',scope).in('id',unread)
+ }
+ useEffect(()=>{
+   threadsRequest.current++;messagesRequest.current++
+   setThreads([]);setThreadId('');setMessages([]);setBody('');setError('')
+   if(orgId)void loadThreads()
+   return()=>{threadsRequest.current++;messagesRequest.current++}
+ },[orgId])
+ useEffect(()=>{setMessages([]);if(threadId)void loadMessages(threadId);return()=>{messagesRequest.current++}},[threadId,orgId])
  const active=threads.find(x=>String(x.id)===threadId)
  async function send(e:any){e.preventDefault();if(!active||!body.trim()||busy||!canCommunicate)return;setBusy(true);setError('');const channel=String(active.channel);const fn=channel==='sms'?'send-sms':channel==='email'?'send-email':'';if(!fn){setError(lang==='es'?'Este canal no admite respuestas desde la bandeja.':'This channel does not support inbox replies.');setBusy(false);return}const r=await supabase.functions.invoke(fn,{body:{thread_id:threadId,body:body.trim(),subject:active.subject||undefined}});if(r.error||r.data?.error){setError(r.data?.error||r.error?.message||(lang==='es'?'No se pudo enviar el mensaje.':'Send failed'))}else{setBody('');await Promise.all([loadMessages(threadId),loadThreads()])}setBusy(false)}
- return <section><div className="wf-head"><div><h2>{lang==='es'?'Bandeja unificada':'Unified inbox'}</h2><p>{lang==='es'?'Correo y SMS por consultorio':'Practice-scoped email and SMS'}</p></div><button className="refresh-button" onClick={()=>void loadThreads()}><RefreshCw size={14}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>{error&&<div className="wf-alert">{error}</div>}<div className="inbox-workspace"><aside className="inbox-thread-list">{!threads.length&&<div className="inbox-empty"><MessageSquareText size={20}/><strong>{lang==='es'?'Sin conversaciones todavía':'No conversations yet'}</strong><p>{lang==='es'?'Los hilos de correo y SMS aparecerán aquí.':'Email and SMS threads will appear here.'}</p></div>}{threads.map(x=><button key={x.id} className={threadId===String(x.id)?'active':''} onClick={()=>setThreadId(String(x.id))}><strong>{x.subject||x.phone_number||x.email_address||(lang==='es'?'Conversación':'Conversation')}</strong><span>{localized(x.channel,lang)} · {localized(x.status,lang)}</span></button>)}</aside><div className="inbox-thread"><header><div><h3>{active?.subject||active?.phone_number||active?.email_address||(lang==='es'?'Conversación':'Conversation')}</h3><span>{localized(active?.channel||'',lang)}</span></div></header><div className="inbox-messages">{messages.map(m=><article key={m.id} className={m.direction==='outbound'?'message-bubble outbound':'message-bubble'}><div><strong>{m.sender_name||(m.direction==='outbound'?(lang==='es'?'Consultorio':'Practice'):(lang==='es'?'Paciente':'Patient'))}</strong><span>{new Date(m.created_at).toLocaleString()}</span></div><p>{m.body}</p></article>)}</div>{active&&canCommunicate&&(String(active.channel)==='sms'||String(active.channel)==='email')?<form className="inbox-compose" onSubmit={send}><textarea rows={2} value={body} onChange={e=>setBody(e.target.value)} placeholder={lang==='es'?'Escribe una respuesta…':'Write a reply…'}/><button type="submit" disabled={busy||!body.trim()}><Send size={15}/>{busy?(lang==='es'?'Enviando…':'Sending…'):(lang==='es'?'Enviar':'Send')}</button></form>:<div className="inbox-readonly-note">{!canCommunicate?(lang==='es'?'Tu rol tiene acceso de solo lectura.':'Your role has read-only access.'):(lang==='es'?'Selecciona un hilo de correo o SMS para responder.':'Select an email or SMS thread to reply.')}</div>}</div></div></section>
+ return <section><div className="wf-head"><div><h2>{lang==='es'?'Bandeja unificada':'Unified inbox'}</h2><p>{lang==='es'?'Correo y SMS por consultorio':'Practice-scoped email and SMS'}</p></div><button className="refresh-button" onClick={()=>void loadThreads()}><RefreshCw size={14}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>{(error||accessError)&&<div className="wf-alert" role="alert">{error||accessError}</div>}<div className="inbox-workspace"><aside className="inbox-thread-list">{!threads.length&&<div className="inbox-empty"><MessageSquareText size={20}/><strong>{lang==='es'?'Sin conversaciones todavía':'No conversations yet'}</strong><p>{lang==='es'?'Los hilos de correo y SMS aparecerán aquí.':'Email and SMS threads will appear here.'}</p></div>}{threads.map(x=><button key={x.id} className={threadId===String(x.id)?'active':''} onClick={()=>setThreadId(String(x.id))}><strong>{x.subject||x.phone_number||x.email_address||(lang==='es'?'Conversación':'Conversation')}</strong><span>{localized(x.channel,lang)} · {localized(x.status,lang)}</span></button>)}</aside><div className="inbox-thread"><header><div><h3>{active?.subject||active?.phone_number||active?.email_address||(lang==='es'?'Conversación':'Conversation')}</h3><span>{localized(active?.channel||'',lang)}</span></div></header><div className="inbox-messages">{messages.map(m=><article key={m.id} className={m.direction==='outbound'?'message-bubble outbound':'message-bubble'}><div><strong>{m.sender_name||(m.direction==='outbound'?(lang==='es'?'Consultorio':'Practice'):(lang==='es'?'Paciente':'Patient'))}</strong><span>{new Date(m.created_at).toLocaleString()}</span></div><p>{m.body}</p></article>)}</div>{active&&canCommunicate&&(String(active.channel)==='sms'||String(active.channel)==='email')?<form className="inbox-compose" onSubmit={send}><textarea rows={2} value={body} onChange={e=>setBody(e.target.value)} placeholder={lang==='es'?'Escribe una respuesta…':'Write a reply…'}/><button type="submit" disabled={busy||!body.trim()}><Send size={15}/>{busy?(lang==='es'?'Enviando…':'Sending…'):(lang==='es'?'Enviar':'Send')}</button></form>:<div className="inbox-readonly-note">{!canCommunicate?(lang==='es'?'Tu rol tiene acceso de solo lectura.':'Your role has read-only access.'):(lang==='es'?'Selecciona un hilo de correo o SMS para responder.':'Select an email or SMS thread to reply.')}</div>}</div></div></section>
 }
 
 export function PhoneOps({session,lang}:{session:Session;lang:Lang}){
- const {orgId,canCommunicate}=useOrgAccess(session),[threads,setThreads]=useState<Row[]>([]),[threadId,setThreadId]=useState(''),[status,setStatus]=useState<'idle'|'preparing'|'ringing'|'connected'|'ended'|'error'>('idle'),[destination,setDestination]=useState(''),[error,setError]=useState(''),[faxFile,setFaxFile]=useState<File|null>(null),[faxBusy,setFaxBusy]=useState(false),[faxMessage,setFaxMessage]=useState('')
+ const {orgId,canCommunicate,accessError}=useOrgAccess(session),[threads,setThreads]=useState<Row[]>([]),[threadId,setThreadId]=useState(''),[status,setStatus]=useState<'idle'|'preparing'|'ringing'|'connected'|'ended'|'error'>('idle'),[destination,setDestination]=useState(''),[error,setError]=useState(''),[faxFile,setFaxFile]=useState<File|null>(null),[faxBusy,setFaxBusy]=useState(false),[faxMessage,setFaxMessage]=useState('')
  const audioRef=useRef<HTMLAudioElement>(null),clientRef=useRef<any>(null),callRef=useRef<any>(null),messageIdRef=useRef(''),terminalRef=useRef(false)
- async function load(){if(!orgId)return;const r=await supabase.from('communication_threads').select('*').eq('organization_id',orgId).eq('channel','phone').order('last_message_at',{ascending:false,nullsFirst:false}).limit(200);if(r.error){setError(r.error.message);return}setThreads(r.data||[]);if(!threadId&&r.data?.[0]?.id)setThreadId(String(r.data[0].id))}
- useEffect(()=>{void load()},[orgId])
+ const phoneScope=useRef(orgId),phoneRequest=useRef(0)
+ phoneScope.current=orgId
+ async function load(){
+  const scope=orgId,request=++phoneRequest.current
+  if(!scope){setThreads([]);setThreadId('');return}
+  const r=await supabase.from('communication_threads').select('*').eq('organization_id',scope).eq('channel','phone').order('last_message_at',{ascending:false,nullsFirst:false}).limit(200)
+  if(phoneScope.current!==scope||request!==phoneRequest.current)return
+  if(r.error){setError(r.error.message);return}
+  const rows=r.data||[];setError('');setThreads(rows)
+  setThreadId(current=>rows.some(x=>String(x.id)===current)?current:String(rows[0]?.id||''))
+ }
+ useEffect(()=>{
+   phoneRequest.current++
+   setThreads([]);setThreadId('');setFaxFile(null);setFaxMessage('');setDestination('')
+   if(orgId)void load()
+   return()=>{phoneRequest.current++}
+ },[orgId])
  useEffect(()=>()=>{void cleanup()},[])
  async function cleanup(){try{await clientRef.current?.destroy?.()}catch{}clientRef.current=null;callRef.current=null;if(audioRef.current)audioRef.current.srcObject=null}
  async function report(action:string){if(!messageIdRef.current)return;await supabase.functions.invoke('phone-session',{body:{action,message_id:messageIdRef.current}})}
@@ -100,6 +184,6 @@ export function PhoneOps({session,lang}:{session:Session;lang:Lang}){
   finally{setFaxBusy(false)}
  }
  const active=threads.find(x=>String(x.id)===threadId),inCall=['preparing','ringing','connected'].includes(status)
- return <section><audio ref={audioRef} autoPlay playsInline/><div className="wf-head"><div><h2>{lang==='es'?'Teléfono':'Phone'}</h2><p>{lang==='es'?'Llamadas del consultorio desde el navegador':'Practice calls from your browser'}</p></div><button className="refresh-button" onClick={()=>void load()}><RefreshCw size={14}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>{error&&<div className="wf-alert">{error}</div>}<div className="phone-workspace"><aside className="inbox-thread-list">{!threads.length&&<div className="inbox-empty"><Phone size={20}/><strong>{lang==='es'?'Sin conversaciones telefónicas':'No phone conversations'}</strong><p>{lang==='es'?'Los hilos telefónicos aparecerán aquí cuando estén disponibles.':'Phone threads will appear here when available.'}</p></div>}{threads.map(x=><button key={x.id} className={threadId===String(x.id)?'active':''} onClick={()=>{setThreadId(String(x.id));setStatus('idle');setError('')}}><strong>{x.subject||x.phone_number||(lang==='es'?'Conversación telefónica':'Phone conversation')}</strong><span>{x.phone_number||''}</span></button>)}</aside><div className="phone-dialer-card"><div className={'phone-orb '+status}><Phone size={28}/></div><span className="date-kicker">{localized(status,lang).toUpperCase()}</span><h2>{active?.phone_number||destination|| (lang==='es'?'Selecciona un hilo':'Select a phone thread')}</h2><p>{status==='connected'?(lang==='es'?'Llamada conectada':'Call connected'):status==='ringing'?(lang==='es'?'Llamando…':'Ringing…'):status==='preparing'?(lang==='es'?'Preparando sesión segura…':'Preparing secure session…'):(lang==='es'?'Usa el micrófono de este navegador para llamar desde la identidad telefónica del consultorio.':'Uses this browser microphone and the practice phone identity.')}</p>{!inCall?<button className="wf-primary" disabled={!threadId||!canCommunicate} onClick={()=>void start()}><Phone size={16}/>{status==='ended'||status==='error'?(lang==='es'?'Llamar otra vez':'Call again'):(lang==='es'?'Iniciar llamada':'Start call')}</button>:<button className="wf-danger" disabled={status==='preparing'} onClick={()=>void hangup()}><PhoneOff size={16}/>{lang==='es'?'Colgar':'Hang up'}</button>}<div className="phone-mic-note"><Mic size={13}/>{!canCommunicate?(lang==='es'?'Tu rol tiene acceso de solo lectura.':'Your role has read-only access.'):(lang==='es'?'El navegador pedirá permiso para usar el micrófono.':'Your browser will ask for microphone permission.')}</div>
+ return <section><audio ref={audioRef} autoPlay playsInline/><div className="wf-head"><div><h2>{lang==='es'?'Teléfono':'Phone'}</h2><p>{lang==='es'?'Llamadas del consultorio desde el navegador':'Practice calls from your browser'}</p></div><button className="refresh-button" onClick={()=>void load()}><RefreshCw size={14}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>{(error||accessError)&&<div className="wf-alert" role="alert">{error||accessError}</div>}<div className="phone-workspace"><aside className="inbox-thread-list">{!threads.length&&<div className="inbox-empty"><Phone size={20}/><strong>{lang==='es'?'Sin conversaciones telefónicas':'No phone conversations'}</strong><p>{lang==='es'?'Los hilos telefónicos aparecerán aquí cuando estén disponibles.':'Phone threads will appear here when available.'}</p></div>}{threads.map(x=><button key={x.id} className={threadId===String(x.id)?'active':''} disabled={inCall} title={inCall?'End the current call before switching conversations':undefined} onClick={()=>{setThreadId(String(x.id));setStatus('idle');setError('')}}><strong>{x.subject||x.phone_number||(lang==='es'?'Conversación telefónica':'Phone conversation')}</strong><span>{x.phone_number||''}</span></button>)}</aside><div className="phone-dialer-card"><div className={'phone-orb '+status}><Phone size={28}/></div><span className="date-kicker">{localized(status,lang).toUpperCase()}</span><h2>{active?.phone_number||destination|| (lang==='es'?'Selecciona un hilo':'Select a phone thread')}</h2><p>{status==='connected'?(lang==='es'?'Llamada conectada':'Call connected'):status==='ringing'?(lang==='es'?'Llamando…':'Ringing…'):status==='preparing'?(lang==='es'?'Preparando sesión segura…':'Preparing secure session…'):(lang==='es'?'Usa el micrófono de este navegador para llamar desde la identidad telefónica del consultorio.':'Uses this browser microphone and the practice phone identity.')}</p>{!inCall?<button className="wf-primary" disabled={!threadId||!canCommunicate} onClick={()=>void start()}><Phone size={16}/>{status==='ended'||status==='error'?(lang==='es'?'Llamar otra vez':'Call again'):(lang==='es'?'Iniciar llamada':'Start call')}</button>:<button className="wf-danger" disabled={status==='preparing'} onClick={()=>void hangup()}><PhoneOff size={16}/>{lang==='es'?'Colgar':'Hang up'}</button>}<div className="phone-mic-note"><Mic size={13}/>{!canCommunicate?(lang==='es'?'Tu rol tiene acceso de solo lectura.':'Your role has read-only access.'):(lang==='es'?'El navegador pedirá permiso para usar el micrófono.':'Your browser will ask for microphone permission.')}</div>
 <div className="fax-send-card"><div><FileText size={16}/><strong>{lang==='es'?'Enviar fax':'Send fax'}</strong></div><p>{lang==='es'?'Usa el número del hilo seleccionado y un PDF privado del consultorio.':'Uses the selected thread number and a private practice PDF.'}</p><input type="file" accept="application/pdf,.pdf" disabled={!threadId||!canCommunicate||faxBusy} onChange={e=>setFaxFile(e.target.files?.[0]||null)}/><button className="wf-primary" disabled={!threadId||!canCommunicate||!faxFile||faxBusy} onClick={()=>void sendFax()}><FileText size={15}/>{faxBusy?(lang==='es'?'Enviando fax…':'Sending fax…'):(lang==='es'?'Enviar fax':'Send fax')}</button>{faxMessage&&<div className="wf-alert">{faxMessage}</div>}</div></div></div></section>
 }

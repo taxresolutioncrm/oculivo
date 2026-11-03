@@ -6,7 +6,7 @@ Oculivo is RomyLabs practice management software for optometry, ophthalmology, a
 - Marketing: https://oculivo.com
 - Backend: Supabase project `czejdbdwaumbdepiswcu`
 - Deployment target: Cloudflare Pages
-- GitHub Actions: intentionally unused
+- Current CI: Cloudflare Workers build checks; source/build green is not provider-backed runtime certification
 
 ## Edge Function secrets
 
@@ -16,7 +16,7 @@ Configure these in the Oculivo Supabase project's Edge Function secrets before p
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `OPENAI_API_KEY` (Oculivo AI)
-- `OCULIVO_AI_MODEL` (optional; defaults to `gpt-5.6-luna`)
+- `OCULIVO_AI_MODEL` (optional; defaults to `gpt-5-mini`)
 - `BREVO_API_KEY` (email)
 - `OCULIVO_FROM_EMAIL` (email sender)
 - `SIGNALWIRE_PROJECT_ID`
@@ -31,4 +31,4 @@ Configure these in the Oculivo Supabase project's Edge Function secrets before p
 
 ## Closeout deployment rule
 
-Work and regression-test in `sandbox/oculivo-closeout-20260913` first. Keep the one-commit release candidate on `release/oculivo-closeout-20260917`. Do not move production `main` until the sandbox build, provider-backed actions, route interactions, mobile layout, and Supabase/RLS checks are green. Use one controlled production deploy after closeout to avoid wasting Cloudflare build minutes.
+Work and regression-test in a current, dedicated sandbox branch first. Keep release changes scoped to Oculivo. Do not move production `main` until the sandbox build, provider-backed actions, route interactions, mobile layout, and Supabase/RLS checks are green. Use one controlled production deploy after closeout to avoid wasting Cloudflare build minutes.

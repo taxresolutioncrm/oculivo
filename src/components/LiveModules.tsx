@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { CalendarDays, MessageSquareText, Plus, RefreshCw, Send, Users } from 'lucide-react'
@@ -192,24 +192,39 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
   const [busy,setBusy] = useState(false)
   const [newChannel,setNewChannel] = useState('')
 
+  const chatOffice=useRef(org?.organizationId||''),channelRequest=useRef(0),messageRequest=useRef(0)
+  chatOffice.current=org?.organizationId||''
   async function loadChannels() {
     if (!org) return
-    const result = await supabase.from('team_channels').select('*').eq('organization_id',org.organizationId).order('created_at',{ascending:true})
+    const scope=org.organizationId,request=++channelRequest.current
+    const result = await supabase.from('team_channels').select('*').eq('organization_id',scope).order('created_at',{ascending:true})
+    if(chatOffice.current!==scope||request!==channelRequest.current)return
     if (result.error) { setError(result.error.message); return }
     const next = (result.data || []) as Row[]
-    setChannels(next)
-    if (!channelId && next[0]?.id) setChannelId(String(next[0].id))
+    setError('');setChannels(next)
+    setChannelId(current=>next.some(c=>String(c.id)===current)?current:String(next[0]?.id||''))
   }
 
   async function loadMessages(id=channelId) {
-    if (!org || !id) { setMessages([]); return }
-    const result = await supabase.from('team_messages').select('*').eq('organization_id',org.organizationId).eq('channel_id',id).order('created_at',{ascending:true}).limit(200)
+    const scope=org?.organizationId||'',request=++messageRequest.current
+    if (!scope || !id) { setMessages([]); return }
+    const result = await supabase.from('team_messages').select('*').eq('organization_id',scope).eq('channel_id',id).order('created_at',{ascending:true}).limit(200)
+    if(chatOffice.current!==scope||request!==messageRequest.current)return
     if (result.error) setError(result.error.message)
-    else setMessages((result.data || []) as Row[])
+    else {setError('');setMessages((result.data || []) as Row[])}
   }
 
-  useEffect(()=>{setChannelId('');setMessages([]);void loadChannels()},[org?.organizationId])
-  useEffect(()=>{void loadMessages(channelId)},[channelId,org?.organizationId])
+  useEffect(()=>{
+    channelRequest.current++;messageRequest.current++
+    setChannels([]);setChannelId('');setMessages([]);setBody('');setError('')
+    if(org?.organizationId)void loadChannels()
+    return()=>{channelRequest.current++;messageRequest.current++}
+  },[org?.organizationId])
+  useEffect(()=>{
+    setMessages([])
+    if(channelId)void loadMessages(channelId)
+    return()=>{messageRequest.current++}
+  },[channelId,org?.organizationId])
 
   // Live updates are scoped to the active practice and channel.
   // PostgreSQL RLS remains the authoritative authorization boundary.
@@ -405,7 +420,7 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
 
 function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
   const {org,error:orgError,loading:orgLoading} = useOrg(session)
-  const [counts,setCounts] = useState<Record<string,number>>({})
+  const [countState,setCountState] = useState<{orgId:string;counts:Record<string,number>}>({orgId:'',counts:{}})
   const [error,setError] = useState('')
 
   const sources = useMemo(()=>{
@@ -428,19 +443,29 @@ function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
   },[lang,org?.role])
 
   useEffect(()=>{
-    if(!org)return
+    if(!org){setCountState({orgId:'',counts:{}});setError('');return}
+    let active=true
+    setError('')
     ;(async()=>{
       const results=await Promise.all(sources.map(async([label,table])=>{
         const r=await supabase.from(table).select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId)
         return [label,r.count||0,r.error?.message||''] as const
       }))
+      if(!active)return
       const bad=results.find(x=>x[2])
       if(bad)setError(bad[2])
-      setCounts(Object.fromEntries(results.map(([label,count])=>[label,count])))
+      setCountState({orgId:org.organizationId,counts:Object.fromEntries(results.map(([label,count])=>[label,count]))})
     })()
+    return()=>{active=false}
   },[org?.organizationId,sources])
 
   return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'REPORTES EN VIVO':'LIVE REPORTING'}</span><h1>{lang==='es'?'Reportes':'Reports'}</h1><p>{lang==='es'?'Conteos actuales de registros en los flujos principales de Oculivo.':'Current record counts across core Oculivo workflows.'}</p></div></div>
-    {orgLoading?<div className="live-loading">{lang==='es'?'Cargando reportes…':'Loading reports…'}</div>:orgError?<ErrorBox message={orgError} lang={lang}/>:error?<ErrorBox message={error} lang={lang}/>:<div className="report-grid">{sources.map(([label])=><article className="panel report-card" key={label}><span>{label}</span><strong>{counts[label]??0}</strong></article>)}</div>}
+    {orgLoading?<div className="live-loading">{lang==='es'?'Cargando reportes…':'Loading reports…'}</div>:orgError?<ErrorBox message={orgError} lang={lang}/>:error?<ErrorBox message={error} lang={lang}/>:<div className="report-grid">{sources.map(([label,table])=>{
+      const routes:Record<string,string>={patients:'/patients',appointments:'/schedule',clinical_records:'/clinical',optical_orders:'/optical',insurance_claims:'/billing',invoices:'/billing',payments:'/billing',communication_messages:'/inbox',support_tickets:'/support'}
+      return <Link to={routes[table]||'/'} className="panel report-card report-card-link" key={label} aria-label={(lang==='es'?'Abrir ':'Open ')+label}>
+        <span>{label}</span><strong>{countState.orgId===org?.organizationId?(countState.counts[label]??0):'—'}</strong>
+        <small>{lang==='es'?'Ver registros →':'View records →'}</small>
+      </Link>
+    })}</div>}
   </section>
 }
