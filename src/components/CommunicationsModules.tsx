@@ -15,12 +15,56 @@ const localized=(v:any,lang:Lang)=>{
  return m[k]||raw
 }
 
+// Resolve active practice membership once per user/office; do not reuse a
+// previous office's permissions while a different practice is being validated.
+const accessCache=new Map<string,{role:string;at:number}>()
+const accessInflight=new Map<string,Promise<{orgId:string;role:string}>>()
+const ACCESS_TTL=60_000
+async function resolveCommsAccess(userId:string,requested:string){
+  const cacheKey=userId+':'+requested
+  const cached=accessCache.get(cacheKey)
+  if(requested&&cached&&Date.now()-cached.at<ACCESS_TTL)return {orgId:requested,role:cached.role}
+  const inflight=accessInflight.get(cacheKey)
+  if(inflight)return inflight
+  const request=(async()=>{
+    const query=supabase.from('organization_memberships').select('organization_id,role,is_active').eq('user_id',userId).eq('is_active',true)
+    const result=requested?await query.eq('organization_id',requested).maybeSingle():await query.limit(1).maybeSingle()
+    if(result.error)throw new Error(result.error.message)
+    if(!result.data?.organization_id)throw new Error('No active practice membership is available for this account.')
+    const orgId=String(result.data.organization_id),role=String(result.data.role||'')
+    accessCache.set(userId+':'+orgId,{role,at:Date.now()})
+    return {orgId,role}
+  })()
+  accessInflight.set(cacheKey,request)
+  try{return await request}finally{accessInflight.delete(cacheKey)}
+}
 function useOrgAccess(session:Session){
-  const [orgId,setOrgId]=useState(localStorage.getItem('oculivo-org-id')||'')
-  const [role,setRole]=useState('')
-  useEffect(()=>{const f=(e:any)=>setOrgId(String(e?.detail||localStorage.getItem('oculivo-org-id')||''));window.addEventListener('oculivo-org-change',f);return()=>window.removeEventListener('oculivo-org-change',f)},[])
-  useEffect(()=>{let active=true;(async()=>{const q=supabase.from('organization_memberships').select('organization_id,role,is_active').eq('user_id',session.user.id).eq('is_active',true);const r=orgId?await q.eq('organization_id',orgId).maybeSingle():await q.limit(1).maybeSingle();if(!active)return;if(r.data?.organization_id){const id=String(r.data.organization_id);localStorage.setItem('oculivo-org-id',id);setOrgId(id);setRole(String(r.data.role||''))}else setRole('')})();return()=>{active=false}},[session.user.id,orgId])
-  return {orgId,role,canCommunicate:['owner','admin','manager','provider','staff'].includes(role)}
+  const [requested,setRequested]=useState(localStorage.getItem('oculivo-org-id')||'')
+  const [resolved,setResolved]=useState<{orgId:string;role:string}>({orgId:'',role:''})
+  const [accessError,setAccessError]=useState('')
+  useEffect(()=>{
+    const change=(e:Event)=>{
+      const next=String((e as CustomEvent<string>).detail||localStorage.getItem('oculivo-org-id')||'')
+      accessCache.clear()
+      setResolved({orgId:'',role:''})
+      setRequested(next)
+    }
+    window.addEventListener('oculivo-org-change',change)
+    return()=>window.removeEventListener('oculivo-org-change',change)
+  },[])
+  useEffect(()=>{
+    let alive=true
+    setResolved({orgId:'',role:''});setAccessError('')
+    void resolveCommsAccess(session.user.id,requested).then(value=>{
+      if(!alive)return
+      if(!requested)localStorage.setItem('oculivo-org-id',value.orgId)
+      setResolved(value)
+    }).catch(err=>{
+      if(alive){setResolved({orgId:'',role:''});setAccessError(err instanceof Error?err.message:'Practice access unavailable')}
+    })
+    return()=>{alive=false}
+  },[session.user.id,requested])
+  return {orgId:resolved.orgId,role:resolved.role,accessError,canCommunicate:['owner','admin','manager','provider','staff'].includes(resolved.role)}
 }
 
 export function InboxComms({session,lang}:{session:Session;lang:Lang}){
