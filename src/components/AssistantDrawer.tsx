@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase'
 type Lang='en'|'es'
 type Msg={role:'user'|'assistant';content:string}
 
-export default function AssistantDrawer({session,lang,open,onClose}:{session:Session;lang:Lang;open:boolean;onClose:()=>void}){
+export default function AssistantDrawer({session,lang,open,onClose,organizationId}:{session:Session;lang:Lang;open:boolean;onClose:()=>void;organizationId:string}){
   const [messages,setMessages]=useState<Msg[]>([]),[text,setText]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('')
   const end=useRef<HTMLDivElement|null>(null)
   useEffect(()=>{end.current?.scrollIntoView({behavior:'smooth'})},[messages,busy])
@@ -16,24 +16,58 @@ export default function AssistantDrawer({session,lang,open,onClose}:{session:Ses
     e.preventDefault()
     const prompt=text.trim()
     if(!prompt||busy)return
-    const orgId=localStorage.getItem('oculivo-org-id')||''
+    const orgId=organizationId
     const next=[...messages,{role:'user' as const,content:prompt}]
     setMessages(next);setText('');setBusy(true);setError('')
-    const {data,error}=await supabase.functions.invoke('oculivo-ai',{body:{
-      message:prompt,
-      organization_id:orgId,
-      route:window.location.pathname,
-      language:lang,
-      history:messages.slice(-10)
-    }})
-    if(error){
-      setError(lang==='es'?'El asistente de Oculivo no está disponible en este momento.':'Oculivo AI is unavailable right now.')
-    }else{
-      const answer=String(data?.answer||data?.message||data?.content||'').trim()
-      if(answer)setMessages(v=>[...v,{role:'assistant',content:answer}])
-      else setError(lang==='es'?'El asistente no devolvió una respuesta.':'The assistant returned no response.')
+    try {
+      if (!orgId) {
+        setError(lang==='es'?'Selecciona un consultorio antes de usar Oculivo AI.':'Select a practice before using Oculivo AI.')
+        return
+      }
+      const {data:authState}=await supabase.auth.getSession()
+      const accessToken=authState.session?.access_token || session.access_token
+      if (!accessToken) {
+        setError(lang==='es'?'La sesión ha expirado. Inicia sesión de nuevo.':'Session expired. Please sign in again.')
+        return
+      }
+      const {data,error}=await supabase.functions.invoke('oculivo-ai',{headers:{Authorization:`Bearer ${accessToken}`},body:{
+        message:prompt,
+        organization_id:orgId,
+        route:window.location.pathname,
+        language:lang,
+        history:messages.slice(-10)
+      }})
+      if(error){
+        const context = (error as {context?:Response}).context
+        const status = context?.status
+        let code = ''
+        try {
+          if (context && typeof context.clone === 'function') {
+            const detail = await context.clone().json() as {error?:unknown;code?:unknown}
+            code = String(detail?.error || detail?.code || '').slice(0,160)
+          }
+        } catch { /* The gateway may return non-JSON. */ }
+        const description = status === 401 ? 'Authentication rejected'
+          : status === 403 ? 'Practice access denied'
+          : status === 404 ? 'AI service endpoint not found'
+          : status === 502 ? 'AI provider request failed'
+          : status === 503 ? 'AI provider not configured'
+          : 'AI request failed'
+        setError(`${description}${status ? ` (HTTP ${status})` : ''}${code ? `: ${code}` : ''}`)
+        console.error('Oculivo AI request failed', {status, message:error.message})
+      }else if (data?.error) {
+        setError(String(data.error).slice(0,180))
+      }else{
+        const answer=String(data?.answer||data?.message||data?.content||'').trim()
+        if(answer)setMessages(v=>[...v,{role:'assistant',content:answer}])
+        else setError(lang==='es'?'El asistente no devolvió una respuesta.':'The assistant returned no response.')
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message.slice(0,150) : ''
+      setError(`${lang==='es'?'Error de conexión':'Connection error'}${message ? `: ${message}` : ''}`)
+    } finally {
+      setBusy(false)
     }
-    setBusy(false)
   }
 
   return <>

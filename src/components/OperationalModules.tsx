@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
 import { Plus, Save, Trash2, X, Clock, Mail, Phone, CalendarDays, FileText, Glasses, Stethoscope, CircleDollarSign, ChevronRight, Pencil } from 'lucide-react'
@@ -26,27 +26,96 @@ const localized=(v:any,lang:Lang)=>{
  return m[k]||raw
 }
 
-function useOrg(session:Session){
-  const [org,setOrg]=useState<Org|null>(null),[error,setError]=useState(''),[v,setV]=useState(0)
-  useEffect(()=>{const f=()=>setV(x=>x+1);window.addEventListener('oculivo-org-change',f);return()=>window.removeEventListener('oculivo-org-change',f)},[])
-  useEffect(()=>{let a=true;(async()=>{
-    const m=await supabase.from('organization_memberships').select('organization_id,role,is_active').eq('user_id',session.user.id).eq('is_active',true)
-    if(!a)return
-    if(m.error||!m.data?.length){setError(m.error?.message||(document.documentElement.lang==='es'?'No hay una membresía activa del consultorio.':'No active practice membership.'));return}
-    const wanted=localStorage.getItem('oculivo-org-id')||''
+// Reuse authorized practice metadata between tabs instead of fetching it for
+// every module mount. Cache is scoped to the signed-in user and selected office.
+const opsPracticeCache=new Map<string,{org:Org;at:number}>()
+const opsPracticeInflight=new Map<string,Promise<Org>>()
+const OPS_PRACTICE_TTL=60_000
+async function getOpsPractice(userId:string,wanted:string):Promise<Org>{
+  const key=userId+':'+wanted
+  const cached=opsPracticeCache.get(key)
+  if(cached&&Date.now()-cached.at<OPS_PRACTICE_TTL)return cached.org
+  const pending=opsPracticeInflight.get(key)
+  if(pending)return pending
+  const task=(async()=>{
+    const m=await supabase.from('organization_memberships').select('organization_id,role,is_active').eq('user_id',userId).eq('is_active',true)
+    if(m.error||!m.data?.length)throw new Error(m.error?.message||'No active practice membership.')
     const mem=m.data.find(x=>s(x.organization_id)===wanted)||m.data[0]
-    const id=s(mem.organization_id);localStorage.setItem('oculivo-org-id',id)
+    const id=s(mem.organization_id)
     const o=await supabase.from('organizations').select('name').eq('id',id).maybeSingle()
-    if(!a)return
-    if(o.error){setError(o.error.message);return}
-    setError('');setOrg({organizationId:id,role:s(mem.role)||'staff',organizationName:s(o.data?.name)||(document.documentElement.lang==='es'?'Consultorio':'Practice')})
-  })();return()=>{a=false}},[session.user.id,v])
+    if(o.error)throw new Error(o.error.message)
+    const org:Org={organizationId:id,role:s(mem.role)||'staff',organizationName:s(o.data?.name)||'Practice'}
+    opsPracticeCache.set(key,{org,at:Date.now()})
+    return org
+  })()
+  opsPracticeInflight.set(key,task)
+  try{return await task}finally{opsPracticeInflight.delete(key)}
+}
+function useOrg(session:Session){
+  const [v,setV]=useState(0)
+  const wanted=localStorage.getItem('oculivo-org-id')||''
+  const current=opsPracticeCache.get(session.user.id+':'+wanted)
+  const [org,setOrg]=useState<Org|null>(current?.org||null)
+  const [error,setError]=useState('')
+  useEffect(()=>{
+    const f=()=>{opsPracticeCache.clear();opsRowsCache.clear();setOrg(null);setV(x=>x+1)}
+    window.addEventListener('oculivo-org-change',f)
+    return()=>window.removeEventListener('oculivo-org-change',f)
+  },[])
+  useEffect(()=>{
+    let active=true
+    const requested=localStorage.getItem('oculivo-org-id')||''
+    void getOpsPractice(session.user.id,requested).then(value=>{
+      if(!active)return
+      if(requested!==value.organizationId)localStorage.setItem('oculivo-org-id',value.organizationId)
+      setError('');setOrg(value)
+    }).catch(e=>{if(active){setOrg(null);setError(e instanceof Error?e.message:'Practice unavailable')}})
+    return()=>{active=false}
+  },[session.user.id,v])
   return {org,error}
 }
-function useRows(table:string,orgId?:string,order='created_at'){
-  const [rows,setRows]=useState<Row[]>([]),[error,setError]=useState(''),[loading,setLoading]=useState(false)
-  async function load(){if(!orgId){setRows([]);setLoading(false);return}setLoading(true);let q=supabase.from(table).select('*').eq('organization_id',orgId);if(order)q=q.order(order,{ascending:false});const r=await q.limit(200);if(r.error)setError(r.error.message);else{setError('');setRows(r.data||[])}setLoading(false)}
-  useEffect(()=>{void load()},[table,orgId]);return {rows,error,load,loading}
+// Keep already-authorized page results stable when navigating between tabs.
+// Cache keys include user, office, table and sort; reload after mutations.
+const opsRowsCache=new Map<string,{rows:Row[];at:number}>()
+const OPS_ROWS_TTL=30_000
+function useRows(table:string,orgId?:string,order='created_at',userId=''){
+  const key=userId+':'+(orgId||'')+':'+table+':'+order
+  const cached=opsRowsCache.get(key)
+  const [rows,setRows]=useState<Row[]>(cached?.rows||[])
+  const [error,setError]=useState('')
+  const [loading,setLoading]=useState(!cached&&!!orgId)
+  const requestId=useRef(0)
+  const lastKey=useRef(key)
+  async function load(){
+    const request=++requestId.current
+    if(!orgId){setRows([]);setLoading(false);return}
+    // Retain current rows during background refresh to prevent full-page flicker.
+    if(!opsRowsCache.has(key))setLoading(true)
+    let q=supabase.from(table).select('*').eq('organization_id',orgId)
+    if(order)q=q.order(order,{ascending:false})
+    const r=await q.limit(200)
+    if(request!==requestId.current)return
+    if(r.error)setError(r.error.message)
+    else{
+      const next=r.data||[]
+      opsRowsCache.set(key,{rows:next,at:Date.now()})
+      setError('');setRows(next)
+    }
+    setLoading(false)
+  }
+  useEffect(()=>{
+    const changed=lastKey.current!==key
+    lastKey.current=key
+    const cache=opsRowsCache.get(key)
+    // Never display another office's rows while its authorization/data loads.
+    if(changed){setRows(cache?.rows||[]);setError('')}
+    if(cache&&Date.now()-cache.at<OPS_ROWS_TTL){
+      setRows(cache.rows);setLoading(false);setError('')
+    }else void load()
+    return()=>{requestId.current++}
+  },[key])
+  // Do not expose previous-office rows even for the frame before the effect runs.
+  return {rows:lastKey.current===key?rows:(opsRowsCache.get(key)?.rows||[]),error,load,loading}
 }
 function Field({label,children}:{label:string;children:any}){return <label className="wf-field"><span>{label}</span>{children}</label>}
 function Modal({title,onClose,children}:{title:string;onClose:()=>void;children:any}){return <div className="wf-overlay" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><section className="wf-modal"><header><h2>{title}</h2><button onClick={onClose}><X size={18}/></button></header>{children}</section></div>}
@@ -57,7 +126,7 @@ function PatientSelect({value,setValue,rows,lang='en'}:{value:string;setValue:(v
 
 export function PatientsOps({session,lang}:{session:Session;lang:Lang}){
  const location=useLocation()
- const {org,error:oe}=useOrg(session),d=useRows('patients',org?.organizationId),[open,setOpen]=useState(false),[edit,setEdit]=useState<Row|null>(null),[f,setF]=useState<Row>({}),[msg,setMsg]=useState(''),[selected,setSelected]=useState<Row|null>(null),[detailLoading,setDetailLoading]=useState(false),[related,setRelated]=useState<{appointments:Row[];clinical:Row[];optical:Row[];invoices:Row[];documents:Row[]}>({appointments:[],clinical:[],optical:[],invoices:[],documents:[]})
+ const {org,error:oe}=useOrg(session),d=useRows('patients',org?.organizationId,undefined,session.user.id),[open,setOpen]=useState(false),[edit,setEdit]=useState<Row|null>(null),[f,setF]=useState<Row>({}),[msg,setMsg]=useState(''),[selected,setSelected]=useState<Row|null>(null),[detailLoading,setDetailLoading]=useState(false),[related,setRelated]=useState<{appointments:Row[];clinical:Row[];optical:Row[];invoices:Row[];documents:Row[]}>({appointments:[],clinical:[],optical:[],invoices:[],documents:[]})
  useEffect(()=>{const params=new URLSearchParams(location.search);if(params.get('new')==='1'){start();params.delete('new');const next=location.pathname+(params.toString()?'?'+params.toString():'');window.history.replaceState({},'',next)}},[location.search])
  function start(r?:Row){setEdit(r||null);setF(r?{...r}:{first_name:'',last_name:'',preferred_name:'',date_of_birth:'',email:'',phone:'',preferred_language:'en',notes:''});setMsg('');setOpen(true)}
  async function save(e:any){e.preventDefault();if(!org||!patientWriter(org.role))return;const p={first_name:s(f.first_name).trim(),last_name:s(f.last_name).trim(),preferred_name:s(f.preferred_name)||null,date_of_birth:s(f.date_of_birth)||null,email:s(f.email)||null,phone:s(f.phone)||null,preferred_language:s(f.preferred_language)||'en',notes:s(f.notes)||null};const r=edit?await supabase.from('patients').update(p).eq('id',edit.id).eq('organization_id',org.organizationId):await supabase.from('patients').insert({organization_id:org.organizationId,...p});if(r.error)setMsg(r.error.message);else{setOpen(false);if(selected&&edit?.id===selected.id)setSelected({...selected,...p});await d.load()}}
@@ -124,7 +193,7 @@ export function PatientsOps({session,lang}:{session:Session;lang:Lang}){
 }
 
 export function ScheduleOps({session,lang}:{session:Session;lang:Lang}){
- const {org,error:oe}=useOrg(session),a=useRows('appointments',org?.organizationId,'starts_at'),p=useRows('patients',org?.organizationId),pr=useRows('providers',org?.organizationId),lo=useRows('locations',org?.organizationId),[open,setOpen]=useState(false),[edit,setEdit]=useState<Row|null>(null),[f,setF]=useState<Row>({}),[msg,setMsg]=useState('')
+ const {org,error:oe}=useOrg(session),a=useRows('appointments',org?.organizationId,'starts_at',session.user.id),p=useRows('patients',org?.organizationId,undefined,session.user.id),pr=useRows('providers',org?.organizationId,undefined,session.user.id),lo=useRows('locations',org?.organizationId,undefined,session.user.id),[open,setOpen]=useState(false),[edit,setEdit]=useState<Row|null>(null),[f,setF]=useState<Row>({}),[msg,setMsg]=useState('')
  const local=(v:any)=>{if(!v)return'';const d=new Date(v);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)}
  function start(r?:Row){setEdit(r||null);setF(r?{...r,starts_at:local(r.starts_at),ends_at:local(r.ends_at)}:{patient_id:'',provider_id:'',location_id:'',appointment_type:lang==='es'?'Examen visual completo':'Comprehensive eye exam',starts_at:'',ends_at:'',room:'',notes:''});setMsg('');setOpen(true)}
  async function save(e:any){e.preventDefault();if(!org||!scheduleWriter(org.role))return;setMsg('');const start=new Date(f.starts_at),end=new Date(f.ends_at);if(!Number.isFinite(start.getTime())||!Number.isFinite(end.getTime())){setMsg(lang==='es'?'Ingresa horas válidas para la cita.':'Enter valid appointment times.');return}if(end<=start){setMsg(lang==='es'?'La hora de finalización debe ser posterior al inicio.':'Appointment end time must be after the start time.');return}if(f.provider_id){let cq=supabase.from('appointments').select('id').eq('organization_id',org.organizationId).eq('provider_id',f.provider_id).lt('starts_at',end.toISOString()).gt('ends_at',start.toISOString());if(edit?.id)cq=cq.neq('id',edit.id);const conflict=await cq.limit(1);if(conflict.error){setMsg(conflict.error.message);return}if(conflict.data?.length){setMsg(lang==='es'?'Ese proveedor ya tiene una cita en ese horario.':'That provider already has an appointment during this time.');return}}const payload={patient_id:f.patient_id,provider_id:f.provider_id||null,location_id:f.location_id||null,appointment_type:s(f.appointment_type),starts_at:start.toISOString(),ends_at:end.toISOString(),room:s(f.room)||null,notes:s(f.notes)||null,created_by:session.user.id};const r=edit?await supabase.from('appointments').update(payload).eq('id',edit.id).eq('organization_id',org.organizationId):await supabase.from('appointments').insert({organization_id:org.organizationId,...payload});if(r.error)setMsg(r.error.message);else{setOpen(false);await a.load()}}
@@ -134,7 +203,7 @@ export function ScheduleOps({session,lang}:{session:Session;lang:Lang}){
 }
 
 export function ClinicalOps({session,lang}:{session:Session;lang:Lang}){
- const {org,error:oe}=useOrg(session),d=useRows('clinical_records',org?.organizationId),p=useRows('patients',org?.organizationId),pr=useRows('providers',org?.organizationId),[open,setOpen]=useState(false),[edit,setEdit]=useState<Row|null>(null),[f,setF]=useState<Row>({}),[msg,setMsg]=useState('')
+ const {org,error:oe}=useOrg(session),d=useRows('clinical_records',org?.organizationId,undefined,session.user.id),p=useRows('patients',org?.organizationId,undefined,session.user.id),pr=useRows('providers',org?.organizationId,undefined,session.user.id),[open,setOpen]=useState(false),[edit,setEdit]=useState<Row|null>(null),[f,setF]=useState<Row>({}),[msg,setMsg]=useState('')
  function start(r?:Row){setEdit(r||null);setF(r?{...r}:{patient_id:'',provider_id:'',chief_complaint:'',visual_acuity_od:'',visual_acuity_os:'',iop_od:'',iop_os:'',assessment:'',treatment_plan:''});setMsg('');setOpen(true)}
  async function save(e:any){e.preventDefault();if(!org||!clinician(org.role))return;if(edit?.signed_at){setMsg(lang==='es'?'Los registros firmados no se pueden editar.':'Signed clinical records cannot be edited.');return}const q={patient_id:f.patient_id,provider_id:f.provider_id||null,chief_complaint:s(f.chief_complaint)||null,visual_acuity_od:s(f.visual_acuity_od)||null,visual_acuity_os:s(f.visual_acuity_os)||null,iop_od:s(f.iop_od)||null,iop_os:s(f.iop_os)||null,assessment:s(f.assessment)||null,treatment_plan:s(f.treatment_plan)||null,created_by:session.user.id};const r=edit?await supabase.from('clinical_records').update(q).eq('id',edit.id).eq('organization_id',org.organizationId):await supabase.from('clinical_records').insert({organization_id:org.organizationId,...q});if(r.error)setMsg(r.error.message);else{setOpen(false);await d.load()}}
  async function sign(r:Row){if(!org||!clinician(org.role))return;const q=await supabase.from('clinical_records').update({signed_at:new Date().toISOString()}).eq('id',r.id).eq('organization_id',org.organizationId);if(q.error)setMsg(q.error.message);else await d.load()}
@@ -143,14 +212,14 @@ export function ClinicalOps({session,lang}:{session:Session;lang:Lang}){
 }
 
 export function TimeclockOps({session,lang}:{session:Session;lang:Lang}){
- const {org,error:oe}=useOrg(session),d=useRows('time_entries',org?.organizationId,'clock_in'),[msg,setMsg]=useState('')
+ const {org,error:oe}=useOrg(session),d=useRows('time_entries',org?.organizationId,'clock_in',session.user.id),[msg,setMsg]=useState('')
  const mine=d.rows.filter(r=>r.user_id===session.user.id),open=mine.find(r=>!r.clock_out)
  async function punch(){if(!org||!timeWriter(org.role))return;setMsg('');if(!open){const check=await supabase.from('time_entries').select('id').eq('organization_id',org.organizationId).eq('user_id',session.user.id).is('clock_out',null).limit(1);if(check.error){setMsg(check.error.message);return}if(check.data?.length){await d.load();setMsg(lang==='es'?'Ya tienes un turno abierto.':'You already have an open shift.');return}}const r=open?await supabase.from('time_entries').update({clock_out:new Date().toISOString()}).eq('id',open.id).eq('organization_id',org.organizationId):await supabase.from('time_entries').insert({organization_id:org.organizationId,user_id:session.user.id,clock_in:new Date().toISOString()});if(r.error)setMsg(r.error.message);else await d.load()}
  return <><div className="timeclock-hero"><div><span>{lang==='es'?'ESTADO ACTUAL':'CURRENT STATUS'}</span><h2>{open?(lang==='es'?'En turno':'Clocked in'):(lang==='es'?'Fuera de turno':'Clocked out')}</h2><p>{open?((lang==='es'?'Desde ':'Since ')+new Date(open.clock_in).toLocaleString()):(lang==='es'?'Listo para iniciar tu turno.':'Ready to start your shift.')}</p></div><button className={open?'wf-danger':'wf-primary'} onClick={()=>void punch()}><Clock size={16}/>{open?(lang==='es'?'Marcar salida':'Clock out'):(lang==='es'?'Marcar entrada':'Clock in')}</button></div><Alert text={oe||d.error||msg}/>{!d.loading&&!mine.length&&<EmptyState lang={lang} label={lang==='es'?'registros de tiempo':'Time entries'}/>}<div className="wf-list">{mine.map(r=><article className="wf-row" key={r.id}><div className="wf-grow"><h3>{new Date(r.clock_in).toLocaleDateString()}</h3><p>{new Date(r.clock_in).toLocaleTimeString()+' → '+(r.clock_out?new Date(r.clock_out).toLocaleTimeString():(lang==='es'?'Activo':'Active'))}</p></div><span className="status-badge">{r.clock_out?(lang==='es'?'Completo':'Complete'):(lang==='es'?'Activo':'Active')}</span></article>)}</div></>
 }
 
 export function SupportOps({session,lang}:{session:Session;lang:Lang}){
- const {org,error:oe}=useOrg(session),d=useRows('support_tickets',org?.organizationId),[open,setOpen]=useState(false),[f,setF]=useState<Row>({}),[msg,setMsg]=useState('')
+ const {org,error:oe}=useOrg(session),d=useRows('support_tickets',org?.organizationId,undefined,session.user.id),[open,setOpen]=useState(false),[f,setF]=useState<Row>({}),[msg,setMsg]=useState('')
  function start(){setF({subject:'',description:'',category:'technical',priority:'normal'});setOpen(true);setMsg('')}
  async function save(e:any){e.preventDefault();if(!org)return;setMsg('');const central=await supabase.functions.invoke('oculivo-support-api',{body:{action:'create_ticket',organization_id:org.organizationId,subject:f.subject,description:f.description,category:f.category||'technical',priority:f.priority||'normal'}});if(central.error||central.data?.error){setMsg(central.data?.error||central.error?.message||(lang==='es'?'No se pudo contactar el soporte de RomyLabs.':'Could not reach RomyLabs support.'));return}const ticketNumber=s(central.data?.ticket_number);const r=await supabase.from('support_tickets').insert({organization_id:org.organizationId,submitted_by:session.user.id,subject:f.subject,description:f.description,category:f.category||'technical',priority:f.priority||'normal',current_page:window.location.pathname});if(r.error){setMsg(ticketNumber?(lang==='es'?'Ticket '+ticketNumber+' enviado a RomyLabs; la copia local no se pudo guardar.':'Ticket '+ticketNumber+' reached RomyLabs; the local mirror could not be saved.'):(lang==='es'?'El ticket llegó a RomyLabs; la copia local no se pudo guardar.':'The ticket reached RomyLabs; the local mirror could not be saved.'));setOpen(false);return}else{setMsg(ticketNumber?(lang==='es'?'Ticket '+ticketNumber+' enviado a RomyLabs.':'Support ticket '+ticketNumber+' submitted to RomyLabs.'):(lang==='es'?'Ticket enviado a RomyLabs.':'Support ticket submitted to RomyLabs.'));setOpen(false);await d.load()}}
  return <><Head title={lang==='es'?'Soporte':'Support'} sub={lang==='es'?'Tickets enviados a RomyLabs':'Tickets routed to RomyLabs'} button={lang==='es'?'Nuevo ticket':'New ticket'} onClick={start} disabled={!org}/><Alert text={oe||d.error||msg}/>{!d.loading&&!d.rows.length&&<EmptyState lang={lang} label={lang==='es'?'tickets de soporte':'Support tickets'}/>}<div className="wf-list">{d.rows.map(r=><article className="wf-row" key={r.id}><div className="wf-grow"><h3>{r.subject}</h3><p>{localized(r.category,lang)+' · '+new Date(r.created_at).toLocaleString()}</p></div><span className="status-badge">{localized(r.priority,lang)}</span><span className="status-badge">{localized(r.status,lang)}</span></article>)}</div>{open&&<Modal title={lang==='es'?'Nuevo ticket de soporte':'New support ticket'} onClose={()=>setOpen(false)}><form className="wf-form" onSubmit={save}><Field label={lang==='es'?'Asunto':'Subject'}><input required value={s(f.subject)} onChange={e=>setF({...f,subject:e.target.value})}/></Field><Field label={lang==='es'?'Descripción':'Description'}><textarea rows={6} required value={s(f.description)} onChange={e=>setF({...f,description:e.target.value})}/></Field><div className="wf-two"><Field label={lang==='es'?'Categoría':'Category'}><select value={s(f.category)} onChange={e=>setF({...f,category:e.target.value})}><option value="technical">{lang==='es'?'Técnico':'Technical'}</option><option value="billing">{lang==='es'?'Facturación':'Billing'}</option><option value="feature_request">{lang==='es'?'Solicitud de función':'Feature request'}</option><option value="training">{lang==='es'?'Capacitación':'Training'}</option><option value="other">{lang==='es'?'Otro':'Other'}</option></select></Field><Field label={lang==='es'?'Prioridad':'Priority'}><select value={s(f.priority)} onChange={e=>setF({...f,priority:e.target.value})}><option value="normal">{lang==='es'?'Normal':'Normal'}</option><option value="high">{lang==='es'?'Alta':'High'}</option><option value="urgent">{lang==='es'?'Urgente':'Urgent'}</option></select></Field></div><Alert text={msg}/><button type="submit" className="wf-primary full"><Save size={15}/>{lang==='es'?'Enviar ticket':'Submit ticket'}</button></form></Modal>}</>
@@ -158,7 +227,7 @@ export function SupportOps({session,lang}:{session:Session;lang:Lang}){
 
 
 export function OpticalOps({session,lang}:{session:Session;lang:Lang}){
- const {org,error:oe}=useOrg(session),orders=useRows('optical_orders',org?.organizationId,'ordered_at'),inv=useRows('optical_inventory',org?.organizationId),p=useRows('patients',org?.organizationId),[tab,setTab]=useState<'orders'|'inventory'>('orders'),[open,setOpen]=useState(false),[f,setF]=useState<Row>({}),[msg,setMsg]=useState('')
+ const {org,error:oe}=useOrg(session),orders=useRows('optical_orders',org?.organizationId,'ordered_at',session.user.id),inv=useRows('optical_inventory',org?.organizationId,undefined,session.user.id),p=useRows('patients',org?.organizationId,undefined,session.user.id),[tab,setTab]=useState<'orders'|'inventory'>('orders'),[open,setOpen]=useState(false),[f,setF]=useState<Row>({}),[msg,setMsg]=useState('')
  function start(){setF(tab==='orders'?{patient_id:'',order_number:'OC-'+Date.now().toString().slice(-7),order_type:lang==='es'?'Anteojos':'Eyewear',total_amount:0}:{sku:'',category:lang==='es'?'Monturas':'Frames',brand:'',product_name:'',quantity_on_hand:0,reorder_point:0,unit_cost:0,retail_price:0});setMsg('');setOpen(true)}
  async function save(e:any){e.preventDefault();if(!org||!(tab==='orders'?opticalOrderWriter(org.role):opticalInventoryWriter(org.role)))return;let r;if(tab==='orders')r=await supabase.from('optical_orders').insert({organization_id:org.organizationId,patient_id:f.patient_id,order_number:f.order_number,order_type:f.order_type,total_amount:n(f.total_amount)});else r=await supabase.from('optical_inventory').insert({organization_id:org.organizationId,sku:f.sku,category:f.category,brand:f.brand||null,product_name:f.product_name,quantity_on_hand:n(f.quantity_on_hand),reorder_point:n(f.reorder_point),unit_cost:n(f.unit_cost),retail_price:n(f.retail_price)});if(r.error)setMsg(r.error.message);else{setOpen(false);await Promise.all([orders.load(),inv.load()])}}
  const pn=(id:any)=>{const x=p.rows.find(q=>q.id===id);return x?s(x.first_name)+' '+s(x.last_name):(lang==='es'?'Paciente':'Patient')}
@@ -166,7 +235,7 @@ export function OpticalOps({session,lang}:{session:Session;lang:Lang}){
 }
 
 export function BillingOps({session,lang}:{session:Session;lang:Lang}){
- const {org,error:oe}=useOrg(session),p=useRows('patients',org?.organizationId),invoices=useRows('invoices',org?.organizationId),claims=useRows('insurance_claims',org?.organizationId),payments=useRows('payments',org?.organizationId),[tab,setTab]=useState<'invoices'|'claims'|'payments'>('invoices'),[open,setOpen]=useState(false),[f,setF]=useState<Row>({}),[msg,setMsg]=useState('')
+ const {org,error:oe}=useOrg(session),p=useRows('patients',org?.organizationId,undefined,session.user.id),invoices=useRows('invoices',org?.organizationId,undefined,session.user.id),claims=useRows('insurance_claims',org?.organizationId,undefined,session.user.id),payments=useRows('payments',org?.organizationId,undefined,session.user.id),[tab,setTab]=useState<'invoices'|'claims'|'payments'>('invoices'),[open,setOpen]=useState(false),[f,setF]=useState<Row>({}),[msg,setMsg]=useState('')
  const [items,setItems]=useState([{description:lang==='es'?'Servicios profesionales':'Professional services',quantity:1,unit_price:0}])
  function start(){
    setMsg('')
@@ -214,7 +283,7 @@ export function BillingOps({session,lang}:{session:Session;lang:Lang}){
 }
 
 export function DocumentsOps({session,lang}:{session:Session;lang:Lang}){
- const {org,error:oe}=useOrg(session),d=useRows('documents',org?.organizationId),p=useRows('patients',org?.organizationId),[open,setOpen]=useState(false),[file,setFile]=useState<File|null>(null),[patientId,setPatientId]=useState(''),[docType,setDocType]=useState('general'),[description,setDescription]=useState(''),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false)
+ const {org,error:oe}=useOrg(session),d=useRows('documents',org?.organizationId,undefined,session.user.id),p=useRows('patients',org?.organizationId,undefined,session.user.id),[open,setOpen]=useState(false),[file,setFile]=useState<File|null>(null),[patientId,setPatientId]=useState(''),[docType,setDocType]=useState('general'),[description,setDescription]=useState(''),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false)
  async function upload(e:any){e.preventDefault();if(!org||!file||!documentWriter(org.role))return;setBusy(true);setMsg('');const allowed=new Set(['application/pdf','image/png','image/jpeg','image/webp','image/heic','image/heif']);if(file.size>25*1024*1024){setMsg(lang==='es'?'El archivo supera el límite de 25 MB.':'File exceeds the 25 MB limit.');setBusy(false);return}if(file.type&&!allowed.has(file.type)){setMsg(lang==='es'?'Ese tipo de archivo no está permitido.':'That file type is not allowed.');setBusy(false);return}const safe=file.name.replace(/[^a-zA-Z0-9._-]+/g,'-');const path=org.organizationId+'/'+(patientId||'practice')+'/'+Date.now()+'-'+safe;const up=await supabase.storage.from('oculivo-documents').upload(path,file,{contentType:file.type||'application/octet-stream',upsert:false});if(up.error){setMsg(up.error.message);setBusy(false);return}const row=await supabase.from('documents').insert({organization_id:org.organizationId,patient_id:patientId||null,uploaded_by:session.user.id,document_type:docType||'general',file_name:file.name,storage_path:path,mime_type:file.type||null,file_size:file.size,description:description||null});if(row.error){await supabase.storage.from('oculivo-documents').remove([path]);setMsg(row.error.message)}else{setOpen(false);setFile(null);setPatientId('');setDescription('');await d.load()}setBusy(false)}
  async function view(r:Row){const q=await supabase.storage.from('oculivo-documents').createSignedUrl(s(r.storage_path),300);if(q.error){setMsg(q.error.message);return}window.open(q.data.signedUrl,'_blank','noopener,noreferrer')}
  async function remove(r:Row){if(!org||!documentDeleter(org.role)||!confirm(lang==='es'?'¿Eliminar este documento?':'Delete this document?'))return;setMsg('');const q=await supabase.from('documents').delete().eq('id',r.id).eq('organization_id',org.organizationId);if(q.error){setMsg(q.error.message);return}const rm=await supabase.storage.from('oculivo-documents').remove([s(r.storage_path)]);if(rm.error)setMsg(lang==='es'?'Se eliminó el registro, pero el archivo requiere limpieza de almacenamiento.':'Record deleted; storage object requires cleanup.');await d.load()}
