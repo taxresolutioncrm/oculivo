@@ -25,6 +25,11 @@ const requiredFunctions=['oculivo-ai','oculivo-support-api','phone-session','sen
 const allSource=[app,comms,live,esign,publicSign].join('\n')
 
 check(requiredRoutes.every(r=>app.includes(r)),'All required CRM routes are wired')
+check(app.includes('!orgReady?')&&app.includes('orgError?')&&app.includes('setOrgReady(true)'),'Route authorization waits for practice membership before rendering or redirecting')
+check(app.includes('if(stored!==resolved)')&&app.includes("window.dispatchEvent(new CustomEvent('oculivo-org-change'"),'Practice selection only broadcasts actual initial office changes')
+check(ops.includes('opsPracticeInflight')&&ops.includes('OPS_PRACTICE_TTL'),'Operational tabs deduplicate repeated practice authorization queries')
+check(ops.includes('opsRowsCache')&&ops.includes('OPS_ROWS_TTL')&&ops.includes('requestId.current++'),'Operational tabs reuse recent scoped rows and cancel stale fetches')
+check(ops.includes('if(changed){setRows(cache?.rows||[]);setError(\'\')}'),'Switching practices clears old rows before new tenant data loads')
 check(!/\b(TODO|FIXME|HACK|XXX)\b|not implemented|coming soon|mock data|demo data/i.test(allSource),'No incomplete implementation markers remain in primary UI source')
 check(esign.includes('Firmas electrónicas')&&esign.includes('E-Signatures'),'Internal e-signature workflow is bilingual')
 check(esign.includes("action:'resend_invite'")&&esign.includes("'Reenviar':'Resend'"),'E-signature resend workflow is wired in EN/ES')
