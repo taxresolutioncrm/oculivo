@@ -25,6 +25,13 @@ const requiredFunctions=['oculivo-ai','oculivo-support-api','phone-session','sen
 const allSource=[app,comms,live,esign,publicSign].join('\n')
 
 check(requiredRoutes.every(r=>app.includes(r)),'All required CRM routes are wired')
+check(comms.includes('resolveCommsAccess')&&comms.includes('accessInflight')&&comms.includes('ACCESS_TTL'),'Communications authorization reuses scoped membership lookups')
+check(comms.includes("setResolved({orgId:'',role:''})")&&comms.includes('if(!alive)return'),'Communications invalidates stale office permissions')
+check(comms.includes('scopeRef.current!==scope||request!==threadsRequest.current')&&comms.includes('scopeRef.current!==scope||request!==messagesRequest.current'),'Inbox ignores out-of-date threads and messages')
+check(comms.includes("setThreads([]);setThreadId('');setMessages([]);setBody('')"),'Inbox clears stale practice messages and drafts on office change')
+check(comms.includes('phoneScope.current!==scope||request!==phoneRequest.current')&&comms.includes('disabled={inCall}'),'Phone ignores out-of-date threads and prevents mid-call switching')
+check(live.includes('report-card-link')&&live.includes('View records →')&&live.includes('if(!active)return'),'Reports cards navigate to scoped modules and reject stale totals')
+check(css.includes('.report-card-link:focus-visible'),'Reports cards retain visible keyboard focus')
 check(app.includes('!orgReady?')&&app.includes('orgError?')&&app.includes('setOrgReady(true)'),'Route authorization waits for practice membership before rendering or redirecting')
 check(app.includes('if(stored!==resolved)')&&app.includes("window.dispatchEvent(new CustomEvent('oculivo-org-change'"),'Practice selection only broadcasts actual initial office changes')
 check(ops.includes('opsPracticeInflight')&&ops.includes('OPS_PRACTICE_TTL'),'Operational tabs deduplicate repeated practice authorization queries')
