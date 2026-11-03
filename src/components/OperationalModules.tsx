@@ -85,6 +85,7 @@ function useRows(table:string,orgId?:string,order='created_at',userId=''){
   const [error,setError]=useState('')
   const [loading,setLoading]=useState(!cached&&!!orgId)
   const requestId=useRef(0)
+  const lastKey=useRef(key)
   async function load(){
     const request=++requestId.current
     if(!orgId){setRows([]);setLoading(false);return}
@@ -103,7 +104,11 @@ function useRows(table:string,orgId?:string,order='created_at',userId=''){
     setLoading(false)
   }
   useEffect(()=>{
+    const changed=lastKey.current!==key
+    lastKey.current=key
     const cache=opsRowsCache.get(key)
+    // Never display another office's rows while its authorization/data loads.
+    if(changed){setRows(cache?.rows||[]);setError('')}
     if(cache&&Date.now()-cache.at<OPS_ROWS_TTL){
       setRows(cache.rows);setLoading(false);setError('')
     }else void load()
