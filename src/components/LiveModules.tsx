@@ -428,19 +428,29 @@ function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
   },[lang,org?.role])
 
   useEffect(()=>{
-    if(!org)return
+    if(!org){setCounts({});setError('');return}
+    let active=true
+    setError('')
     ;(async()=>{
       const results=await Promise.all(sources.map(async([label,table])=>{
         const r=await supabase.from(table).select('id',{count:'exact',head:true}).eq('organization_id',org.organizationId)
         return [label,r.count||0,r.error?.message||''] as const
       }))
+      if(!active)return
       const bad=results.find(x=>x[2])
       if(bad)setError(bad[2])
       setCounts(Object.fromEntries(results.map(([label,count])=>[label,count])))
     })()
+    return()=>{active=false}
   },[org?.organizationId,sources])
 
   return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'REPORTES EN VIVO':'LIVE REPORTING'}</span><h1>{lang==='es'?'Reportes':'Reports'}</h1><p>{lang==='es'?'Conteos actuales de registros en los flujos principales de Oculivo.':'Current record counts across core Oculivo workflows.'}</p></div></div>
-    {orgLoading?<div className="live-loading">{lang==='es'?'Cargando reportes…':'Loading reports…'}</div>:orgError?<ErrorBox message={orgError} lang={lang}/>:error?<ErrorBox message={error} lang={lang}/>:<div className="report-grid">{sources.map(([label])=><article className="panel report-card" key={label}><span>{label}</span><strong>{counts[label]??0}</strong></article>)}</div>}
+    {orgLoading?<div className="live-loading">{lang==='es'?'Cargando reportes…':'Loading reports…'}</div>:orgError?<ErrorBox message={orgError} lang={lang}/>:error?<ErrorBox message={error} lang={lang}/>:<div className="report-grid">{sources.map(([label,table])=>{
+      const routes:Record<string,string>={patients:'/patients',appointments:'/schedule',clinical_records:'/clinical',optical_orders:'/optical',insurance_claims:'/billing',invoices:'/billing',payments:'/billing',communication_messages:'/inbox',support_tickets:'/support'}
+      return <Link to={routes[table]||'/'} className="panel report-card report-card-link" key={label} aria-label={(lang==='es'?'Abrir ':'Open ')+label}>
+        <span>{label}</span><strong>{counts[label]??0}</strong>
+        <small>{lang==='es'?'Ver registros →':'View records →'}</small>
+      </Link>
+    })}</div>}
   </section>
 }
