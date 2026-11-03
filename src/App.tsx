@@ -215,6 +215,8 @@ function Shell({session}:{session:Session}){
   const [releaseOpen,setReleaseOpen]=useState(false)
   const [orgMenuOpen,setOrgMenuOpen]=useState(false)
   const [orgs,setOrgs]=useState<OrgOption[]>([])
+  const [orgReady,setOrgReady]=useState(false)
+  const [orgError,setOrgError]=useState('')
   const [selectedOrgId,setSelectedOrgId]=useState(()=>localStorage.getItem('oculivo-org-id')||'')
   const [lang,setLang]=useState<Lang>(()=>(localStorage.getItem('oculivo-lang')==='es'?'es':'en'))
   const location=useLocation()
@@ -222,18 +224,35 @@ function Shell({session}:{session:Session}){
   useEffect(()=>setOpen(false),[location.pathname])
   useEffect(()=>{
     let active=true
+    setOrgReady(false);setOrgError('')
     ;(async()=>{
-      const memberships=await supabase.from('organization_memberships').select('organization_id,role,is_active').eq('user_id',session.user.id).eq('is_active',true)
-      if(!active||memberships.error||!memberships.data?.length)return
-      const ids=memberships.data.map(m=>String(m.organization_id))
-      const organizations=await supabase.from('organizations').select('id,name').in('id',ids)
-      if(!active)return
-      const byId=new Map((organizations.data||[]).map(o=>[String(o.id),String(o.name||'Practice')]))
-      const next=memberships.data.map(m=>({id:String(m.organization_id),name:byId.get(String(m.organization_id))||'Practice',role:String(m.role||'member')}))
-      setOrgs(next)
-      const stored=localStorage.getItem('oculivo-org-id')||''
-      const resolved=next.some(o=>o.id===stored)?stored:next[0]?.id||''
-      if(resolved){localStorage.setItem('oculivo-org-id',resolved);setSelectedOrgId(resolved);window.dispatchEvent(new CustomEvent('oculivo-org-change',{detail:resolved}))}
+      try{
+        const memberships=await supabase.from('organization_memberships').select('organization_id,role,is_active').eq('user_id',session.user.id).eq('is_active',true)
+        if(!active)return
+        if(memberships.error||!memberships.data?.length){
+          setOrgError(memberships.error?.message||'No active practice membership was found.')
+          setOrgReady(true);return
+        }
+        const ids=memberships.data.map(m=>String(m.organization_id))
+        const organizations=await supabase.from('organizations').select('id,name').in('id',ids)
+        if(!active)return
+        if(organizations.error){setOrgError(organizations.error.message);setOrgReady(true);return}
+        const byId=new Map((organizations.data||[]).map(o=>[String(o.id),String(o.name||'Practice')]))
+        const next=memberships.data.map(m=>({id:String(m.organization_id),name:byId.get(String(m.organization_id))||'Practice',role:String(m.role||'member')}))
+        setOrgs(next)
+        const stored=localStorage.getItem('oculivo-org-id')||''
+        const resolved=next.some(o=>o.id===stored)?stored:next[0]?.id||''
+        if(resolved){
+          setSelectedOrgId(resolved)
+          if(stored!==resolved){
+            localStorage.setItem('oculivo-org-id',resolved)
+            window.dispatchEvent(new CustomEvent('oculivo-org-change',{detail:resolved}))
+          }
+        }
+        setOrgReady(true)
+      }catch(err){
+        if(active){setOrgError(err instanceof Error?err.message:'Practice unavailable');setOrgReady(true)}
+      }
     })()
     return()=>{active=false}
   },[session.user.id])
@@ -266,7 +285,7 @@ function Shell({session}:{session:Session}){
     <div className="app-main">
       <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><button className="searchbox search-trigger" onClick={()=>setSearchOpen(true)}><Search size={18}/><span>{t.search}</span></button><button className="kbd" onClick={()=>setSearchOpen(true)}>⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div>{canAccessPath('/phone',selectedOrg?.role||'')&&<button type="button" className="secondary-action" onClick={()=>navigate('/phone')}><Phone size={16}/>{t.call}</button>}{canAccessPath('/inbox',selectedOrg?.role||'')&&<button type="button" className="icon-action" onClick={()=>navigate('/inbox')} aria-label={lang==='es'?'Abrir bandeja':'Open inbox'} title={lang==='es'?'Abrir bandeja':'Open inbox'}><Bell size={17}/></button>}{canCreatePatient&&<button type="button" className="new-patient" onClick={openNewPatient}><Plus size={17}/>{t.newPatient}</button>}</div></header>
       <div className="context-strip"><div><span>{lang==='es'?'ESPACIO DE TRABAJO':'WORKSPACE'}</span><strong>{currentLabel}</strong></div><div className="context-strip-meta"><span className="context-live-dot"/><span>{selectedOrg?.name||t.yourPractice}</span><span className="context-role">{selectedOrg?.role||'member'}</span></div></div>
-      <Routes><Route path="/" element={<LiveOverview session={session} lang={lang}/>}/><Route path="/email-blast" element={canAccessPath('/email-blast',selectedOrg?.role||'')?<EmailBlastPage lang={lang}/>:<Navigate to="/" replace/>}/><Route path="/esign" element={canAccessPath('/esign',selectedOrg?.role||'')?<ESignaturesPage lang={lang}/>:<Navigate to="/" replace/>}/>{Object.entries(moduleCopy[lang]).map(([path,[title,description]])=><Route key={path} path={path} element={canAccessPath(path,selectedOrg?.role||'')?<LiveModulePage path={path} title={title} description={description} session={session} lang={lang}/>:<Navigate to="/" replace/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>
+      {!orgReady?<div className="live-loading" role="status">{lang==='es'?'Cargando consultorio…':'Loading your practice…'}</div>:orgError?<div className="wf-alert" role="alert">{orgError}</div>:<Routes><Route path="/" element={<LiveOverview session={session} lang={lang}/>}/><Route path="/email-blast" element={canAccessPath('/email-blast',selectedOrg?.role||'')?<EmailBlastPage lang={lang}/>:<Navigate to="/" replace/>}/><Route path="/esign" element={canAccessPath('/esign',selectedOrg?.role||'')?<ESignaturesPage lang={lang}/>:<Navigate to="/" replace/>}/>{Object.entries(moduleCopy[lang]).map(([path,[title,description]])=><Route key={path} path={path} element={canAccessPath(path,selectedOrg?.role||'')?<LiveModulePage path={path} title={title} description={description} session={session} lang={lang}/>:<Navigate to="/" replace/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>}
     </div>
     <SearchOverlay session={session} open={searchOpen} onClose={()=>setSearchOpen(false)} lang={lang} role={selectedOrg?.role||''}/>
     <ReleaseHistory open={releaseOpen} onClose={()=>setReleaseOpen(false)}/>
