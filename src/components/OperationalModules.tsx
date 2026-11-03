@@ -26,21 +26,52 @@ const localized=(v:any,lang:Lang)=>{
  return m[k]||raw
 }
 
-function useOrg(session:Session){
-  const [org,setOrg]=useState<Org|null>(null),[error,setError]=useState(''),[v,setV]=useState(0)
-  useEffect(()=>{const f=()=>setV(x=>x+1);window.addEventListener('oculivo-org-change',f);return()=>window.removeEventListener('oculivo-org-change',f)},[])
-  useEffect(()=>{let a=true;(async()=>{
-    const m=await supabase.from('organization_memberships').select('organization_id,role,is_active').eq('user_id',session.user.id).eq('is_active',true)
-    if(!a)return
-    if(m.error||!m.data?.length){setError(m.error?.message||(document.documentElement.lang==='es'?'No hay una membresía activa del consultorio.':'No active practice membership.'));return}
-    const wanted=localStorage.getItem('oculivo-org-id')||''
+// Reuse authorized practice metadata between tabs instead of fetching it for
+// every module mount. Cache is scoped to the signed-in user and selected office.
+const opsPracticeCache=new Map<string,{org:Org;at:number}>()
+const opsPracticeInflight=new Map<string,Promise<Org>>()
+const OPS_PRACTICE_TTL=60_000
+async function getOpsPractice(userId:string,wanted:string):Promise<Org>{
+  const key=userId+':'+wanted
+  const cached=opsPracticeCache.get(key)
+  if(cached&&Date.now()-cached.at<OPS_PRACTICE_TTL)return cached.org
+  const pending=opsPracticeInflight.get(key)
+  if(pending)return pending
+  const task=(async()=>{
+    const m=await supabase.from('organization_memberships').select('organization_id,role,is_active').eq('user_id',userId).eq('is_active',true)
+    if(m.error||!m.data?.length)throw new Error(m.error?.message||'No active practice membership.')
     const mem=m.data.find(x=>s(x.organization_id)===wanted)||m.data[0]
-    const id=s(mem.organization_id);localStorage.setItem('oculivo-org-id',id)
+    const id=s(mem.organization_id)
     const o=await supabase.from('organizations').select('name').eq('id',id).maybeSingle()
-    if(!a)return
-    if(o.error){setError(o.error.message);return}
-    setError('');setOrg({organizationId:id,role:s(mem.role)||'staff',organizationName:s(o.data?.name)||(document.documentElement.lang==='es'?'Consultorio':'Practice')})
-  })();return()=>{a=false}},[session.user.id,v])
+    if(o.error)throw new Error(o.error.message)
+    const org:Org={organizationId:id,role:s(mem.role)||'staff',organizationName:s(o.data?.name)||'Practice'}
+    opsPracticeCache.set(key,{org,at:Date.now()})
+    return org
+  })()
+  opsPracticeInflight.set(key,task)
+  try{return await task}finally{opsPracticeInflight.delete(key)}
+}
+function useOrg(session:Session){
+  const [v,setV]=useState(0)
+  const wanted=localStorage.getItem('oculivo-org-id')||''
+  const current=opsPracticeCache.get(session.user.id+':'+wanted)
+  const [org,setOrg]=useState<Org|null>(current?.org||null)
+  const [error,setError]=useState('')
+  useEffect(()=>{
+    const f=()=>{opsPracticeCache.clear();setOrg(null);setV(x=>x+1)}
+    window.addEventListener('oculivo-org-change',f)
+    return()=>window.removeEventListener('oculivo-org-change',f)
+  },[])
+  useEffect(()=>{
+    let active=true
+    const requested=localStorage.getItem('oculivo-org-id')||''
+    void getOpsPractice(session.user.id,requested).then(value=>{
+      if(!active)return
+      if(requested!==value.organizationId)localStorage.setItem('oculivo-org-id',value.organizationId)
+      setError('');setOrg(value)
+    }).catch(e=>{if(active){setOrg(null);setError(e instanceof Error?e.message:'Practice unavailable')}})
+    return()=>{active=false}
+  },[session.user.id,v])
   return {org,error}
 }
 function useRows(table:string,orgId?:string,order='created_at'){
