@@ -114,7 +114,8 @@ function useRows(table:string,orgId?:string,order='created_at',userId=''){
     }else void load()
     return()=>{requestId.current++}
   },[key])
-  return {rows,error,load,loading}
+  // Do not expose previous-office rows even for the frame before the effect runs.
+  return {rows:lastKey.current===key?rows:(opsRowsCache.get(key)?.rows||[]),error,load,loading}
 }
 function Field({label,children}:{label:string;children:any}){return <label className="wf-field"><span>{label}</span>{children}</label>}
 function Modal({title,onClose,children}:{title:string;onClose:()=>void;children:any}){return <div className="wf-overlay" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><section className="wf-modal"><header><h2>{title}</h2><button onClick={onClose}><X size={18}/></button></header>{children}</section></div>}
