@@ -60,7 +60,7 @@ check(smsFn.includes('OCULIVO_SMS_FROM_NUMBER')&&smsFn.includes('SIGNALWIRE_AUTH
 check(supportFn.includes('OCULIVO_SUPPORT_SECRET')&&supportFn.includes('x-romylabs-signature')&&supportFn.includes('Active practice membership required'),'Support bridge signs outbound requests and requires active practice membership')
 check(aiFn.includes('organization_memberships')&&aiFn.includes('Not authorized for this practice')&&aiFn.includes('Never expose data from another organization'),'AI assistant is scoped to an authenticated active practice membership')
 check(!/voicemail|patient portal conversations/i.test(app),'CRM copy does not claim unsupported voicemail or patient portal workflows')
-check(app.includes("function canAccessPath(")&&app.includes("path==='/clinical'")&&app.includes("path==='/inbox'||path==='/phone'||path==='/esign'")&&app.includes("canAccessPath('/esign',selectedOrg?.role||'')?<ESignaturesPage"),'Clinical, communications, and e-sign routes are role-gated')
+check(app.includes("function canAccessPath(")&&app.includes("path==='/clinical'")&&app.includes("path==='/inbox'||path==='/email-blast'||path==='/phone'||path==='/esign'")&&app.includes("canAccessPath('/esign',selectedOrg?.role||'')?<ESignaturesPage"),'Clinical, communications, and e-sign routes are role-gated')
 check(fs.existsSync(new URL('../supabase/migrations/20260913113500_clinical_read_least_privilege.sql',import.meta.url)),'Clinical read least-privilege migration is present')
 check(fs.existsSync(new URL('../supabase/migrations/20260913114000_communication_read_least_privilege.sql',import.meta.url)),'Communication read least-privilege migration is present')
 check(app.includes("role={selectedOrg?.role||''}"),'Global search receives the active role for sensitive-result filtering')
