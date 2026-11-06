@@ -24,4 +24,9 @@ const allowed=new Set([
   'Release notes dialog added with body-level portal layering'
 ])
 const notes=Array.from(manifest.matchAll(/^    '([^']+)'[,]?$/gm),m=>m[1])
-assert(notes.length===allowed.size&&notes.every(note=>allowed.has(note)),'Baseline changelog contains only approved release metadata changes')
+const notificationNotes = [
+  'Existing inbox bell is enhanced with exact practice-scoped email/SMS unread counts and a mobile-safe bilingual notification sheet',
+  'No second notification bell, unauthorized practice data or unverified phone event delivery is introduced',
+]
+const expected = version === '3.0.1' ? new Set([...allowed,...notificationNotes]) : allowed
+assert(notes.length===expected.size&&notes.every(note=>expected.has(note)),'Release changelog matches only approved baseline and notification updates')
