@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Bell, CalendarDays, CircleDollarSign, Glasses, Inbox, LayoutDashboard,
+  CalendarDays, CircleDollarSign, Glasses, Inbox, LayoutDashboard,
   Menu, MessageSquareText, Phone, Search, Stethoscope, TicketCheck,
   Timer, Users, X, BarChart3, BookOpen, Plus, ChevronDown, LogOut, Files, FileSignature, Sparkles
 } from 'lucide-react'
@@ -10,6 +10,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { LiveModulePage, LiveOverview } from './components/LiveModules'
 import AssistantDrawer from './components/AssistantDrawer'
+import CommunicationsBell from './components/CommunicationsBell'
 import ReleaseHistory from './components/ReleaseHistory'
 import { release } from './release'
 import ESignaturesPage from './pages/ESignaturesPage'
@@ -283,7 +284,7 @@ function Shell({session}:{session:Session}){
       <div className="sidebar-foot"><div className="user-chip"><div className="avatar">{name.slice(0,1).toUpperCase()}</div><div><strong>{session.user.email||'Practice owner'}</strong><span>{selectedOrg?.role|| (lang==='es'?'Usuario autenticado':'Authenticated user')}</span></div></div><button className="logout-button" onClick={()=>void signOut()} aria-label={lang==='es'?'Cerrar sesión':'Sign out'} title={lang==='es'?'Cerrar sesión':'Sign out'}><LogOut size={16}/></button></div>
     </aside>
     <div className="app-main">
-      <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><button className="searchbox search-trigger" onClick={()=>setSearchOpen(true)}><Search size={18}/><span>{t.search}</span></button><button className="kbd" onClick={()=>setSearchOpen(true)}>⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div>{canAccessPath('/phone',selectedOrg?.role||'')&&<button type="button" className="secondary-action" onClick={()=>navigate('/phone')}><Phone size={16}/>{t.call}</button>}{canAccessPath('/inbox',selectedOrg?.role||'')&&<button type="button" className="icon-action" onClick={()=>navigate('/inbox')} aria-label={lang==='es'?'Abrir bandeja':'Open inbox'} title={lang==='es'?'Abrir bandeja':'Open inbox'}><Bell size={17}/></button>}{canCreatePatient&&<button type="button" className="new-patient" onClick={openNewPatient}><Plus size={17}/>{t.newPatient}</button>}</div></header>
+      <header className="topbar"><button className="icon-btn mobile-only" onClick={()=>setOpen(true)}><Menu size={22}/></button><button className="searchbox search-trigger" onClick={()=>setSearchOpen(true)}><Search size={18}/><span>{t.search}</span></button><button className="kbd" onClick={()=>setSearchOpen(true)}>⌘<small>K</small></button><div className="top-actions"><div className="lang-toggle"><button className={lang==='en'?'active':''} onClick={()=>setLang('en')}>EN</button><button className={lang==='es'?'active':''} onClick={()=>setLang('es')}>ES</button></div>{canAccessPath('/phone',selectedOrg?.role||'')&&<button type="button" className="secondary-action" onClick={()=>navigate('/phone')}><Phone size={16}/>{t.call}</button>}{canAccessPath('/inbox',selectedOrg?.role||'')&&<CommunicationsBell key={selectedOrg?.id||'none'} organizationId={selectedOrg?.id||''} lang={lang} userId={session.user.id}/>}{canCreatePatient&&<button type="button" className="new-patient" onClick={openNewPatient}><Plus size={17}/>{t.newPatient}</button>}</div></header>
       <div className="context-strip"><div><span>{lang==='es'?'ESPACIO DE TRABAJO':'WORKSPACE'}</span><strong>{currentLabel}</strong></div><div className="context-strip-meta"><span className="context-live-dot"/><span>{selectedOrg?.name||t.yourPractice}</span><span className="context-role">{selectedOrg?.role||'member'}</span></div></div>
       {!orgReady?<div className="live-loading" role="status">{lang==='es'?'Cargando consultorio…':'Loading your practice…'}</div>:orgError?<div className="wf-alert" role="alert">{orgError}</div>:<Routes><Route path="/" element={<LiveOverview session={session} lang={lang}/>}/><Route path="/email-blast" element={canAccessPath('/email-blast',selectedOrg?.role||'')?<EmailBlastPage lang={lang}/>:<Navigate to="/" replace/>}/><Route path="/esign" element={canAccessPath('/esign',selectedOrg?.role||'')?<ESignaturesPage lang={lang}/>:<Navigate to="/" replace/>}/>{Object.entries(moduleCopy[lang]).map(([path,[title,description]])=><Route key={path} path={path} element={canAccessPath(path,selectedOrg?.role||'')?<LiveModulePage path={path} title={title} description={description} session={session} lang={lang}/>:<Navigate to="/" replace/>}/>) }<Route path="*" element={<Navigate to="/" replace/>}/></Routes>}
     </div>

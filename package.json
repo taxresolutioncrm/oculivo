@@ -1,11 +1,11 @@
 {
   "name": "oculivo",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "node scripts/check-communications-notifications.mjs && tsc && vite build",
     "preview": "vite preview",
     "verify:closeout": "node scripts/verify-closeout.mjs && node scripts/verify-imports.mjs && node scripts/verify-deploy-config.mjs && node scripts/verify-version.mjs"
   },
