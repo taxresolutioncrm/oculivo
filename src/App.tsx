@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Bell, CalendarDays, CircleDollarSign, Glasses, Inbox, LayoutDashboard,
+  CalendarDays, CircleDollarSign, Glasses, Inbox, LayoutDashboard,
   Menu, MessageSquareText, Phone, Search, Stethoscope, TicketCheck,
   Timer, Users, X, BarChart3, BookOpen, Plus, ChevronDown, LogOut, Files, FileSignature, Sparkles
 } from 'lucide-react'
