@@ -30,7 +30,7 @@ check(app.includes('if(stored!==resolved)')&&app.includes("window.dispatchEvent(
 check(ops.includes('opsPracticeInflight')&&ops.includes('OPS_PRACTICE_TTL'),'Operational tabs deduplicate repeated practice authorization queries')
 check(ops.includes('opsRowsCache')&&ops.includes('OPS_ROWS_TTL')&&ops.includes('requestId.current++'),'Operational tabs reuse recent scoped rows and cancel stale fetches')
 check(ops.includes('if(changed){setRows(cache?.rows||[]);setError(\'\')}'),'Switching practices clears old rows before new tenant data loads')
-check(!/\b(TODO|FIXME|HACK|XXX)\b|not implemented|coming soon|mock data|demo data/i.test(allSource),'No incomplete implementation markers remain in primary UI source')
+check(!/(?<![\p{L}\p{N}_])(?:TODO|FIXME|HACK|XXX)(?![\p{L}\p{N}_])|not implemented|coming soon|mock data|demo data/iu.test(allSource),'No incomplete implementation markers remain in primary UI source')
 check(esign.includes('Firmas electrónicas')&&esign.includes('E-Signatures'),'Internal e-signature workflow is bilingual')
 check(esign.includes("action:'resend_invite'")&&esign.includes("'Reenviar':'Resend'"),'E-signature resend workflow is wired in EN/ES')
 check(publicSign.includes('Firma electrónica de Oculivo')&&publicSign.includes('Oculivo E-Signature'),'Public signer workflow is bilingual')
