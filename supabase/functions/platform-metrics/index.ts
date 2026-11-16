@@ -1,8 +1,17 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const CENTRAL_URL='https://mpxgxfqdbquzkrvvejkh.supabase.co'
-const CENTRAL_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1weGd4ZnFkYnF1emtydnZlamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyOTk5MzksImV4cCI6MjA5NDg3NTkzOX0.puvhU1MV5nGOykizeTkwCpRR7NKKaGsVpA8oqjVjmu4'
+const CENTRAL_URL=Deno.env.get('ROMYLABS_CENTRAL_SUPABASE_URL')||''
+const CENTRAL_ANON=Deno.env.get('ROMYLABS_CENTRAL_SUPABASE_ANON_KEY')||''
 const ALLOWED=new Set(['info@romylabs.com','romy@romylabs.com','romy@taxrescrm.net','romy@taxcasereview.org'])
+// Constant-time comparison for server-to-server bearer secrets.
+function secureEqual(incoming:string,expected:string){
+  if(!incoming||!expected)return false
+  const a=new TextEncoder().encode(incoming),b=new TextEncoder().encode(expected)
+  if(a.length!==b.length)return false
+  let difference=0
+  for(let i=0;i<a.length;i++)difference|=a[i]^b[i]
+  return difference===0
+}
 const cors={'Access-Control-Allow-Origin':'https://admin.romylabs.com','Access-Control-Allow-Methods':'GET,OPTIONS','Access-Control-Allow-Headers':'authorization,content-type,x-hub-secret,x-romylabs-support-secret'}
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json'}})
 
@@ -52,11 +61,12 @@ Deno.serve(async(req:Request)=>{
   const incomingHub=req.headers.get('x-hub-secret')||''
   const expectedHub=Deno.env.get('HUB_METRICS_SECRET')||''
   let authorized=Boolean(
-    (expectedSupport && incomingSupport && incomingSupport===expectedSupport) ||
-    (expectedHub && incomingHub && incomingHub===expectedHub)
+    (expectedSupport && incomingSupport && secureEqual(incomingSupport,expectedSupport)) ||
+    (expectedHub && incomingHub && secureEqual(incomingHub,expectedHub))
   )
   if(!authorized){
     if(!auth.startsWith('Bearer ')) return json({ok:false,error:'Authentication required'},401)
+    if(!CENTRAL_URL||!CENTRAL_ANON) return json({ok:false,error:'Central authentication not configured'},503)
     const hub=createClient(CENTRAL_URL,CENTRAL_ANON,{global:{headers:{Authorization:auth}}})
     const {data:{user},error:authError}=await hub.auth.getUser()
     if(authError||!user) return json({ok:false,error:'Invalid or expired session'},401)
