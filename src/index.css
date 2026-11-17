@@ -493,3 +493,71 @@ body{font-size:var(--crm-body-font)}
 .oculivo-release-date{color:#6a7283;font-size:12px}
 .oculivo-release-content ul{padding-left:22px;margin:19px 0 0;display:grid;gap:11px;font-size:14px;line-height:1.5}
 @media(max-width:520px){.oculivo-release-header{padding:18px}.oculivo-release-content{padding:18px}}
+
+/* Oculivo CRM 2026: live workspace presentation, not marketing mock data. */
+.overview-page .overview-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.overview-page .overview-head h1{font-size:clamp(27px,3vw,37px);letter-spacing:-.045em;line-height:1.16}
+.overview-page .metric-grid{gap:14px;margin-top:22px}
+.overview-page .metric-card{border:1px solid #e1e5f0;border-radius:15px;box-shadow:0 8px 24px rgba(23,25,75,.045);background:linear-gradient(160deg,#fff 68%,#f7f5ff)}
+.overview-page .metric-card:nth-child(2){background:linear-gradient(160deg,#fff 65%,#effaf9)}
+.overview-page .metric-card:nth-child(3){background:linear-gradient(160deg,#fff 65%,#f6f1ff)}
+.overview-page .metric-link{transition:transform .16s,border-color .16s,box-shadow .16s}
+.overview-page .metric-link:hover{transform:translateY(-2px);border-color:#ad9bf4;box-shadow:0 12px 28px rgba(60,35,130,.10)}
+.oc-workspace-section{margin:25px 0 24px;padding:25px;border-radius:18px;background:#fff;border:1px solid #e1e5f0;box-shadow:0 12px 30px rgba(21,25,60,.04)}
+.oc-workspace-title{display:flex;align-items:start;justify-content:space-between;gap:20px;margin-bottom:18px}
+.oc-workspace-title h2{font-size:clamp(20px,2.2vw,27px);letter-spacing:-.032em;line-height:1.23;margin:7px 0 5px;color:#19203b}
+.oc-workspace-title p{font-size:13px;line-height:1.55;color:#657086;margin:0}
+.oc-workspace-shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+.oc-workspace-shortcut{min-width:0;display:flex;align-items:center;gap:13px;padding:17px 15px;border:1px solid #e6e8f1;border-radius:12px;background:#fcfcff;text-decoration:none;color:#202642;transition:transform .15s,border-color .15s,background .15s}
+.oc-workspace-shortcut:hover{transform:translateY(-2px);background:#f8f6ff;border-color:#ab9ae8}
+.oc-workspace-shortcut:focus-visible{outline:3px solid #7254dc;outline-offset:3px}
+.oc-shortcut-icon{width:42px;height:42px;flex-shrink:0;display:grid;place-items:center;border-radius:11px;background:#efeafe;color:#623bd9}
+.oc-workspace-shortcut:nth-child(3n+2) .oc-shortcut-icon{background:#e8f8f6;color:#127e83}
+.oc-workspace-shortcut:nth-child(3n+3) .oc-shortcut-icon{background:#eaf2ff;color:#3d62b4}
+.oc-shortcut-copy{min-width:0;display:flex;flex-direction:column;gap:3px;flex:1}
+.oc-shortcut-copy strong{font-size:13px;line-height:1.3;overflow-wrap:anywhere}
+.oc-shortcut-copy small{font-size:11px;line-height:1.4;color:#687389}
+.oc-shortcut-arrow{flex-shrink:0;color:#8167df}
+.overview-page .overview-grid>.panel{border:1px solid #e0e5ef;border-radius:15px;overflow:hidden;box-shadow:0 8px 24px rgba(22,30,67,.04)}
+@media(max-width:1100px){.oc-workspace-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.oc-workspace-section{padding:17px;margin:20px 0}.oc-workspace-shortcuts{grid-template-columns:1fr}.oc-workspace-shortcut{padding:14px}.overview-page .overview-head{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){.oc-workspace-shortcut,.overview-page .metric-link{transition:none}}
+
+/* Real scheduling calendar: data comes from tenant-scoped appointment records. */
+.oc-schedule-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:16px 0}
+.oc-schedule-view{display:flex;align-items:center;gap:4px;border:1px solid #e0e4ef;background:#fff;border-radius:11px;padding:4px}
+.oc-schedule-view button{border:0;background:transparent;color:#536079;padding:10px 19px;font-size:12px;font-weight:750;border-radius:8px;cursor:pointer}
+.oc-schedule-view button.active{color:#5638c8;background:#eee9ff}
+.oc-schedule-nav{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.oc-schedule-nav button{border:1px solid #dce1ed;background:#fff;color:#37415e;border-radius:8px;min-width:36px;min-height:36px;padding:7px 10px;font-size:13px;font-weight:800;cursor:pointer}
+.oc-schedule-nav button:hover{border-color:#8468dc;background:#f7f4ff}
+.oc-schedule-nav strong{font-size:12px;color:#27304d;white-space:nowrap;margin:0 4px}
+.oc-week-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid #e1e5ee;border-radius:15px;overflow:hidden;background:#fff;box-shadow:0 10px 28px rgba(18,24,70,.04)}
+.oc-calendar-day{min-width:0;border-right:1px solid #e5e8f0;display:flex;flex-direction:column}
+.oc-calendar-day:last-child{border-right:0}
+.oc-calendar-day header{padding:14px 11px;background:#f8f9fd;border-bottom:1px solid #e5e8f0;display:flex;align-items:center;flex-direction:column;gap:5px}
+.oc-calendar-day header strong{font-size:12px;color:#27324b}.oc-calendar-day header span{font-size:11px;color:#5d6a80}
+.oc-calendar-day.today header{background:#eee9ff}.oc-calendar-day.today header strong{color:#5638c8}
+.oc-calendar-events{padding:10px;min-height:250px;display:flex;flex-direction:column;gap:10px}
+.oc-calendar-event{width:100%;text-align:left;border:1px solid #e4dcff;border-left:3px solid #6a46d9;background:#f9f6ff;padding:10px 8px;border-radius:8px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;color:#27304d;cursor:pointer;overflow-wrap:anywhere}
+.oc-calendar-event:hover:not(:disabled){background:#eee7ff;border-color:#b5a5ea}
+.oc-calendar-event:disabled{cursor:default;opacity:1}
+.oc-calendar-event time{font-size:10px;font-weight:800;color:#6447cf}
+.oc-calendar-event strong{font-size:12px;font-weight:750;line-height:1.35}.oc-calendar-event small{font-size:10px;line-height:1.4;color:#5c6581}
+.oc-calendar-event .status-badge{font-size:10px;max-width:100%;overflow-wrap:anywhere}
+.oc-calendar-empty{text-align:center;font-size:11px;color:#8d95a4;margin:24px auto}
+.oc-schedule-toolbar button:focus-visible,.oc-calendar-event:focus-visible{outline:3px solid #7c60df;outline-offset:2px}
+@media(max-width:1160px){.oc-week-calendar{grid-template-columns:repeat(4,minmax(0,1fr))}.oc-calendar-day:nth-child(4){border-right:0}.oc-calendar-day:nth-child(n+5){border-top:1px solid #e5e8f0}.oc-calendar-events{min-height:130px}}
+@media(max-width:700px){.oc-week-calendar{grid-template-columns:repeat(2,minmax(0,1fr))}.oc-calendar-day:nth-child(4){border-right:1px solid #e5e8f0}.oc-calendar-day:nth-child(even){border-right:0}.oc-calendar-day:nth-child(n+3){border-top:1px solid #e5e8f0}.oc-calendar-events{min-height:100px}.oc-schedule-nav{width:100%;justify-content:space-between}.oc-schedule-nav strong{flex:1;text-align:center}}
+@media(max-width:380px){.oc-week-calendar{grid-template-columns:1fr}.oc-calendar-day{border-right:0!important;border-top:1px solid #e5e8f0}.oc-calendar-day:first-child{border-top:0}.oc-calendar-day header{flex-direction:row;justify-content:space-between}.oc-calendar-events{min-height:50px}}
+
+/* Actual reports: counts queried with exact count by organization, no mock trends. */
+.oc-report-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:22px 0 16px}
+.oc-report-item{background:#fff;border:1px solid #e1e5ef;border-radius:15px;padding:21px;box-shadow:0 8px 25px rgba(23,31,72,.045);min-width:0}
+.oc-report-item>span{display:block;font-size:13px;color:#647087;font-weight:700;margin-bottom:13px}
+.oc-report-item>strong{display:block;font-size:clamp(24px,3vw,35px);font-variant-numeric:tabular-nums;letter-spacing:-.045em;color:#1b2241;line-height:1.2;margin-bottom:18px}
+.oc-report-track{width:100%;height:9px;border-radius:999px;background:#eeeafc;overflow:hidden}
+.oc-report-track span{display:block;height:100%;background:linear-gradient(90deg,#6c41e1,#21b2bb);border-radius:999px}
+.oc-report-note{font-size:12px;color:#6b758b;line-height:1.6;margin:0 0 16px}
+@media(max-width:950px){.oc-report-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:550px){.oc-report-summary{grid-template-columns:1fr}.oc-report-item{padding:18px}}
