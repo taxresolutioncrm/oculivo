@@ -522,3 +522,31 @@ body{font-size:var(--crm-body-font)}
 @media(max-width:1100px){.oc-workspace-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.oc-workspace-section{padding:17px;margin:20px 0}.oc-workspace-shortcuts{grid-template-columns:1fr}.oc-workspace-shortcut{padding:14px}.overview-page .overview-head{flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){.oc-workspace-shortcut,.overview-page .metric-link{transition:none}}
+
+/* Real scheduling calendar: data comes from tenant-scoped appointment records. */
+.oc-schedule-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:16px 0}
+.oc-schedule-view{display:flex;align-items:center;gap:4px;border:1px solid #e0e4ef;background:#fff;border-radius:11px;padding:4px}
+.oc-schedule-view button{border:0;background:transparent;color:#536079;padding:10px 19px;font-size:12px;font-weight:750;border-radius:8px;cursor:pointer}
+.oc-schedule-view button.active{color:#5638c8;background:#eee9ff}
+.oc-schedule-nav{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.oc-schedule-nav button{border:1px solid #dce1ed;background:#fff;color:#37415e;border-radius:8px;min-width:36px;min-height:36px;padding:7px 10px;font-size:13px;font-weight:800;cursor:pointer}
+.oc-schedule-nav button:hover{border-color:#8468dc;background:#f7f4ff}
+.oc-schedule-nav strong{font-size:12px;color:#27304d;white-space:nowrap;margin:0 4px}
+.oc-week-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid #e1e5ee;border-radius:15px;overflow:hidden;background:#fff;box-shadow:0 10px 28px rgba(18,24,70,.04)}
+.oc-calendar-day{min-width:0;border-right:1px solid #e5e8f0;display:flex;flex-direction:column}
+.oc-calendar-day:last-child{border-right:0}
+.oc-calendar-day header{padding:14px 11px;background:#f8f9fd;border-bottom:1px solid #e5e8f0;display:flex;align-items:center;flex-direction:column;gap:5px}
+.oc-calendar-day header strong{font-size:12px;color:#27324b}.oc-calendar-day header span{font-size:11px;color:#5d6a80}
+.oc-calendar-day.today header{background:#eee9ff}.oc-calendar-day.today header strong{color:#5638c8}
+.oc-calendar-events{padding:10px;min-height:250px;display:flex;flex-direction:column;gap:10px}
+.oc-calendar-event{width:100%;text-align:left;border:1px solid #e4dcff;border-left:3px solid #6a46d9;background:#f9f6ff;padding:10px 8px;border-radius:8px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;color:#27304d;cursor:pointer;overflow-wrap:anywhere}
+.oc-calendar-event:hover:not(:disabled){background:#eee7ff;border-color:#b5a5ea}
+.oc-calendar-event:disabled{cursor:default;opacity:1}
+.oc-calendar-event time{font-size:10px;font-weight:800;color:#6447cf}
+.oc-calendar-event strong{font-size:12px;font-weight:750;line-height:1.35}.oc-calendar-event small{font-size:10px;line-height:1.4;color:#5c6581}
+.oc-calendar-event .status-badge{font-size:10px;max-width:100%;overflow-wrap:anywhere}
+.oc-calendar-empty{text-align:center;font-size:11px;color:#8d95a4;margin:24px auto}
+.oc-schedule-toolbar button:focus-visible,.oc-calendar-event:focus-visible{outline:3px solid #7c60df;outline-offset:2px}
+@media(max-width:1160px){.oc-week-calendar{grid-template-columns:repeat(4,minmax(0,1fr))}.oc-calendar-day:nth-child(4){border-right:0}.oc-calendar-day:nth-child(n+5){border-top:1px solid #e5e8f0}.oc-calendar-events{min-height:130px}}
+@media(max-width:700px){.oc-week-calendar{grid-template-columns:repeat(2,minmax(0,1fr))}.oc-calendar-day:nth-child(4){border-right:1px solid #e5e8f0}.oc-calendar-day:nth-child(even){border-right:0}.oc-calendar-day:nth-child(n+3){border-top:1px solid #e5e8f0}.oc-calendar-events{min-height:100px}.oc-schedule-nav{width:100%;justify-content:space-between}.oc-schedule-nav strong{flex:1;text-align:center}}
+@media(max-width:380px){.oc-week-calendar{grid-template-columns:1fr}.oc-calendar-day{border-right:0!important;border-top:1px solid #e5e8f0}.oc-calendar-day:first-child{border-top:0}.oc-calendar-day header{flex-direction:row;justify-content:space-between}.oc-calendar-events{min-height:50px}}
