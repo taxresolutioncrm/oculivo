@@ -196,6 +196,7 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
     if (!org) return
     const result = await supabase.from('team_channels').select('*').eq('organization_id',org.organizationId).order('created_at',{ascending:true})
     if (result.error) { setError(result.error.message); return }
+    setError('')
     const next = (result.data || []) as Row[]
     setChannels(next)
     if (!channelId && next[0]?.id) setChannelId(String(next[0].id))
@@ -287,7 +288,7 @@ function TeamChat({session,lang}:{session:Session;lang:'en'|'es'}) {
   }
 
   return <section className="page">
-    <div className="page-head"><div><span className="date-kicker">{lang==='es'?'CHAT DEL EQUIPO EN VIVO':'LIVE TEAM CHAT'}</span><h1>{lang==='es'?'Chat del equipo':'Team Chat'}</h1><p>{lang==='es'?'Canales del consultorio y conversaciones internas del personal.':'Practice channels and internal staff conversations.'}</p></div><button className="refresh-button" onClick={()=>void loadMessages()}><RefreshCw size={15}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>
+    <div className="page-head"><div><span className="date-kicker">{lang==='es'?'CHAT DEL EQUIPO EN VIVO':'LIVE TEAM CHAT'}</span><h1>{lang==='es'?'Chat del equipo':'Team Chat'}</h1><p>{lang==='es'?'Canales del consultorio y conversaciones internas del personal.':'Practice channels and internal staff conversations.'}</p></div><button className="refresh-button" onClick={()=>{void loadChannels();void loadMessages()}}><RefreshCw size={15}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>
     {orgLoading ? <div className="live-loading">{lang==='es'?'Cargando chat del equipo…':'Loading team chat…'}</div> : orgError ? <ErrorBox message={orgError} lang={lang}/> :
     <div className="chat-layout">
       <aside className="chat-channels">
