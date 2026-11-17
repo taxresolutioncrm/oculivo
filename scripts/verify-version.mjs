@@ -23,7 +23,8 @@ const allowed=new Set([
   'Production release history is now tracked inside Oculivo',
   'Release notes dialog added with body-level portal layering',
   'Real dashboard workspace cards now link to operational modules using existing permissions and live practice counts',
-  'Team Chat reloads channels and messages and clears stale policy errors after successful refresh'
+  'Team Chat reloads channels and messages and clears stale policy errors after successful refresh',
+  'Scheduling now includes a live seven-day calendar with previous/next week navigation and existing appointment edit controls'
 ])
 const notes=Array.from(manifest.matchAll(/^    '([^']+)'[,]?$/gm),m=>m[1])
 assert(notes.length===allowed.size&&notes.every(note=>allowed.has(note)),'Oculivo release changelog contains only verified, scoped release changes')
