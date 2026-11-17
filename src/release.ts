@@ -10,6 +10,7 @@ export const release = {
     'Release notes dialog added with body-level portal layering',
     'Real dashboard workspace cards now link to operational modules using existing permissions and live practice counts',
     'Team Chat reloads channels and messages and clears stale policy errors after successful refresh',
-    'Scheduling now includes a live seven-day calendar with previous/next week navigation and existing appointment edit controls'
+    'Scheduling now includes a live seven-day calendar with previous/next week navigation and existing appointment edit controls',
+    'Reports visualize real organization-scoped record counts with accessible comparison bars, without invented metrics'
   ]
 } as const
