@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Session } from '@supabase/supabase-js'
-import { CalendarDays, MessageSquareText, Plus, RefreshCw, Send, Users } from 'lucide-react'
+import { CalendarDays, MessageSquareText, Plus, RefreshCw, Send, Users, Glasses, CircleDollarSign, BarChart3, ArrowUpRight } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { BillingOps, ClinicalOps, DocumentsOps, OpticalOps, PatientsOps, ScheduleOps, SupportOps, TimeclockOps } from './OperationalModules'
 import { InboxComms, PhoneOps } from './CommunicationsModules'
@@ -377,8 +377,20 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
   const fmtDate=(v:any)=>v?new Date(v).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}):'—'
   const fmtTime=(v:any)=>v?new Date(v).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'—'
 
+  // Shortcuts only navigate to real modules. Metrics above remain live,
+  // organization-scoped Supabase counts rather than marketing demo figures.
+  const canUseCommunications=['owner','admin','manager','provider','staff'].includes(org?.role||'')
+  const workspaceLinks=[
+    {to:'/schedule',name:lang==='es'?'Agenda':'Scheduling',desc:lang==='es'?'Citas y disponibilidad':'Appointments and availability',Icon:CalendarDays},
+    {to:'/patients',name:lang==='es'?'Pacientes':'Patient records',desc:lang==='es'?'Perfiles e historial':'Profiles and history',Icon:Users},
+    {to:'/optical',name:lang==='es'?'Óptica':'Optical operations',desc:lang==='es'?'Inventario y pedidos':'Inventory and orders',Icon:Glasses},
+    {to:'/billing',name:lang==='es'?'Facturación':'Billing',desc:lang==='es'?'Facturas y pagos':'Invoices and payments',Icon:CircleDollarSign},
+    {to:'/reports',name:lang==='es'?'Reportes':'Reports',desc:lang==='es'?'Actividad del consultorio':'Practice activity',Icon:BarChart3},
+    ...(canUseCommunications?[{to:'/inbox',name:lang==='es'?'Bandeja':'Communications',desc:lang==='es'?'Mensajes y seguimiento':'Messages and follow-up',Icon:MessageSquareText}]:[]),
+  ]
+
   return <section className="page overview-page">
-    <div className="page-head overview-head"><div><span className="date-kicker">{lang==='es'?'DATOS EN VIVO DEL CONSULTORIO':'LIVE PRACTICE DATA'}</span><h1>{lang==='es'?'Resumen':'Overview'}</h1><p>{org ? (lang==='es'?`Esto es lo que está pasando en ${org.organizationName}.`:`Here’s what’s happening across ${org.organizationName}.`) : (lang==='es'?'Cargando tu consultorio…':'Loading your practice…')}</p></div><button className="refresh-button" onClick={()=>void load()}><RefreshCw size={15}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>
+    <div className="page-head overview-head"><div><span className="date-kicker">{lang==='es'?'DATOS EN VIVO DEL CONSULTORIO':'LIVE PRACTICE DATA'}</span><h1>{lang==='es'?'Tu consultorio, conectado':'Your practice, at a glance'}</h1><p>{org ? (lang==='es'?`Actividad real de ${org.organizationName}.`:`Live activity from ${org.organizationName}.`) : (lang==='es'?'Cargando tu consultorio…':'Loading your practice…')}</p></div><button className="refresh-button" onClick={()=>void load()}><RefreshCw size={15}/>{lang==='es'?'Actualizar':'Refresh'}</button></div>
     {orgError && <ErrorBox message={orgError} lang={lang}/>}
     {error && <ErrorBox message={error} lang={lang}/>}
     <div className="metric-grid">
@@ -387,6 +399,21 @@ export function LiveOverview({session,lang}:{session:Session;lang:'en'|'es'}) {
       {org&&['owner','admin','manager','provider','staff'].includes(org.role)&&<Link to="/inbox" className="metric-card metric-link"><div><span>{lang==='es'?'Conversaciones':'Conversations'}</span><MessageSquareText size={17}/></div><strong>{orgLoading||loading?'…':stats.conversations}</strong><p>{lang==='es'?'Abrir bandeja':'Open inbox'}</p></Link>}
       <Link to="/timeclock" className="metric-card metric-link"><div><span>{lang==='es'?'Registros de tiempo':'Time entries'}</span><CalendarDays size={17}/></div><strong>{orgLoading||loading?'…':stats.timeEntries}</strong><p>{lang==='es'?'Abrir reloj':'Open timeclock'}</p></Link>
     </div>
+
+    <section className="oc-workspace-section" aria-labelledby="oc-workspace-heading">
+      <div className="oc-workspace-title">
+        <div><span className="date-kicker">{lang==='es'?'OPERACIONES':'PRACTICE WORKSPACE'}</span>
+        <h2 id="oc-workspace-heading">{lang==='es'?'Trabaja desde un solo lugar':'Your connected workspace'}</h2>
+        <p>{lang==='es'?'Abre los módulos reales de tu consultorio.':'Open the tools that power your practice.'}</p></div>
+      </div>
+      <div className="oc-workspace-shortcuts">
+        {workspaceLinks.map(({to,name,desc,Icon})=><Link key={to} to={to} className="oc-workspace-shortcut">
+          <span className="oc-shortcut-icon"><Icon size={21}/></span>
+          <span className="oc-shortcut-copy"><strong>{name}</strong><small>{desc}</small></span>
+          <ArrowUpRight className="oc-shortcut-arrow" size={18}/>
+        </Link>)}
+      </div>
+    </section>
     <div className="overview-grid">
       <section className="panel schedule-panel">
         <div className="panel-title-row"><div><h2>{lang==='es'?'Flujo de pacientes':'Patient flow'}</h2><p>{lang==='es'?'Próximas citas del consultorio':'Upcoming appointments in this practice'}</p></div><Link to="/schedule">{lang==='es'?'Ver agenda completa':'View full schedule'}</Link></div>
