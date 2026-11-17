@@ -469,6 +469,17 @@ function ReportsPage({session,lang}:{session:Session;lang:'en'|'es'}) {
   },[org?.organizationId,sources])
 
   return <section className="page"><div className="page-head"><div><span className="date-kicker">{lang==='es'?'REPORTES EN VIVO':'LIVE REPORTING'}</span><h1>{lang==='es'?'Reportes':'Reports'}</h1><p>{lang==='es'?'Conteos actuales de registros en los flujos principales de Oculivo.':'Current record counts across core Oculivo workflows.'}</p></div></div>
-    {orgLoading?<div className="live-loading">{lang==='es'?'Cargando reportes…':'Loading reports…'}</div>:orgError?<ErrorBox message={orgError} lang={lang}/>:error?<ErrorBox message={error} lang={lang}/>:<div className="report-grid">{sources.map(([label])=><article className="panel report-card" key={label}><span>{label}</span><strong>{counts[label]??0}</strong></article>)}</div>}
+    {orgLoading?<div className="live-loading">{lang==='es'?'Cargando reportes…':'Loading reports…'}</div>:orgError?<ErrorBox message={orgError} lang={lang}/>:error?<ErrorBox message={error} lang={lang}/>:<>
+      <div className="oc-report-summary" aria-label={lang==='es'?'Registros por módulo':'Records by module'}>
+        {sources.map(([label,table])=><article className="oc-report-item" key={table}>
+          <span>{label}</span>
+          <strong>{(counts[label]??0).toLocaleString()}</strong>
+          <div className="oc-report-track" role="img" aria-label={lang==='es'?('Registros: '+(counts[label]??0)):('Records: '+(counts[label]??0))}>
+            <span style={{width:((counts[label]??0)/Math.max(1,...sources.map(([sourceLabel])=>counts[sourceLabel]??0))*100)+'%'}}/>
+          </div>
+        </article>)}
+      </div>
+      <p className="oc-report-note">{lang==='es'?'Los gráficos comparan el número actual de registros visibles en cada módulo, no los ingresos ni las tendencias históricas.':'Bars compare live record counts across modules, not revenue or historical trends.'}</p>
+    </>}
   </section>
 }
