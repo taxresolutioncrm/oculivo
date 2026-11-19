@@ -1,0 +1,241 @@
+/*
+ * Oculivo unified interface — all 16 navigation destinations.
+ * Explicit component-level styles with restrained scope; keep existing
+ * routing, RLS, role gating, Supabase queries and integrations unchanged.
+ */
+:root {
+ --oc-page-bg:#f4f6fb;
+ --oc-card:#ffffff;
+ --oc-card-edge:#dce3f0;
+ --oc-heading:#121c36;
+ --oc-body:#42516b;
+ --oc-soft:#f8f9fd;
+ --oc-violet:#653bdb;
+ --oc-teal:#12aaa9;
+ --oc-radius:16px;
+ --oc-shadow:0 7px 26px rgba(25,35,78,.055);
+}
+.app-shell{background:var(--oc-page-bg)}
+.app-main{min-width:0}
+.page{padding-top:30px}
+.page-head{align-items:center;margin-bottom:24px}
+.page h1,.oc-esign-page h1{font-weight:800}
+.page-head p{max-width:760px}
+.page>section:not(.page-head),.page>div{min-width:0}
+.panel,.wf-card,.wf-row,.metric-card,.record-card,.oc-workspace-section,.oc-report-item{background:var(--oc-card);border-color:var(--oc-card-edge);box-shadow:var(--oc-shadow)}
+.panel-title-row{min-height:62px;align-items:center}
+.panel-title-row h2{font-size:16px}
+.panel-title-row p{font-size:12px}
+.panel-title-row a{font-size:12px}
+.live-panel{padding:20px}
+.live-loading,.live-empty,.live-error{font-size:14px}
+.live-empty{min-height:220px;gap:7px}
+.live-empty strong,.live-error strong{font-size:15px}
+.live-empty p,.live-error p{font-size:13px;line-height:1.65}
+.record-list{gap:12px}
+.record-card{padding:18px}
+.record-card-head strong{font-size:15px}
+.record-card-head span{font-size:12px}
+.record-fields{gap:12px 18px}
+.record-fields span{font-size:11px}
+.record-fields b{font-size:13px;overflow-wrap:anywhere}
+.status-badge,.ready-pill{font-size:12px!important;padding:6px 10px}
+.refresh-button{font-size:13px!important;min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 14px}
+.wf-head{margin-bottom:20px}
+.wf-head h2{font-size:24px}
+.wf-head p{font-size:14px}
+.wf-head>span{font-size:13px}
+.wf-primary{background:var(--oc-violet);border-radius:10px;box-shadow:0 5px 13px rgba(101,59,219,.13)}
+.wf-primary:not(:disabled):hover{background:#4c27c2}
+.wf-primary:disabled{cursor:not-allowed}
+.wf-card,.wf-row{transition:border-color .15s,box-shadow .15s}
+.wf-card:hover,.wf-row:hover{border-color:#c4b9ec;box-shadow:0 10px 28px rgba(24,27,74,.075)}
+.wf-card h3,.wf-row h3{font-size:15px}
+.wf-card p,.wf-row p{font-size:13px}
+.wf-empty{padding:23px;border-radius:14px;min-height:110px;justify-content:center;gap:7px}
+.wf-empty strong{font-size:15px}
+.wf-empty span{font-size:13px;line-height:1.6}
+.wf-tabs{gap:5px}
+.wf-tabs button{font-size:13px!important;padding:10px 16px!important;min-height:40px}
+.wf-field>span{font-size:13px}
+.wf-field input,.wf-field select,.wf-field textarea{font-size:14px;min-height:44px}
+.wf-form{gap:17px}
+.wf-modal>header h2{font-size:20px}
+.wf-modal>header button{min-width:40px;min-height:40px}
+.clinical-mini{gap:10px}
+.clinical-mini span{font-size:12px!important;padding:11px}
+.clinical-mini b{font-size:13px!important}
+.patient-grid{gap:15px}
+.patient-card{border-radius:15px}
+.patient-card-name h3{font-size:17px!important}
+.patient-card-name span,.patient-card-facts span,.patient-open-label{font-size:12px!important}
+.patient-profile-identity h2{font-size:24px}
+.patient-info-grid span,.patient-notes-panel>span,.patient-activity-head span{font-size:12px!important}
+.patient-info-grid strong,.patient-contact-panel strong{font-size:14px!important}
+.patient-contact-panel span,.patient-notes-panel p,.patient-activity-item small{font-size:12px!important}
+.patient-linked-grid span{font-size:12px!important}
+.patient-activity-item span{font-size:11px!important}
+.patient-activity-item strong{font-size:13px!important}
+.oc-workspace-section{padding:27px}
+.oc-workspace-title h2{font-size:clamp(23px,2.3vw,30px)}
+.oc-workspace-shortcut{min-height:92px}
+.oc-workspace-shortcut strong{font-size:15px}
+.oc-workspace-shortcut small{font-size:12px}
+.oc-report-summary{gap:16px}
+.oc-report-item{min-height:167px;padding:24px}
+.oc-report-item>span{font-size:14px}
+.oc-report-item>strong{font-size:36px}
+.oc-report-track{height:7px}
+.oc-report-note{font-size:13px;color:var(--oc-body);padding:8px 3px}
+/* Communications and phone: intentional desktop split, no full-screen blank panel */
+.oc-inbox-page,.oc-phone-page,.oc-email-page{min-width:0}
+.oc-inbox-page .inbox-workspace,.oc-phone-page .phone-workspace{grid-template-columns:minmax(250px,310px) minmax(0,1fr);gap:15px}
+.oc-inbox-page .inbox-workspace{min-height:530px}
+.oc-inbox-page .inbox-thread-list,.oc-phone-page .inbox-thread-list,
+.oc-email-recipients{background:#fff;border:1px solid var(--oc-card-edge);border-radius:15px;padding:9px;overflow-y:auto}
+.inbox-thread-list button{min-height:60px;padding:12px 13px;gap:7px;border-radius:10px}
+.inbox-thread-list strong{font-size:13px!important}
+.inbox-thread-list span{font-size:12px!important}
+.inbox-thread-list button.active{background:#f0ecff;box-shadow:inset 3px 0 0 var(--oc-violet)}
+.inbox-thread{border:1px solid var(--oc-card-edge);border-radius:15px;overflow:hidden}
+.inbox-thread>header{min-height:76px;padding:17px 22px;display:flex;align-items:center}
+.inbox-thread h3{font-size:17px!important;line-height:1.35;overflow-wrap:anywhere}
+.inbox-thread header span{font-size:12px!important}
+.inbox-messages{min-height:260px;padding:24px;background:linear-gradient(180deg,#fff 0%,#fcfcff 100%)}
+.message-bubble{border:1px solid #e4e8f1;max-width:min(80%,740px);padding:14px 17px;border-radius:14px}
+.message-bubble.outbound{border-color:#dfd4fc;background:#f1edff}
+.message-bubble strong{font-size:13px!important}
+.message-bubble span{font-size:11px!important}
+.message-bubble p{font-size:14px!important;line-height:1.6}
+.inbox-compose{padding:14px;display:flex;align-items:end;gap:12px}
+.inbox-compose textarea{flex:1;min-width:0;resize:vertical;max-height:170px;min-height:56px;border:1px solid #d5dce9;border-radius:10px;background:white;padding:13px;font:inherit;font-size:14px}
+.inbox-compose button{min-height:44px;padding:0 19px;border-radius:10px;font-size:13px}
+.inbox-readonly-note{font-size:12px!important;line-height:1.65;padding:13px 16px}
+.phone-dialer-card{min-height:500px;padding:24px;background:#fff;justify-content:flex-start;padding-top:35px}
+.phone-orb{height:68px;width:68px;border-radius:22px}
+.phone-dialer-card h2{font-size:29px;margin:5px 0}
+.phone-dialer-card>p{font-size:14px;line-height:1.6;max-width:480px}
+.phone-mic-note{font-size:12px;line-height:1.6;justify-content:center;text-align:center}
+.fax-send-card{width:min(100%,510px);padding:18px 20px;margin-top:23px;background:#f9faff;text-align:left}
+.fax-send-card strong{font-size:15px}
+.fax-send-card p{font-size:13px}
+.fax-send-card input[type=file]{padding:11px;background:#fff;border:1px solid #dce2ef;border-radius:9px}
+/* Email campaign has its own composition, not the generic messaging thread layout */
+.oc-email-head{padding:22px 25px;background:#fff;border:1px solid var(--oc-card-edge);border-radius:15px;box-shadow:var(--oc-shadow)}
+.oc-email-count{border-radius:99px;background:#f0ebff;color:#5532c0;padding:8px 14px;font-weight:800;white-space:nowrap}
+.oc-email-workspace{grid-template-columns:minmax(265px,335px) minmax(0,1fr);min-height:590px;gap:17px}
+.oc-email-recipients{max-height:680px!important;padding:0;min-height:420px}
+.oc-email-recipient-tools{padding:18px;border-bottom:1px solid #e4e8f2;background:#fafbff;display:grid;gap:10px}
+.oc-email-recipient-tools input{width:100%;height:43px;padding:10px 12px;border:1px solid #cfd7e5;border-radius:9px;font-size:14px}
+.oc-email-recipient-tools .refresh-button{width:100%;margin:0!important}
+.oc-email-recipient{display:flex;align-items:center;gap:12px;padding:15px;border-bottom:1px solid #edf0f6;cursor:pointer;transition:background .13s}
+.oc-email-recipient:hover{background:#faf8ff}
+.oc-email-recipient:has(input:checked){background:#f2efff}
+.oc-email-recipient input[type=checkbox]{width:18px;height:18px;accent-color:#643bdb;flex:0 0 auto}
+.oc-email-recipient strong{font-size:14px;line-height:1.4}
+.oc-email-recipient span{display:block;font-size:12px;line-height:1.5;overflow-wrap:anywhere;color:#65728a}
+.oc-email-recipient small{font-size:12px}
+.oc-email-editor{min-height:590px}
+.oc-email-editor-inner{padding:25px 28px;display:grid;align-content:start;gap:17px}
+.oc-email-field{display:grid;gap:9px;margin:0}
+.oc-email-field strong{font-size:13px;color:#283651}
+.oc-email-field input,.oc-email-field textarea{width:100%;border:1px solid #d2daea;background:#fff;border-radius:10px;padding:13px 15px;font-family:inherit;font-size:14px;line-height:1.6;color:#1b2740}
+.oc-email-field input{min-height:46px}
+.oc-email-message-field textarea{min-height:245px;max-height:550px;resize:vertical}
+.oc-email-editor .inbox-readonly-note{border:1px solid #e0e5ef;border-radius:10px;background:#f8faff;margin:0}
+.oc-email-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.oc-email-actions>input{height:43px;flex:1 1 200px;padding:11px 13px;border:1px solid #cfd8e6;border-radius:9px;font-size:14px;min-width:0}
+.oc-email-actions>button{white-space:nowrap}
+/* Team chat: better hierarchy and readable message composer */
+.chat-layout{grid-template-columns:minmax(220px,255px) minmax(0,1fr);gap:15px}
+.chat-channels{background:#16172e;padding:15px;min-height:510px;border-radius:15px}
+.chat-channel-title{font-size:14px}
+.chat-channel-title button{min-height:37px;font-size:12px}
+.chat-channels>button{min-height:44px;padding:11px 13px;font-size:13px}
+.chat-main{min-height:510px;border:1px solid var(--oc-card-edge);border-radius:15px;overflow:hidden;background:#fff}
+.chat-messages{padding:22px;gap:12px}
+.chat-message{padding:13px 16px;max-width:75%;border:1px solid #e5e8f0}
+.chat-message.mine{border-color:#e2d7ff}
+.chat-message strong{font-size:13px}
+.chat-message span{font-size:11px}
+.chat-message p{font-size:14px;line-height:1.65}
+.chat-compose{padding:15px}
+.chat-compose input{font-size:14px;min-height:47px;padding:12px 15px}
+.chat-compose button{font-size:13px;min-height:47px;padding:0 18px}
+/* Timeclock, billing lines, optical inventory and documents */
+.timeclock-hero{min-height:138px;padding:25px 28px}
+.timeclock-hero h2{font-size:27px}
+.invoice-lines{padding:16px;gap:12px}
+.invoice-lines-head strong{font-size:14px}
+.invoice-lines-head button{font-size:12px;min-height:35px;padding:8px 12px}
+.invoice-line input{font-size:13px;min-height:40px;padding:9px 11px}
+.invoice-line b{font-size:13px}
+.invoice-line button{width:38px;height:38px}
+/* E-sign: replace the prototype-like bare inputs with a consistent envelope workspace */
+.oc-esign-page{padding:32px clamp(18px,3vw,42px) 52px;max-width:1540px;margin:auto;color:var(--oc-heading)}
+.oc-esign-heading{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:24px}
+.oc-esign-heading h1{font-size:clamp(27px,2.7vw,36px);letter-spacing:-.04em;margin:5px 0 6px}
+.oc-esign-heading p{font-size:14px;color:var(--oc-body);line-height:1.6;margin:0}
+.oc-esign-audit{font-size:12px;color:#5631b7;background:#f0ebff;border:1px solid #e4dcff;border-radius:99px;padding:9px 13px;font-weight:750}
+.oc-esign-grid{display:grid;grid-template-columns:minmax(340px,.94fr) minmax(0,1.06fr);gap:18px;align-items:start}
+.oc-esign-panel{background:#fff;border:1px solid var(--oc-card-edge);border-radius:15px;padding:25px;box-shadow:var(--oc-shadow);min-width:0}
+.oc-esign-panel h2{font-size:20px!important;letter-spacing:-.025em;margin:0 0 20px!important}
+.oc-esign-fields{display:grid;gap:14px}
+.oc-esign-fields input:not([type=checkbox]),.oc-esign-fields select{width:100%;min-width:0;min-height:45px;padding:11px 13px;border:1px solid #cfd7e5;border-radius:9px;background:#fff;font-size:14px;color:#1b2640}
+.oc-esign-fields input[type=file]{min-height:50px;padding:11px;background:#f9faff}
+.oc-esign-field-controls{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(65px,.5fr) minmax(0,1.3fr) auto;gap:9px;align-items:center}
+.oc-esign-fields button,.oc-esign-envelope-actions button{min-height:40px;border-radius:9px;padding:9px 13px;font-size:13px;cursor:pointer}
+.oc-esign-added-fields{display:flex;gap:7px;flex-wrap:wrap}
+.oc-esign-added-fields>div{font-size:13px!important;border-radius:9px;padding:8px 10px!important;background:#f7f6ff;border:1px solid #e8e1ff}
+.oc-esign-send{width:100%;height:46px;box-shadow:0 5px 16px rgba(100,54,220,.17);font-size:14px!important;font-weight:800}
+.oc-esign-envelope{padding:18px!important;border-radius:12px!important;border-color:#e1e5ee!important;background:#fcfdff;margin-bottom:9px}
+.oc-esign-envelope>div:first-child strong{font-size:14px}
+.oc-esign-envelope>div:first-child span{font-size:12px;overflow-wrap:anywhere}
+.oc-esign-envelope-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.oc-esign-envelope-actions button{background:#fff!important;color:#4b347d;border:1px solid #d9d3e9!important}
+.oc-esign-envelope-actions button:hover{background:#f2eeff!important}
+.oc-esign-panel>p{font-size:14px;line-height:1.6}
+/* All tools require accessible focus and pointer hit targets */
+:is(.wf-primary,.refresh-button,.inbox-thread-list button,.chat-channels button,.oc-email-actions button,.oc-esign-fields button,.oc-esign-envelope-actions button):focus-visible{outline:3px solid #7d5ee7;outline-offset:2px}
+button:disabled{cursor:not-allowed;opacity:.55}
+@media(max-width:1120px){
+ .oc-esign-grid{grid-template-columns:1fr}
+ .oc-email-workspace{grid-template-columns:minmax(225px,.36fr) minmax(0,.64fr)}
+ .oc-inbox-page .inbox-workspace,.oc-phone-page .phone-workspace{grid-template-columns:minmax(205px,.33fr) minmax(0,.67fr)}
+ .oc-esign-panel{padding:22px}
+}
+@media(max-width:860px){
+ .oc-email-workspace,.oc-inbox-page .inbox-workspace,.oc-phone-page .phone-workspace,.chat-layout{grid-template-columns:1fr}
+ .oc-email-recipients{min-height:0;max-height:270px!important}
+ .oc-email-editor{min-height:0}
+ .oc-inbox-page .inbox-thread-list,.oc-phone-page .inbox-thread-list{max-height:250px}
+ .oc-inbox-page .inbox-thread{min-height:430px}
+ .oc-phone-page .phone-dialer-card{min-height:430px}
+ .chat-channels{min-height:0}
+ .chat-main{min-height:440px}
+ .oc-esign-field-controls{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:600px){
+ .oc-email-head{padding:17px;align-items:flex-start}
+ .oc-email-editor-inner{padding:17px}
+ .oc-email-actions>input{flex-basis:100%}
+ .oc-email-actions>button{flex:1}
+ .oc-esign-page{padding:20px 14px 36px}
+ .oc-esign-panel{padding:17px}
+ .oc-esign-grid{grid-template-columns:minmax(0,1fr)}
+ .oc-esign-field-controls{grid-template-columns:1fr 1fr}
+ .oc-inbox-page .inbox-workspace{min-height:0}
+ .inbox-messages{padding:14px}
+ .message-bubble{max-width:93%}
+ .inbox-compose{flex-wrap:wrap}
+ .inbox-compose textarea{flex-basis:100%}
+ .chat-messages{padding:13px}
+ .chat-message{max-width:93%}
+ .chat-compose{padding:10px}
+ .report-grid,.oc-report-summary{grid-template-columns:1fr}
+ .oc-workspace-section{padding:18px}
+ .oc-report-item{padding:18px;min-height:140px}
+ .invoice-line{grid-template-columns:minmax(0,1fr) 60px 65px 60px 32px;gap:4px}
+ .invoice-line input{font-size:12px;padding:8px 5px}
+}
+@media(prefers-reduced-motion:reduce){.wf-card,.wf-row,.oc-email-recipient{transition:none}}

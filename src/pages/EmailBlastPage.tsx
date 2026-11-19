@@ -73,21 +73,21 @@ export default function EmailBlastPage({lang}:{lang:'en'|'es'}){
     setNotice(lang==='es'?'Envío completo: '+sent+' enviados'+(failed?', '+failed+' fallidos':'')+'.':'Blast complete: '+sent+' sent'+(failed?', '+failed+' failed':'')+'.')
   }
 
-  return <section>
-    <div className="wf-head"><div><h2>{lang==='es'?'Envío masivo':'Email Blast'}</h2><p>{lang==='es'?'Correo masivo por consultorio con selección de pacientes y registro en comunicaciones.':'Practice-scoped bulk email with patient selection and communications logging.'}</p></div><span>{selected.size} {lang==='es'?'seleccionados':'selected'}</span></div>
+  return <section className="oc-email-page" aria-label={lang==='es'?'Envío masivo':'Email Blast'}>
+    <div className="wf-head oc-email-head"><div><h2>{lang==='es'?'Envío masivo':'Email Blast'}</h2><p>{lang==='es'?'Correo masivo por consultorio con selección de pacientes y registro en comunicaciones.':'Practice-scoped bulk email with patient selection and communications logging.'}</p></div><span className="oc-email-count" aria-live="polite">{selected.size} {lang==='es'?'seleccionados':'selected'}</span></div>
     {error&&<div className="wf-alert">{error}</div>}{notice&&<div className="wf-alert">{notice}</div>}
-    <div className="inbox-workspace">
-      <aside className="inbox-thread-list" style={{maxHeight:620,overflow:'auto'}}>
-        <div style={{padding:12,borderBottom:'1px solid var(--border)'}}><input style={{width:'100%'}} value={search} onChange={e=>setSearch(e.target.value)} placeholder={lang==='es'?'Buscar pacientes…':'Search patients…'}/><button className="refresh-button" style={{marginTop:8,width:'100%'}} onClick={toggleAll}>{all?(lang==='es'?'Limpiar visibles':'Clear visible'):(lang==='es'?'Seleccionar visibles':'Select visible')}</button></div>
-        {filtered.map(row=><label key={row.id} style={{display:'flex',gap:9,alignItems:'center',padding:'10px 12px',cursor:'pointer',borderBottom:'1px solid var(--border)'}}><input type="checkbox" checked={selected.has(row.id)} onChange={()=>setSelected(current=>{const next=new Set(current);next.has(row.id)?next.delete(row.id):next.add(row.id);return next})}/><div style={{minWidth:0,flex:1}}><strong style={{display:'block'}}>{nameOf(row)}</strong><span>{row.email}</span></div><small>{status[row.id]||''}</small></label>)}
+    <div className="inbox-workspace oc-email-workspace">
+      <aside className="inbox-thread-list oc-email-recipients" aria-label={lang==='es'?'Destinatarios':'Recipients'}>
+        <div className="oc-email-recipient-tools"><input aria-label={lang==='es'?'Buscar pacientes':'Search patients'} value={search} onChange={e=>setSearch(e.target.value)} placeholder={lang==='es'?'Buscar pacientes…':'Search patients…'}/><button className="refresh-button" style={{marginTop:8,width:'100%'}} onClick={toggleAll}>{all?(lang==='es'?'Limpiar visibles':'Clear visible'):(lang==='es'?'Seleccionar visibles':'Select visible')}</button></div>
+        {filtered.map(row=><label key={row.id} className="oc-email-recipient"><input type="checkbox" checked={selected.has(row.id)} onChange={()=>setSelected(current=>{const next=new Set(current);next.has(row.id)?next.delete(row.id):next.add(row.id);return next})}/><div style={{minWidth:0,flex:1}}><strong style={{display:'block'}}>{nameOf(row)}</strong><span>{row.email}</span></div><small>{status[row.id]||''}</small></label>)}
         {!filtered.length&&<div className="inbox-empty">{lang==='es'?'No hay destinatarios elegibles.':'No eligible recipients.'}</div>}
       </aside>
-      <div className="inbox-thread">
-        <div style={{padding:18}}>
-          <label style={{display:'grid',gap:6,marginBottom:14}}><strong>{lang==='es'?'Asunto':'Subject'}</strong><input value={subject} onChange={e=>setSubject(e.target.value)} placeholder={lang==='es'?'Asunto — admite variables':'Subject — supports merge fields'}/></label>
-          <label style={{display:'grid',gap:6}}><strong>{lang==='es'?'Mensaje':'Message'}</strong><textarea rows={14} value={message} onChange={e=>setMessage(e.target.value)} placeholder={'Hi {{first_name}},\n\nYour message here…'}/></label>
+      <div className="inbox-thread oc-email-editor">
+        <div className="oc-email-editor-inner">
+          <label className="oc-email-field"><strong>{lang==='es'?'Asunto':'Subject'}</strong><input value={subject} onChange={e=>setSubject(e.target.value)} placeholder={lang==='es'?'Asunto — admite variables':'Subject — supports merge fields'}/></label>
+          <label className="oc-email-field oc-email-message-field"><strong>{lang==='es'?'Mensaje':'Message'}</strong><textarea rows={11} value={message} onChange={e=>setMessage(e.target.value)} placeholder={'Hi {{first_name}},\n\nYour message here…'}/></label>
           <p className="inbox-readonly-note">{lang==='es'?'Variables: {{first_name}}, {{last_name}}, {{name}}, {{email}}. No incluyas datos clínicos ni otra PHI en correos de marketing.':'Merge fields: {{first_name}}, {{last_name}}, {{name}}, {{email}}. Do not include clinical details or other PHI in marketing email.'}</p>
-          <div style={{display:'flex',gap:8,marginTop:14}}><input style={{flex:1}} value={testEmail} onChange={e=>setTestEmail(e.target.value)} placeholder={lang==='es'?'Correo de prueba':'Test email address'}/><button className="refresh-button" disabled={sending} onClick={()=>void sendTest()}><Send size={14}/>{lang==='es'?'Prueba':'Test'}</button><button className="wf-primary" disabled={sending||!selected.size} onClick={()=>void sendBlast()}><Send size={15}/>{sending?(lang==='es'?'Enviando…':'Sending…'):(lang==='es'?'Enviar':'Send Blast')}</button></div>
+          <div className="oc-email-actions"><input aria-label={lang==='es'?'Correo de prueba':'Test email address'} value={testEmail} onChange={e=>setTestEmail(e.target.value)} placeholder={lang==='es'?'Correo de prueba':'Test email address'}/><button className="refresh-button" disabled={sending} onClick={()=>void sendTest()}><Send size={14}/>{lang==='es'?'Prueba':'Test'}</button><button className="wf-primary" disabled={sending||!selected.size} onClick={()=>void sendBlast()}><Send size={15}/>{sending?(lang==='es'?'Enviando…':'Sending…'):(lang==='es'?'Enviar':'Send Blast')}</button></div>
         </div>
       </div>
     </div>

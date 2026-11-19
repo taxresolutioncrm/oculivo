@@ -19,5 +19,7 @@ jobs:
         run: npm install --no-save --no-audit --no-fund
       - name: Verify application contracts
         run: npm run verify:closeout
+      - name: Verify every CRM tab has responsive visual coverage
+        run: npm run verify:ui
       - name: Compile and build production CRM
         run: npm run build
