@@ -561,3 +561,109 @@ body{font-size:var(--crm-body-font)}
 .oc-report-note{font-size:12px;color:#6b758b;line-height:1.6;margin:0 0 16px}
 @media(max-width:950px){.oc-report-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:550px){.oc-report-summary{grid-template-columns:1fr}.oc-report-item{padding:18px}}
+
+/* Oculivo UI polish v3.0.2 — shared readability and consistent controls.
+   Design-only. Preserves all existing routes, tenant scoping, state and permissions. */
+:root{--oc-surface:#fff;--oc-surface-soft:#f8f9fd;--oc-border:#dfe4ef;--oc-ink:#17213c;--oc-secondary:#56627a;--oc-focus:#724de5}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{line-height:1.5}
+.app-shell{background:#f5f7fb}
+.page{max-width:1600px;padding:30px clamp(17px,2.8vw,43px) 54px}
+.page h1{font-size:clamp(27px,2.6vw,36px);line-height:1.18;letter-spacing:-.04em;color:var(--oc-ink)}
+.page-head{gap:18px;flex-wrap:wrap}
+.page-head p{font-size:14px;line-height:1.6;color:var(--oc-secondary)}
+.date-kicker{font-size:11px;line-height:1.4;letter-spacing:.11em;color:#6553a2}
+.sidebar{width:232px;background:#10112b}
+.app-main{margin-left:232px}
+.sidebar-top{height:63px;padding:0 15px}
+.practice-switch{margin:13px 12px;padding:12px}
+.practice-switch span{font-size:10px;color:#b0b2d0;letter-spacing:.05em}
+.practice-switch strong{font-size:12px;line-height:1.35;overflow-wrap:anywhere}
+.sidebar nav{padding:4px 11px;gap:3px;scrollbar-width:thin}
+.nav-item{font-size:13px;line-height:1.35;padding:11px 12px;border-radius:9px;min-height:42px}
+.nav-item:hover{background:#272442}
+.nav-item.active{background:#3b2b75;box-shadow:inset 3px 0 0 #4addd5}
+.help-card{gap:10px;padding:13px}
+.help-card strong,.user-chip strong{font-size:12px}
+.help-card small,.user-chip span{font-size:10px;color:#c0bfd4}
+.topbar{height:63px;padding:0 clamp(15px,2.8vw,35px);gap:12px}
+.searchbox{font-size:13px}
+.lang-toggle button{font-size:11px;min-height:30px;padding:6px 11px}
+.secondary-action,.icon-action,.new-patient{height:39px;font-size:12px}
+.panel,.wf-card,.wf-row,.report-card,.metric-card{border-color:var(--oc-border);border-radius:13px;box-shadow:0 5px 19px rgba(28,36,76,.035)}
+.metric-card{min-height:142px;padding:20px}
+.metric-card>div span{font-size:12px;font-weight:650}
+.metric-card p{font-size:12px;line-height:1.5;color:var(--oc-secondary)}
+.metric-card strong{font-size:clamp(26px,2.6vw,34px)}
+.table-head{font-size:11px;color:#5b657c;padding:13px 15px}
+.empty-row{font-size:13px;padding:18px 15px}
+.patient-empty strong{font-size:13px}
+.patient-empty p,.inbox-empty p{font-size:12px;line-height:1.6}
+.ready-pill{font-size:11px;padding:6px 10px}
+.panel-title-row{padding:18px}
+.panel-title-row h2{font-size:15px;letter-spacing:-.015em}
+.wf-head{gap:18px;margin-bottom:22px;flex-wrap:wrap}
+.wf-head h2{font-size:22px;line-height:1.2;letter-spacing:-.025em}
+.wf-head p{font-size:13px;line-height:1.6;color:var(--oc-secondary)}
+.wf-primary,.wf-danger{font-size:13px;min-height:42px;padding:0 16px}
+.wf-grid{gap:15px}
+.wf-card{padding:20px}
+.wf-card h3,.wf-row h3{font-size:15px;line-height:1.35}
+.wf-card p,.wf-row p{font-size:12px;line-height:1.55;color:var(--oc-secondary)}
+.wf-card footer{gap:9px;flex-wrap:wrap}
+.wf-card footer button,.wf-row>button{min-height:36px;padding:8px 12px;font-size:12px}
+.wf-list{gap:10px}
+.wf-row{padding:15px 18px;gap:14px;min-width:0}
+.wf-row:hover{border-color:#c7b8f0;background:#fdfcff}
+.wf-date{width:96px;flex-shrink:0}
+.wf-date b{font-size:12px}.wf-date span{font-size:11px}
+.wf-modal{border-radius:17px;box-shadow:0 30px 85px rgba(15,22,53,.23)}
+.wf-modal>header{height:auto;min-height:64px;padding:15px 21px;gap:14px}
+.wf-modal>header h2{font-size:19px;line-height:1.3}
+.wf-form{padding:22px;gap:16px}
+.wf-field{gap:8px}
+.wf-field>span{font-size:12px;color:#38445e}
+.wf-field input,.wf-field select,.wf-field textarea{font-size:14px;line-height:1.4;padding:11px 13px;background:#fff;border-color:#cdd5e3;min-height:43px}
+.wf-field textarea{min-height:100px}
+.wf-alert{font-size:13px;line-height:1.5}
+.clinical-mini span{font-size:11px;line-height:1.5}.clinical-mini b{font-size:12px}
+.timeclock-hero span{font-size:11px}.timeclock-hero p{font-size:13px}
+.chat-layout{grid-template-columns:minmax(215px,.32fr) minmax(0,1fr);gap:15px}
+.chat-channels{min-height:460px;padding:13px}
+.chat-channel-title{font-size:13px;line-height:1.4}
+.chat-channel-title button{font-size:12px;padding:9px}
+.chat-channels>button{font-size:13px;padding:12px 10px;min-height:40px}
+.chat-message{padding:13px 15px;border-radius:12px}
+.chat-message strong{font-size:12px}
+.chat-message span{font-size:10px}
+.chat-message p{font-size:13px;line-height:1.6}
+.chat-compose{padding:13px;gap:9px}
+.chat-compose input{font-size:14px;min-height:42px}
+.chat-compose button{font-size:12px;padding:0 15px}
+.manual-card h2{font-size:17px}.manual-card p{font-size:13px}
+.report-card span{font-size:11px}.report-card strong{font-size:32px}
+.overview-status span{font-size:12px}.overview-status b{font-size:12px}
+.oc-workspace-shortcut strong{font-size:14px}
+.oc-workspace-shortcut small{font-size:12px}
+.oc-report-item>span{font-size:13px}
+:is(a,button,input,textarea,select,[role="button"]):focus-visible{outline:3px solid var(--oc-focus);outline-offset:3px}
+:is(button,input,select,textarea){max-width:100%}
+@media(max-width:1050px){
+ .sidebar{width:218px}.app-main{margin-left:218px}
+ .chat-layout{grid-template-columns:1fr}
+ .chat-channels{min-height:auto}
+}
+@media(max-width:760px){
+ .app-main{margin-left:0}
+ .page{padding:21px 14px 35px}
+ .page-head{gap:12px}
+ .topbar{padding:0 13px}
+ .wf-grid,.wf-two,.wf-four{grid-template-columns:1fr}
+ .wf-row{flex-wrap:wrap;padding:13px}
+ .wf-date{width:auto;min-width:82px}
+ .wf-form{padding:16px}
+ .wf-head{align-items:flex-start}
+ .metric-card{padding:15px}
+ .chat-message{max-width:91%}
+}
+@media(prefers-reduced-motion:reduce){.wf-row,.metric-card,.nav-item{transition:none}}
