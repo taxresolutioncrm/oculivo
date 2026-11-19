@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "verify:closeout": "node scripts/verify-closeout.mjs && node scripts/verify-imports.mjs && node scripts/verify-deploy-config.mjs && node scripts/verify-version.mjs"
+    "verify:closeout": "node scripts/verify-closeout.mjs && node scripts/verify-imports.mjs && node scripts/verify-deploy-config.mjs && node scripts/verify-version.mjs",
+    "verify:ui": "node scripts/verify-ui-polish.mjs"
   },
   "dependencies": {
     "@signalwire/js": "4.0.0-rc.2",
