@@ -54,3 +54,10 @@ check(css.includes('@media(max-width:860px)')&&css.includes('@media(max-width:60
 check(css.includes(':focus-visible'),'Accessible keyboard focus states are provided')
 check(email.includes('aria-label=')&&esign.includes('aria-label='),'Email and e-sign composition controls retain accessible labels')
 check(!/https?:\/\//.test(css),'Polish stylesheet has no third-party visual dependencies')
+const old=read('src/index.css')
+const start=old.indexOf('.wf-head h2{font-size:22px')
+const stop=old.indexOf('/* bottom nav must never be covered',start)
+check(start>=0&&stop>start&&!/font-size:[^;}]+!important/.test(old.slice(start,stop)),
+  'Legacy small-font locks no longer override the new visual system')
+check(live.includes('oc-chat-channel-header'),'Team Chat identifies the selected channel in its conversation header')
+

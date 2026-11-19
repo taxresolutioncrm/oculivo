@@ -239,3 +239,12 @@ button:disabled{cursor:not-allowed;opacity:.55}
  .invoice-line input{font-size:12px;padding:8px 5px}
 }
 @media(prefers-reduced-motion:reduce){.wf-card,.wf-row,.oc-email-recipient{transition:none}}
+
+
+/* Channel identity makes a sparse team conversation readable at first glance. */
+.oc-chat-channel-header{min-height:82px;padding:16px 22px;border-bottom:1px solid var(--oc-card-edge);display:flex;align-items:center;justify-content:space-between;gap:14px;background:#fff}
+.oc-chat-channel-header span{font-size:10px;letter-spacing:.12em;color:#71679e;font-weight:800}
+.oc-chat-channel-header h2{font-size:18px;letter-spacing:-.02em;color:var(--oc-heading);margin:4px 0 0}
+.oc-chat-channel-header small{font-size:12px;color:var(--oc-body)}
+.chat-main .chat-messages{background:linear-gradient(180deg,#fcfcff,#fff);min-height:280px}
+@media(max-width:600px){.oc-chat-channel-header{padding:13px 15px;align-items:flex-start;flex-direction:column;gap:5px}}

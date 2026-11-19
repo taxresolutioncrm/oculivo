@@ -322,51 +322,51 @@ body{font-size:var(--crm-body-font)}
 .table-head{font-size:10px}
 .empty-row{font-size:12px}
 
-.wf-head h2{font-size:22px!important}
-.wf-head p{font-size:12px!important}
-.wf-card h3,.wf-row h3{font-size:15px!important}
-.wf-card p,.wf-row p{font-size:11.5px!important;line-height:1.5}
-.wf-card footer button,.wf-row>button{font-size:10.5px!important;padding:7px 10px!important}
-.wf-date b{font-size:11.5px!important}
-.wf-date span{font-size:10px!important}
-.wf-field>span{font-size:11.5px!important}
-.wf-field input,.wf-field select,.wf-field textarea{font-size:13px!important;padding:11px 12px!important}
-.wf-alert{font-size:11.5px!important}
-.wf-tabs button{font-size:12px!important;padding:8px 14px!important}
-.status-badge,.ready-pill{font-size:10.5px!important}
-.clinical-mini span{font-size:9.5px!important}
-.clinical-mini b{font-size:11.5px!important}
+.wf-head h2{font-size:22px}
+.wf-head p{font-size:12px}
+.wf-card h3,.wf-row h3{font-size:15px}
+.wf-card p,.wf-row p{font-size:11.5px;line-height:1.5}
+.wf-card footer button,.wf-row>button{font-size:10.5px;padding:7px 10px}
+.wf-date b{font-size:11.5px}
+.wf-date span{font-size:10px}
+.wf-field>span{font-size:11.5px}
+.wf-field input,.wf-field select,.wf-field textarea{font-size:13px;padding:11px 12px}
+.wf-alert{font-size:11.5px}
+.wf-tabs button{font-size:12px;padding:8px 14px}
+.status-badge,.ready-pill{font-size:10.5px}
+.clinical-mini span{font-size:9.5px}
+.clinical-mini b{font-size:11.5px}
 
-.patient-card-name h3{font-size:15px!important}
-.patient-card-name span{font-size:10.5px!important}
-.patient-card-facts span{font-size:10.5px!important}
-.patient-open-label{font-size:10.5px!important}
-.patient-info-grid span,.patient-notes-panel>span,.patient-activity-head span{font-size:9px!important}
-.patient-info-grid strong{font-size:12.5px!important}
-.patient-contact-panel span{font-size:9.5px!important}
-.patient-contact-panel strong{font-size:11.5px!important}
-.patient-notes-panel p{font-size:11.5px!important}
-.patient-linked-grid span{font-size:9px!important}
-.patient-linked-grid strong{font-size:17px!important}
-.patient-activity-item span{font-size:8.5px!important}
-.patient-activity-item strong{font-size:11.5px!important}
-.patient-activity-item small{font-size:9.5px!important}
+.patient-card-name h3{font-size:15px}
+.patient-card-name span{font-size:10.5px}
+.patient-card-facts span{font-size:10.5px}
+.patient-open-label{font-size:10.5px}
+.patient-info-grid span,.patient-notes-panel>span,.patient-activity-head span{font-size:9px}
+.patient-info-grid strong{font-size:12.5px}
+.patient-contact-panel span{font-size:9.5px}
+.patient-contact-panel strong{font-size:11.5px}
+.patient-notes-panel p{font-size:11.5px}
+.patient-linked-grid span{font-size:9px}
+.patient-linked-grid strong{font-size:17px}
+.patient-activity-item span{font-size:8.5px}
+.patient-activity-item strong{font-size:11.5px}
+.patient-activity-item small{font-size:9.5px}
 
-.inbox-thread-list strong{font-size:12.5px!important}
-.inbox-thread-list span{font-size:9.5px!important}
-.inbox-thread h3{font-size:14px!important}
-.inbox-thread header span{font-size:9.5px!important}
-.message-bubble strong{font-size:10.5px!important}
-.message-bubble span{font-size:8.5px!important}
-.message-bubble p{font-size:11.5px!important}
-.inbox-empty strong{font-size:13px!important}
-.inbox-empty p{font-size:11px!important}
+.inbox-thread-list strong{font-size:12.5px}
+.inbox-thread-list span{font-size:9.5px}
+.inbox-thread h3{font-size:14px}
+.inbox-thread header span{font-size:9.5px}
+.message-bubble strong{font-size:10.5px}
+.message-bubble span{font-size:8.5px}
+.message-bubble p{font-size:11.5px}
+.inbox-empty strong{font-size:13px}
+.inbox-empty p{font-size:11px}
 
-.secondary-action,.new-patient{font-size:11.5px!important}
-.searchbox{font-size:13px!important}
-.context-strip>div:first-child span{font-size:9px!important}
-.context-strip>div:first-child strong{font-size:14px!important}
-.context-strip-meta{font-size:10px!important}
+.secondary-action,.new-patient{font-size:11.5px}
+.searchbox{font-size:13px}
+.context-strip>div:first-child span{font-size:9px}
+.context-strip>div:first-child strong{font-size:14px}
+.context-strip-meta{font-size:10px}
 
 /* bottom nav must never be covered by AI/help/footer layers */
 .sidebar-nav-scroll{position:relative;z-index:5;flex:1 1 auto!important;min-height:0!important;padding-bottom:14px!important}
