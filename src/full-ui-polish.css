@@ -235,8 +235,11 @@ button:disabled{cursor:not-allowed;opacity:.55}
  .report-grid,.oc-report-summary{grid-template-columns:1fr}
  .oc-workspace-section{padding:18px}
  .oc-report-item{padding:18px;min-height:140px}
- .invoice-line{grid-template-columns:minmax(0,1fr) 60px 65px 60px 32px;gap:4px}
- .invoice-line input{font-size:12px;padding:8px 5px}
+ /* Keep billing fields legible on phones instead of compressing five editable columns. */
+ .invoice-lines{overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+ .invoice-line{min-width:540px;grid-template-columns:minmax(170px,1fr) 75px 80px 80px 38px;gap:8px}
+ .invoice-line input{font-size:14px;padding:9px 10px;min-width:0}
+ .invoice-line button{min-width:38px;min-height:40px}
 }
 @media(prefers-reduced-motion:reduce){.wf-card,.wf-row,.oc-email-recipient{transition:none}}
 
