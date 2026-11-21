@@ -60,4 +60,13 @@ const stop=old.indexOf('/* bottom nav must never be covered',start)
 check(start>=0&&stop>start&&!/font-size:[^;}]+!important/.test(old.slice(start,stop)),
   'Legacy small-font locks no longer override the new visual system')
 check(live.includes('oc-chat-channel-header'),'Team Chat identifies the selected channel in its conversation header')
+check(css.includes('overscroll-behavior-x:contain')&&css.includes('min-width:540px')&&css.includes('.invoice-line input{font-size:14px'),
+  'Mobile invoice rows remain readable and horizontally scrollable')
+check(css.includes('outline:3px solid var(--oc-violet)')&&css.includes('.page-head{gap:14px;flex-wrap:wrap}'),
+  'Shared CRM controls retain keyboard focus and responsive page heading')
+check(ops.includes('role="dialog" aria-modal="true" aria-label={title}')&&ops.includes("event.key==='Escape'")&&ops.includes('aria-label="Close dialog"'),
+  'Operational dialogs have accessible titles, close labels and Escape dismissal')
+check(ops.includes("'Remove invoice line'")&&ops.includes("'Eliminar línea de factura'"),
+  'Invoice-line removal controls have localized accessible labels')
+
 
