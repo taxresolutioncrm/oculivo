@@ -89,13 +89,13 @@ export function BillingReportsDashboard({lang,tab,onTabChange,invoices,claims,pa
       {[0,1,2,3,4].map(i=><g key={i}><line x1="44" y1={28+i*36.5} x2="660" y2={28+i*36.5} stroke="#e9eaf5" strokeWidth="1"/><text x="38" y={33+i*36.5} textAnchor="end" fontSize="12" fill="#7d8497">{'$'+Math.round((top*(4-i)/4)/1000)+'k'}</text></g>)}
       <polygon points={'44,174 '+points(revenue)+' 644,174'} fill="#9064f3" opacity=".12"/>
       <polyline points={points(revenue)} fill="none" stroke="#7745e4" strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round"/>
-      <polyline points={points(received)} fill="none" stroke="#22b8b2" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
+      <polyline points={points(received)} fill="none" stroke="#a78bea" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
       {revenue.map((v,i)=><circle key={i} cx={44+i*120} cy={y(v)} r="4.5" fill="#7745e4" stroke="white" strokeWidth="2"/>)}
       {months.map((m,i)=><text key={i} x={44+i*120} y="204" textAnchor="middle" fontSize="13" fill="#7d8497">{m.label}</text>)}
       </svg>
     </article>
     <article className="obr-panel obr-aging"><div className="obr-panel-head"><div><h2>{label(lang,'Aging Balances (A/R)','Antigüedad de saldos (C/C)')}</h2><p>{label(lang,'Outstanding receivables by age','Saldos pendientes por antigüedad')}</p></div></div>
-     <div className="obr-aging-main"><div className="obr-donut" style={{background:allDue?'conic-gradient('+(['#7d4be4','#a681f3','#23aeb3','#f4b150'].map((color,i)=>{const begin=allDue?aging.slice(0,i).reduce((a,b)=>a+b,0)/allDue*100:0;const end=allDue?aging.slice(0,i+1).reduce((a,b)=>a+b,0)/allDue*100:0;return color+' '+begin+'% '+end+'%'}).join(', '))+')':'#eceaf3'}}><div className="obr-donut-hole"><strong>{money(allDue)}</strong><small>{label(lang,'Total A/R','Total C/C')}</small></div></div>
+     <div className="obr-aging-main"><div className="obr-donut" style={{background:allDue?'conic-gradient('+(['#6132d5','#9271e9','#bcabf2','#e1d8f9'].map((color,i)=>{const begin=allDue?aging.slice(0,i).reduce((a,b)=>a+b,0)/allDue*100:0;const end=allDue?aging.slice(0,i+1).reduce((a,b)=>a+b,0)/allDue*100:0;return color+' '+begin+'% '+end+'%'}).join(', '))+')':'#eceaf3'}}><div className="obr-donut-hole"><strong>{money(allDue)}</strong><small>{label(lang,'Total A/R','Total C/C')}</small></div></div>
       <div className="obr-aging-legend">{aging.map((v,i)=><div key={i}><span><i className={'obr-age-dot age-'+i}/>{['0–30','31–60','61–90','90+'][i]} {label(lang,'days','días')}</span><strong>{money(v)}</strong><small>{allDue?Math.round(v/allDue*100):0}%</small></div>)}</div>
      </div>
     </article>
