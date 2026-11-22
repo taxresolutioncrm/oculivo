@@ -72,7 +72,7 @@ export function BillingReportsDashboard({lang,tab,onTabChange,invoices:recentInv
  const loading=baseLoading||historyLoading
 
  const [period,setPeriod]=useState('6')
- const [showAll,setShowAll]=useState(false)
+ const [transactionLimit,setTransactionLimit]=useState(5)
  const today=new Date()
  const start=useMemo(()=>{const d=new Date();if(period==='30')d.setDate(d.getDate()-30);else d.setMonth(d.getMonth()-Number(period));return d},[period])
  const within=(r:RecordRow)=>{const d=timestamp(r);return d!==null&&d>=start}
@@ -116,7 +116,7 @@ export function BillingReportsDashboard({lang,tab,onTabChange,invoices:recentInv
    if(['paid','approved','completed'].includes(String(r.status||'').toLowerCase()))acc[key].paid++
    return acc
  },{})).map(([name,value])=>({name,...value})).sort((a,b)=>b.billed-a.billed).slice(0,5)
- const recent=[...scopedPayments].sort((a,b)=>(timestamp(b)?.getTime()||0)-(timestamp(a)?.getTime()||0)).slice(0,showAll?undefined:5)
+ const recent=[...scopedPayments].sort((a,b)=>(timestamp(b)?.getTime()||0)-(timestamp(a)?.getTime()||0)).slice(0,transactionLimit)
  const tabs:[BillingView,string,string][]=[['overview','Overview','Resumen'],['invoices','Billing','Facturación'],['claims','Claims','Reclamaciones'],['payments','Collections','Cobros'],['reports','Reports','Informes']]
  const chartVisible=tab==='overview'||tab==='reports'
  return <section className="obr-root" aria-label={label(lang,'Billing and reports','Facturación e informes')}>
@@ -161,7 +161,7 @@ export function BillingReportsDashboard({lang,tab,onTabChange,invoices:recentInv
      <div className="obr-table-scroll"><table><thead><tr><th>{label(lang,'Payer','Aseguradora')}</th><th>{label(lang,'Billed','Facturado')}</th><th>{label(lang,'Claims','Reclamaciones')}</th><th>{label(lang,'Accepted','Aceptadas')}</th></tr></thead><tbody>{providers.map(x=><tr key={x.name}><td title={x.name}>{barLabel(x.name)}</td><td>{money(x.billed)}</td><td>{number(x.count)}</td><td><span className="obr-meter"><i style={{width:(x.count?x.paid/x.count*100:0)+'%'}}/></span>{x.count?Math.round(x.paid/x.count*100):0}%</td></tr>)}{!providers.length&&<tr><td colSpan={4} className="obr-no-data">{label(lang,'No claims in this period','No hay reclamaciones en este período')}</td></tr>}</tbody></table></div>
     </article>
    </div>
-   <article className="obr-panel obr-transactions"><div className="obr-panel-head"><div><h2>{label(lang,'Recent Transactions','Transacciones recientes')}</h2></div><button type="button" className="obr-view-all" onClick={()=>setShowAll(v=>!v)}>{showAll?label(lang,'Show fewer','Ver menos'):label(lang,'View all transactions','Ver todas las transacciones')} <ArrowUpRight size={14}/></button></div>
+   <article className="obr-panel obr-transactions"><div className="obr-panel-head"><div><h2>{label(lang,'Recent Transactions','Transacciones recientes')}</h2></div><button type="button" className="obr-view-all" onClick={()=>setTransactionLimit(v=>v===5?55:v>=scopedPayments.length?5:v+50)}>{transactionLimit===5?label(lang,'View all transactions','Ver todas las transacciones'):transactionLimit>=scopedPayments.length?label(lang,'Show fewer','Ver menos'):label(lang,'Load more transactions','Cargar más transacciones')} <ArrowUpRight size={14}/></button></div>
     <div className="obr-table-scroll"><table><thead><tr><th>{label(lang,'Date','Fecha')}</th><th>{label(lang,'Patient','Paciente')}</th><th>{label(lang,'Type','Tipo')}</th><th>{label(lang,'Payer / Method','Pagador / Método')}</th><th>{label(lang,'Amount','Monto')}</th><th>{label(lang,'Status','Estado')}</th></tr></thead><tbody>{recent.map(r=><tr key={String(r.id)}><td>{dateFmt(r)}</td><td>{patientName(r.patient_id)}</td><td>{label(lang,'Payment','Pago')}</td><td>{String(r.payment_method||'—').toUpperCase()}</td><td className="obr-amount">{money(amount(r.amount))}</td><td><span className="obr-status"><CheckCircle2 size={12}/>{label(lang,'Recorded','Registrado')}</span></td></tr>)}{!recent.length&&<tr><td colSpan={6} className="obr-no-data">{label(lang,'No payments in this period','No hay pagos en este período')}</td></tr>}</tbody></table></div>
    </article>
   </>}
