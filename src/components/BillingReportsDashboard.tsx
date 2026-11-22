@@ -86,8 +86,8 @@ export function BillingReportsDashboard({lang,tab,onTabChange,invoices:recentInv
  const paymentsMTD=sum(payments.filter(mtd),r=>amount(r.amount))
  const paymentsPrior=sum(payments.filter(priorMonth),r=>amount(r.amount))
  const claimSubmitted=(r:RecordRow)=>!['draft','void','cancelled'].includes(String(r.status||'').toLowerCase())
- const claimsMTD=claims.filter(r=>mtd(r)&&claimSubmitted(r)).length
- const claimsPrior=claims.filter(r=>priorMonth(r)&&claimSubmitted(r)).length
+ const claimsMTD=sum(claims.filter(r=>mtd(r)&&claimSubmitted(r)),r=>amount(r.billed_amount))
+ const claimsPrior=sum(claims.filter(r=>priorMonth(r)&&claimSubmitted(r)),r=>amount(r.billed_amount))
  const delta=(current:number,previous:number)=>previous>0?(current-previous)/previous*100:null
  const trend=(current:number,previous:number)=>{const change=delta(current,previous);return change===null?label(lang,'Current month','Mes actual'):(change>=0?'+':'')+change.toFixed(1)+'% '+label(lang,'vs prior month','frente al mes anterior')}
  const collected=sum(scopedPayments,r=>amount(r.amount))
@@ -129,7 +129,7 @@ export function BillingReportsDashboard({lang,tab,onTabChange,invoices:recentInv
    {history?.truncated&&<div className="obr-report-warning" role="status">{label(lang,'Some financial records exceed the report retrieval limit; totals may be incomplete.','Algunos registros superan el límite de consulta; los totales pueden estar incompletos.')}</div>}
    <div className="obr-kpis" aria-busy={loading}>
     <article className="obr-kpi"><div className="obr-kpi-top"><span className="obr-kpi-icon purple"><ReceiptText size={18}/></span><span className="obr-kpi-label">{label(lang,'Total Billed (MTD)','Total facturado (mes)')}</span></div><strong>{money(billedMTD)}</strong><small className={delta(billedMTD,billedPrior)===null?'':'obr-trend-delta'}>{trend(billedMTD,billedPrior)}</small></article>
-    <article className="obr-kpi"><div className="obr-kpi-top"><span className="obr-kpi-icon teal"><ShieldCheck size={18}/></span><span className="obr-kpi-label">{label(lang,'Claims Submitted (MTD)','Reclamaciones enviadas (mes)')}</span></div><strong>{number(claimsMTD)}</strong><small className={delta(claimsMTD,claimsPrior)===null?'':'obr-trend-delta'}>{trend(claimsMTD,claimsPrior)}</small></article>
+    <article className="obr-kpi"><div className="obr-kpi-top"><span className="obr-kpi-icon teal"><ShieldCheck size={18}/></span><span className="obr-kpi-label">{label(lang,'Claims Submitted (MTD)','Reclamaciones enviadas (mes)')}</span></div><strong>{money(claimsMTD)}</strong><small className={delta(claimsMTD,claimsPrior)===null?'':'obr-trend-delta'}>{trend(claimsMTD,claimsPrior)}</small></article>
     <article className="obr-kpi"><div className="obr-kpi-top"><span className="obr-kpi-icon purple"><CircleDollarSign size={18}/></span><span className="obr-kpi-label">{label(lang,'Collections (MTD)','Cobros (mes)')}</span></div><strong>{money(paymentsMTD)}</strong><small className={delta(paymentsMTD,paymentsPrior)===null?'':'obr-trend-delta'}>{trend(paymentsMTD,paymentsPrior)}</small></article>
     <article className="obr-kpi"><div className="obr-kpi-top"><span className="obr-kpi-icon green"><Wallet size={18}/></span><span className="obr-kpi-label">{label(lang,'AR Balance','Saldo por cobrar')}</span></div><strong>{money(allDue)}</strong><small>{label(lang,'Outstanding across all invoices','Pendiente de todas las facturas')}</small></article>
    </div>
