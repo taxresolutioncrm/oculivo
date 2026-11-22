@@ -40,7 +40,7 @@
 .obr-legends{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
 .obr-legends>span{display:flex;gap:5px;align-items:center;font-size:10px;color:#68627d;font-weight:700}
 .obr-dot,.obr-age-dot{height:8px;width:8px;display:inline-block;border-radius:50%;flex:0 0 auto}
-.obr-dot.billed{background:#784be7}.obr-dot.collected{background:#23b8af}
+.obr-dot.billed{background:#784be7}.obr-dot.collected{background:#a78bea}
 .obr-trend{display:block;width:100%;height:auto;min-height:164px;padding:2px 13px 4px 3px}
 .obr-aging-main{display:flex;align-items:center;justify-content:center;gap:21px;padding:18px 17px 24px;min-height:188px}
 .obr-donut{position:relative;border-radius:50%;width:152px;height:152px;flex:0 0 152px;display:grid;place-items:center;background:#eceaf3;box-shadow:0 0 0 7px #f7f6fb}
@@ -53,7 +53,7 @@
 .obr-aging-legend span{color:#615c73;font-size:10px;display:flex;align-items:center;gap:5px}
 .obr-aging-legend strong{font-size:10px;color:#36304c;white-space:nowrap}
 .obr-aging-legend small{font-size:10px;color:#9c97a8;text-align:right}
-.obr-age-dot.age-0{background:#7d4be4}.obr-age-dot.age-1{background:#a681f3}.obr-age-dot.age-2{background:#23aeb3}.obr-age-dot.age-3{background:#f4b150}
+.obr-age-dot.age-0{background:#6132d5}.obr-age-dot.age-1{background:#9271e9}.obr-age-dot.age-2{background:#bcabf2}.obr-age-dot.age-3{background:#e1d8f9}
 .obr-breakdown{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:14px;margin-bottom:15px}
 .obr-claims,.obr-collections,.obr-provider{min-height:225px}
 .obr-summary-line{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 16px;font-size:11px}
