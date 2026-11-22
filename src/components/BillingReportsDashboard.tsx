@@ -16,7 +16,7 @@ type Props = {
 const amount=(v:any)=>Number.isFinite(Number(v))?Math.max(0,Number(v)):0
 const money=(v:number)=>v.toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2})
 const number=(v:number)=>v.toLocaleString('en-US')
-const validDate=(v:any)=>{const d=new Date(v);return !Number.isNaN(d.getTime())?d:null}
+const validDate=(v:any)=>{if(v==null||v==='')return null;const d=new Date(v);return !Number.isNaN(d.getTime())?d:null}
 const timestamp=(r:RecordRow)=>validDate(r.created_at||r.paid_at||r.updated_at)
 const sum=(rows:RecordRow[],get:(r:RecordRow)=>number)=>rows.reduce((t,r)=>t+get(r),0)
 const outstanding=(r:RecordRow)=>Math.max(0,amount(r.subtotal||r.patient_amount)-amount(r.amount_paid))
@@ -37,8 +37,9 @@ export function BillingReportsDashboard({lang,tab,onTabChange,invoices,claims,pa
  const billedPrior=sum(invoices.filter(priorMonth),r=>amount(r.subtotal||r.patient_amount))
  const paymentsMTD=sum(payments.filter(mtd),r=>amount(r.amount))
  const paymentsPrior=sum(payments.filter(priorMonth),r=>amount(r.amount))
- const claimsMTD=claims.filter(mtd).length
- const claimsPrior=claims.filter(priorMonth).length
+ const claimSubmitted=(r:RecordRow)=>!['draft','void','cancelled'].includes(String(r.status||'').toLowerCase())
+ const claimsMTD=claims.filter(r=>mtd(r)&&claimSubmitted(r)).length
+ const claimsPrior=claims.filter(r=>priorMonth(r)&&claimSubmitted(r)).length
  const delta=(current:number,previous:number)=>previous>0?(current-previous)/previous*100:null
  const trend=(current:number,previous:number)=>{const change=delta(current,previous);return change===null?label(lang,'Current month','Mes actual'):(change>=0?'+':'')+change.toFixed(1)+'% '+label(lang,'vs prior month','frente al mes anterior')}
  const collected=sum(scopedPayments,r=>amount(r.amount))
