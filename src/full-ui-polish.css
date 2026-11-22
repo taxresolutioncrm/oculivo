@@ -235,8 +235,11 @@ button:disabled{cursor:not-allowed;opacity:.55}
  .report-grid,.oc-report-summary{grid-template-columns:1fr}
  .oc-workspace-section{padding:18px}
  .oc-report-item{padding:18px;min-height:140px}
- .invoice-line{grid-template-columns:minmax(0,1fr) 60px 65px 60px 32px;gap:4px}
- .invoice-line input{font-size:12px;padding:8px 5px}
+ /* Keep billing fields legible on phones instead of compressing five editable columns. */
+ .invoice-lines{overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+ .invoice-line{min-width:540px;grid-template-columns:minmax(170px,1fr) 75px 80px 80px 38px;gap:8px}
+ .invoice-line input{font-size:14px;padding:9px 10px;min-width:0}
+ .invoice-line button{min-width:38px;min-height:40px}
 }
 @media(prefers-reduced-motion:reduce){.wf-card,.wf-row,.oc-email-recipient{transition:none}}
 
@@ -248,3 +251,24 @@ button:disabled{cursor:not-allowed;opacity:.55}
 .oc-chat-channel-header small{font-size:12px;color:var(--oc-body)}
 .chat-main .chat-messages{background:linear-gradient(180deg,#fcfcff,#fff);min-height:280px}
 @media(max-width:600px){.oc-chat-channel-header{padding:13px 15px;align-items:flex-start;flex-direction:column;gap:5px}}
+
+/* Shared CRM polish: preserve existing brand tokens, prevent narrow-screen
+   clipping, and give all keyboard-accessible controls a consistent state. */
+.page,.oc-esign-page,.oc-email-page,.oc-inbox-page,.oc-phone-page{min-width:0}
+.page-head{gap:14px;flex-wrap:wrap}
+.page-head h1,.wf-head h2,.oc-esign-heading h1{overflow-wrap:break-word}
+.panel,.wf-card,.record-card,.patient-card,.oc-workspace-section{min-width:0}
+.wf-field input,.wf-field select,.wf-field textarea,
+.oc-email-page input,.oc-email-page textarea,
+.oc-inbox-page textarea,.oc-esign-page input,.oc-esign-page select{max-width:100%;min-width:0}
+:where(.page,.oc-esign-page,.oc-email-page,.oc-inbox-page,.oc-phone-page) :is(button,a,input,select,textarea,[role="button"]):focus-visible{
+ outline:3px solid var(--oc-violet);outline-offset:2px
+}
+:where(.page,.oc-esign-page,.oc-email-page,.oc-inbox-page,.oc-phone-page) :is(button,a,[role="button"]):not(:disabled){-webkit-tap-highlight-color:transparent}
+@media(max-width:600px){
+ .page{padding-top:20px}
+ .page-head{align-items:flex-start;margin-bottom:18px}
+ .wf-form{gap:14px}
+ .panel,.wf-card,.oc-workspace-section{max-width:100%}
+ .oc-email-actions,.oc-esign-heading{min-width:0}
+}
