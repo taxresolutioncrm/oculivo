@@ -31,6 +31,7 @@
 .obr-kpi-label{font-size:11px;line-height:1.25;font-weight:750;color:#66627c}
 .obr-kpi>strong{display:block;font-size:clamp(20px,2vw,29px);letter-spacing:-.05em;line-height:1.12;color:#1f1b40;font-weight:850;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .obr-kpi>small{font-size:10px;color:#9a95ab;display:block;margin-top:7px}
+.obr-kpi>small.obr-trend-delta{color:#24a963;font-weight:750}
 .obr-charts{display:grid;grid-template-columns:minmax(0,1.42fr) minmax(0,1fr);gap:14px;margin-bottom:15px}
 .obr-panel{padding:0;overflow:hidden}
 .obr-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:15px 17px 12px}
