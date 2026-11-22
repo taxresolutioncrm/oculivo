@@ -41,7 +41,6 @@ export function BillingReportsDashboard({lang,tab,onTabChange,invoices,claims,pa
  const claimsPrior=claims.filter(priorMonth).length
  const delta=(current:number,previous:number)=>previous>0?(current-previous)/previous*100:null
  const trend=(current:number,previous:number)=>{const change=delta(current,previous);return change===null?label(lang,'Current month','Mes actual'):(change>=0?'+':'')+change.toFixed(1)+'% '+label(lang,'vs prior month','frente al mes anterior')}
- const totalBilled=sum(scopedInv,r=>amount(r.subtotal||r.patient_amount))
  const collected=sum(scopedPayments,r=>amount(r.amount))
  const allDue=invoices.reduce((n,r)=>n+outstanding(r),0)
  const paidClaims=scopedClaims.filter(r=>['paid','approved','accepted','completed'].includes(String(r.status||'').toLowerCase()))
@@ -95,7 +94,7 @@ export function BillingReportsDashboard({lang,tab,onTabChange,invoices,claims,pa
       </svg>
     </article>
     <article className="obr-panel obr-aging"><div className="obr-panel-head"><div><h2>{label(lang,'Aging Balances (A/R)','Antigüedad de saldos (C/C)')}</h2><p>{label(lang,'Outstanding receivables by age','Saldos pendientes por antigüedad')}</p></div></div>
-     <div className="obr-aging-main"><div className="obr-donut" style={{background:'conic-gradient('+(['#7d4be4','#a681f3','#23aeb3','#f4b150'].map((color,i)=>{const begin=allDue?aging.slice(0,i).reduce((a,b)=>a+b,0)/allDue*100:0;const end=allDue?aging.slice(0,i+1).reduce((a,b)=>a+b,0)/allDue*100:0;return color+' '+begin+'% '+end+'%'}).join(', '))+')'}}><div className="obr-donut-hole"><strong>{money(allDue)}</strong><small>{label(lang,'Total A/R','Total C/C')}</small></div></div>
+     <div className="obr-aging-main"><div className="obr-donut" style={{background:allDue?'conic-gradient('+(['#7d4be4','#a681f3','#23aeb3','#f4b150'].map((color,i)=>{const begin=allDue?aging.slice(0,i).reduce((a,b)=>a+b,0)/allDue*100:0;const end=allDue?aging.slice(0,i+1).reduce((a,b)=>a+b,0)/allDue*100:0;return color+' '+begin+'% '+end+'%'}).join(', '))+')':'#eceaf3'}}><div className="obr-donut-hole"><strong>{money(allDue)}</strong><small>{label(lang,'Total A/R','Total C/C')}</small></div></div>
       <div className="obr-aging-legend">{aging.map((v,i)=><div key={i}><span><i className={'obr-age-dot age-'+i}/>{['0–30','31–60','61–90','90+'][i]} {label(lang,'days','días')}</span><strong>{money(v)}</strong><small>{allDue?Math.round(v/allDue*100):0}%</small></div>)}</div>
      </div>
     </article>
@@ -107,7 +106,7 @@ export function BillingReportsDashboard({lang,tab,onTabChange,invoices,claims,pa
     <article className="obr-panel obr-collections"><div className="obr-panel-head"><div><h2>{label(lang,'Collections','Cobros')}</h2><p>{label(lang,'Actual payments recorded','Pagos realmente registrados')}</p></div><span className="obr-kpi-icon purple"><CircleDollarSign size={18}/></span></div>
      <div className="obr-big-total">{money(collected)}</div><div className="obr-collection-metrics"><div><span>{label(lang,'Insurance / linked invoice payments','Pagos con factura vinculada')}</span><strong>{money(sum(scopedPayments.filter(r=>r.invoice_id),r=>amount(r.amount)))}</strong></div><div><span>{label(lang,'Other payments','Otros pagos')}</span><strong>{money(sum(scopedPayments.filter(r=>!r.invoice_id),r=>amount(r.amount)))}</strong></div></div>
     </article>
-    <article className="obr-panel obr-provider"><div className="obr-panel-head"><div><h2>{label(lang,'Payer Performance','Rendimiento por aseguradora')}</h2><p>{label(lang,'Insurance claims in selected period','Reclamaciones de seguros del período')}</p></div></div>
+    <article className="obr-panel obr-provider"><div className="obr-panel-head"><div><h2>{label(lang,'Provider Performance','Rendimiento de proveedores')}</h2><p>{label(lang,'Grouped by payer; provider attribution is not stored on claims','Agrupado por aseguradora; las reclamaciones no incluyen proveedor')}</p></div></div>
      <div className="obr-table-scroll"><table><thead><tr><th>{label(lang,'Payer','Aseguradora')}</th><th>{label(lang,'Billed','Facturado')}</th><th>{label(lang,'Claims','Reclamaciones')}</th><th>{label(lang,'Accepted','Aceptadas')}</th></tr></thead><tbody>{providers.map(x=><tr key={x.name}><td title={x.name}>{barLabel(x.name)}</td><td>{money(x.billed)}</td><td>{number(x.count)}</td><td><span className="obr-meter"><i style={{width:(x.count?x.paid/x.count*100:0)+'%'}}/></span>{x.count?Math.round(x.paid/x.count*100):0}%</td></tr>)}{!providers.length&&<tr><td colSpan={4} className="obr-no-data">{label(lang,'No claims in this period','No hay reclamaciones en este período')}</td></tr>}</tbody></table></div>
     </article>
    </div>
