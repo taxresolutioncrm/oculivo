@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ArrowDownRight, ArrowUpRight, CalendarDays, CheckCircle2, CircleDollarSign, Clock3, FileText, ReceiptText, ShieldCheck, Wallet } from 'lucide-react'
+import { ArrowUpRight, CalendarDays, CheckCircle2, CircleDollarSign, ReceiptText, ShieldCheck, Wallet } from 'lucide-react'
 
 type RecordRow = Record<string, any>
 type BillingView = 'overview' | 'invoices' | 'claims' | 'payments' | 'reports'
@@ -84,7 +84,7 @@ export function BillingReportsDashboard({lang,tab,onTabChange,invoices,claims,pa
       </svg>
     </article>
     <article className="obr-panel obr-aging"><div className="obr-panel-head"><div><h2>{label(lang,'Aging Balances (A/R)','Antigüedad de saldos (C/C)')}</h2><p>{label(lang,'Outstanding receivables by age','Saldos pendientes por antigüedad')}</p></div></div>
-     <div className="obr-aging-main"><div className="obr-donut" style={{background:'conic-gradient('+(['#7d4be4','#a681f3','#23aeb3','#f4b150'].map((color,i)=>{const begin=allDue?sum(aging.slice(0,i),v=>v)/allDue*100:0;const end=allDue?sum(aging.slice(0,i+1),v=>v)/allDue*100:0;return color+' '+begin+'% '+end+'%'}).join(', '))+')'}}><div className="obr-donut-hole"><strong>{money(allDue)}</strong><small>{label(lang,'Total A/R','Total C/C')}</small></div></div>
+     <div className="obr-aging-main"><div className="obr-donut" style={{background:'conic-gradient('+(['#7d4be4','#a681f3','#23aeb3','#f4b150'].map((color,i)=>{const begin=allDue?aging.slice(0,i).reduce((a,b)=>a+b,0)/allDue*100:0;const end=allDue?aging.slice(0,i+1).reduce((a,b)=>a+b,0)/allDue*100:0;return color+' '+begin+'% '+end+'%'}).join(', '))+')'}}><div className="obr-donut-hole"><strong>{money(allDue)}</strong><small>{label(lang,'Total A/R','Total C/C')}</small></div></div>
       <div className="obr-aging-legend">{aging.map((v,i)=><div key={i}><span><i className={'obr-age-dot age-'+i}/>{['0–30','31–60','61–90','90+'][i]} {label(lang,'days','días')}</span><strong>{money(v)}</strong><small>{allDue?Math.round(v/allDue*100):0}%</small></div>)}</div>
      </div>
     </article>
