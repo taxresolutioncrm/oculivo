@@ -76,7 +76,7 @@ const billingCss=read('src/billing-reports.css')
 check(read('src/main.tsx').includes("import './billing-reports.css'"),'Billing screenshot design stylesheet is loaded')
 check(read('src/components/OperationalModules.tsx').includes('BillingReportsDashboard')&&read('src/components/OperationalModules.tsx').includes("'overview'|'invoices'|'claims'|'payments'|'reports'"),
   'Billing overview is integrated without removing invoice, claims and payment workflows')
-check(['Revenue Trend','Aging Balances (A/R)','Claims Summary','Payer Performance','Recent Transactions','Last 6 Months'].every(s=>billingOverview.includes(s)),
+check(['Revenue Trend','Aging Balances (A/R)','Claims Summary','Provider Performance','Recent Transactions','Last 6 Months'].every(s=>billingOverview.includes(s)),
   'Billing screenshot sections are present and backed by financial records')
 check(billingOverview.includes("invoices.filter(within)")&&billingOverview.includes("payments.filter(within)")&&billingOverview.includes("claims.filter(within)"),
   'Billing KPIs are filtered from existing organization-scoped live records')
