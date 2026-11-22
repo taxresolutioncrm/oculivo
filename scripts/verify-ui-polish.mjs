@@ -82,3 +82,10 @@ check(billingOverview.includes("invoices.filter(within)")&&billingOverview.inclu
   'Billing KPIs are filtered from existing organization-scoped live records')
 check(['.obr-kpis','.obr-charts','.obr-breakdown','.obr-transactions','@media(max-width:600px)'].every(s=>billingCss.includes(s)),
   'Billing dashboard layout supports desktop and mobile widths')
+
+check(billingOverview.includes(".eq('organization_id',organizationId)")&&billingOverview.includes(".range(begin,begin+499)"),
+  'History pagination is organization-scoped and handles financial records beyond the standard row limit')
+check(billingOverview.includes("claimsMTD=sum(claims.filter")&&billingOverview.includes("<strong>{money(claimsMTD)}</strong>"),
+  'Submitted claims MTD displays actual claim dollar amounts rather than claim counts')
+check(read('src/App.tsx').includes("billing:'Billing & Reports'"),
+  'Billing navigation identifies the new Billing & Reports dashboard')
