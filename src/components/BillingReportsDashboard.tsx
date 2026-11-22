@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { supabase } from '../lib/supabase'
 import { ArrowUpRight, CalendarDays, CheckCircle2, CircleDollarSign, ReceiptText, ShieldCheck, Wallet } from 'lucide-react'
 
 type RecordRow = Record<string, any>
@@ -12,6 +13,8 @@ type Props = {
  payments:RecordRow[]
  patientName:(id:any)=>string
  loading:boolean
+ organizationId?:string
+ refreshKey:number
 }
 const amount=(v:any)=>Number.isFinite(Number(v))?Math.max(0,Number(v)):0
 const money=(v:number)=>v.toLocaleString('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2})
@@ -22,7 +25,52 @@ const sum=(rows:RecordRow[],get:(r:RecordRow)=>number)=>rows.reduce((t,r)=>t+get
 const outstanding=(r:RecordRow)=>Math.max(0,amount(r.subtotal||r.patient_amount)-amount(r.amount_paid))
 const barLabel=(v:string)=>v.length>16?v.slice(0,15)+'…':v
 function label(lang:Props['lang'],en:string,es:string){return lang==='es'?es:en}
-export function BillingReportsDashboard({lang,tab,onTabChange,invoices,claims,payments,patientName,loading}:Props){
+type BillingHistory={
+ organizationId:string
+ invoices:RecordRow[]
+ claims:RecordRow[]
+ payments:RecordRow[]
+ truncated:boolean
+}
+function useBillingHistory(organizationId:string|undefined,refreshKey:number){
+ const [history,setHistory]=useState<BillingHistory|null>(null)
+ const [error,setError]=useState('')
+ const [loading,setLoading]=useState(false)
+ useEffect(()=>{
+  if(!organizationId){setHistory(null);setError('');setLoading(false);return}
+  let active=true
+  setLoading(true);setError('')
+  const read=async(table:'invoices'|'insurance_claims'|'payments',columns:string)=>{
+   const rows:RecordRow[]=[]
+   for(let page=0;page<40;page++){
+    const begin=page*500
+    const result=await supabase.from(table).select(columns).eq('organization_id',organizationId).order('created_at',{ascending:false}).range(begin,begin+499)
+    if(result.error)throw new Error(result.error.message)
+    const batch=(result.data||[]) as RecordRow[]
+    rows.push(...batch)
+    if(batch.length<500)return {rows,truncated:false}
+   }
+   return {rows,truncated:true}
+  }
+  void Promise.all([
+   read('invoices','id,patient_id,invoice_number,subtotal,insurance_amount,patient_amount,amount_paid,due_date,created_at'),
+   read('insurance_claims','id,patient_id,claim_number,payer_name,billed_amount,status,created_at'),
+   read('payments','id,patient_id,invoice_id,amount,payment_method,created_at')
+  ]).then(([inv,cla,pay])=>{
+   if(!active)return
+   setHistory({organizationId,invoices:inv.rows,claims:cla.rows,payments:pay.rows,truncated:inv.truncated||cla.truncated||pay.truncated})
+  }).catch((reason:unknown)=>{if(active)setError(reason instanceof Error?reason.message:String(reason))}).finally(()=>{if(active)setLoading(false)})
+  return ()=>{active=false}
+ },[organizationId,refreshKey])
+ return {history:history?.organizationId===organizationId?history:null,error,loading}
+}
+export function BillingReportsDashboard({lang,tab,onTabChange,invoices:recentInvoices,claims:recentClaims,payments:recentPayments,patientName,loading:baseLoading,organizationId,refreshKey}:Props){
+ const {history,error:historyError,loading:historyLoading}=useBillingHistory(organizationId,refreshKey)
+ const invoices=history?.invoices||recentInvoices
+ const claims=history?.claims||recentClaims
+ const payments=history?.payments||recentPayments
+ const loading=baseLoading||historyLoading
+
  const [period,setPeriod]=useState('6')
  const [showAll,setShowAll]=useState(false)
  const today=new Date()
@@ -77,6 +125,8 @@ export function BillingReportsDashboard({lang,tab,onTabChange,invoices,claims,pa
   </div>
   <nav className="obr-tabs" aria-label={label(lang,'Billing report sections','Secciones de informes')} >{tabs.map(([id,en,es])=><button type="button" key={id} className={tab===id?'active':''} aria-current={tab===id?'page':undefined} onClick={()=>onTabChange(id)}>{label(lang,en,es)}</button>)}</nav>
   {chartVisible&&<>
+   {historyError&&<div className="obr-report-warning" role="status">{label(lang,'Complete billing history could not be loaded; figures may be incomplete.','No se pudo cargar el historial completo; las cifras pueden estar incompletas.')+' '+historyError}</div>}
+   {history?.truncated&&<div className="obr-report-warning" role="status">{label(lang,'Some financial records exceed the report retrieval limit; totals may be incomplete.','Algunos registros superan el límite de consulta; los totales pueden estar incompletos.')}</div>}
    <div className="obr-kpis" aria-busy={loading}>
     <article className="obr-kpi"><div className="obr-kpi-top"><span className="obr-kpi-icon purple"><ReceiptText size={18}/></span><span className="obr-kpi-label">{label(lang,'Total Billed (MTD)','Total facturado (mes)')}</span></div><strong>{money(billedMTD)}</strong><small className={delta(billedMTD,billedPrior)===null?'':'obr-trend-delta'}>{trend(billedMTD,billedPrior)}</small></article>
     <article className="obr-kpi"><div className="obr-kpi-top"><span className="obr-kpi-icon teal"><ShieldCheck size={18}/></span><span className="obr-kpi-label">{label(lang,'Claims Submitted (MTD)','Reclamaciones enviadas (mes)')}</span></div><strong>{number(claimsMTD)}</strong><small className={delta(claimsMTD,claimsPrior)===null?'':'obr-trend-delta'}>{trend(claimsMTD,claimsPrior)}</small></article>
