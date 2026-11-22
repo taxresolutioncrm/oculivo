@@ -2,6 +2,7 @@
 /* Billing & Reports — production data, screenshot-matched structure */
 .obr-root{color:#252444;font-size:13px;margin:0 0 24px;max-width:100%;min-width:0}
 .obr-root *{box-sizing:border-box}
+.obr-report-warning{margin:8px 0 12px;padding:10px 13px;background:#fff7e8;border:1px solid #ecd9ac;border-radius:8px;color:#79571c;font-size:11px;line-height:1.45}
 .obr-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin:0 0 15px}
 .obr-heading h1{font-size:28px;letter-spacing:-.045em;line-height:1.12;font-weight:850;color:#15132e;margin:0 0 7px}
 .obr-heading p{font-size:12px;line-height:1.5;color:#8b8b9d;margin:0}
