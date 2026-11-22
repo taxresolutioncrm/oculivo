@@ -70,3 +70,15 @@ check(ops.includes("'Remove invoice line'")&&ops.includes("'Eliminar línea de f
   'Invoice-line removal controls have localized accessible labels')
 
 
+
+const billingOverview=read('src/components/BillingReportsDashboard.tsx')
+const billingCss=read('src/billing-reports.css')
+check(read('src/main.tsx').includes("import './billing-reports.css'"),'Billing screenshot design stylesheet is loaded')
+check(read('src/components/OperationalModules.tsx').includes('BillingReportsDashboard')&&read('src/components/OperationalModules.tsx').includes("'overview'|'invoices'|'claims'|'payments'|'reports'"),
+  'Billing overview is integrated without removing invoice, claims and payment workflows')
+check(['Revenue Trend','Aging Balances (A/R)','Claims Summary','Payer Performance','Recent Transactions','Last 6 Months'].every(s=>billingOverview.includes(s)),
+  'Billing screenshot sections are present and backed by financial records')
+check(billingOverview.includes("invoices.filter(within)")&&billingOverview.includes("payments.filter(within)")&&billingOverview.includes("claims.filter(within)"),
+  'Billing KPIs are filtered from existing organization-scoped live records')
+check(['.obr-kpis','.obr-charts','.obr-breakdown','.obr-transactions','@media(max-width:600px)'].every(s=>billingCss.includes(s)),
+  'Billing dashboard layout supports desktop and mobile widths')
