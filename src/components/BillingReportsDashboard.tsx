@@ -29,9 +29,20 @@ export function BillingReportsDashboard({lang,tab,onTabChange,invoices,claims,pa
  const start=useMemo(()=>{const d=new Date();if(period==='30')d.setDate(d.getDate()-30);else d.setMonth(d.getMonth()-Number(period));return d},[period])
  const within=(r:RecordRow)=>{const d=timestamp(r);return d!==null&&d>=start}
  const scopedInv=invoices.filter(within),scopedClaims=claims.filter(within),scopedPayments=payments.filter(within)
+ const monthStart=new Date(today.getFullYear(),today.getMonth(),1)
+ const previousMonthStart=new Date(today.getFullYear(),today.getMonth()-1,1)
+ const mtd=(r:RecordRow)=>{const d=timestamp(r);return !!d&&d>=monthStart}
+ const priorMonth=(r:RecordRow)=>{const d=timestamp(r);return !!d&&d>=previousMonthStart&&d<monthStart}
+ const billedMTD=sum(invoices.filter(mtd),r=>amount(r.subtotal||r.patient_amount))
+ const billedPrior=sum(invoices.filter(priorMonth),r=>amount(r.subtotal||r.patient_amount))
+ const paymentsMTD=sum(payments.filter(mtd),r=>amount(r.amount))
+ const paymentsPrior=sum(payments.filter(priorMonth),r=>amount(r.amount))
+ const claimsMTD=claims.filter(mtd).length
+ const claimsPrior=claims.filter(priorMonth).length
+ const delta=(current:number,previous:number)=>previous>0?(current-previous)/previous*100:null
+ const trend=(current:number,previous:number)=>{const change=delta(current,previous);return change===null?label(lang,'Current month','Mes actual'):(change>=0?'+':'')+change.toFixed(1)+'% '+label(lang,'vs prior month','frente al mes anterior')}
  const totalBilled=sum(scopedInv,r=>amount(r.subtotal||r.patient_amount))
  const collected=sum(scopedPayments,r=>amount(r.amount))
- const totalClaims=sum(scopedClaims,r=>amount(r.billed_amount))
  const allDue=invoices.reduce((n,r)=>n+outstanding(r),0)
  const paidClaims=scopedClaims.filter(r=>['paid','approved','accepted','completed'].includes(String(r.status||'').toLowerCase()))
  const pendingClaims=scopedClaims.filter(r=>['pending','submitted','processing','in_review','open'].includes(String(r.status||'').toLowerCase()))
@@ -57,7 +68,7 @@ export function BillingReportsDashboard({lang,tab,onTabChange,invoices,claims,pa
    if(['paid','approved','completed'].includes(String(r.status||'').toLowerCase()))acc[key].paid++
    return acc
  },{})).map(([name,value])=>({name,...value})).sort((a,b)=>b.billed-a.billed).slice(0,5)
- const recent=[...scopedPayments].sort((a,b)=>(timestamp(b)?.getTime()||0)-(timestamp(a)?.getTime()||0)).slice(0,showAll?30:5)
+ const recent=[...scopedPayments].sort((a,b)=>(timestamp(b)?.getTime()||0)-(timestamp(a)?.getTime()||0)).slice(0,showAll?undefined:5)
  const tabs:[BillingView,string,string][]=[['overview','Overview','Resumen'],['invoices','Billing','Facturación'],['claims','Claims','Reclamaciones'],['payments','Collections','Cobros'],['reports','Reports','Informes']]
  const chartVisible=tab==='overview'||tab==='reports'
  return <section className="obr-root" aria-label={label(lang,'Billing and reports','Facturación e informes')}>
@@ -67,9 +78,9 @@ export function BillingReportsDashboard({lang,tab,onTabChange,invoices,claims,pa
   <nav className="obr-tabs" aria-label={label(lang,'Billing report sections','Secciones de informes')} >{tabs.map(([id,en,es])=><button type="button" key={id} className={tab===id?'active':''} aria-current={tab===id?'page':undefined} onClick={()=>onTabChange(id)}>{label(lang,en,es)}</button>)}</nav>
   {chartVisible&&<>
    <div className="obr-kpis" aria-busy={loading}>
-    <article className="obr-kpi"><div className="obr-kpi-top"><span className="obr-kpi-icon purple"><ReceiptText size={18}/></span><span className="obr-kpi-label">{label(lang,'Total Billed','Total facturado')}</span></div><strong>{money(totalBilled)}</strong><small>{label(lang,'In selected period','En el período seleccionado')}</small></article>
-    <article className="obr-kpi"><div className="obr-kpi-top"><span className="obr-kpi-icon teal"><ShieldCheck size={18}/></span><span className="obr-kpi-label">{label(lang,'Claims Submitted','Reclamaciones enviadas')}</span></div><strong>{money(totalClaims)}</strong><small>{number(scopedClaims.length)} {label(lang,'claims in period','reclamaciones del período')}</small></article>
-    <article className="obr-kpi"><div className="obr-kpi-top"><span className="obr-kpi-icon purple"><CircleDollarSign size={18}/></span><span className="obr-kpi-label">{label(lang,'Collections','Cobros')}</span></div><strong>{money(collected)}</strong><small>{number(scopedPayments.length)} {label(lang,'payments recorded','pagos registrados')}</small></article>
+    <article className="obr-kpi"><div className="obr-kpi-top"><span className="obr-kpi-icon purple"><ReceiptText size={18}/></span><span className="obr-kpi-label">{label(lang,'Total Billed (MTD)','Total facturado (mes)')}</span></div><strong>{money(billedMTD)}</strong><small className={delta(billedMTD,billedPrior)===null?'':'obr-trend-delta'}>{trend(billedMTD,billedPrior)}</small></article>
+    <article className="obr-kpi"><div className="obr-kpi-top"><span className="obr-kpi-icon teal"><ShieldCheck size={18}/></span><span className="obr-kpi-label">{label(lang,'Claims Submitted (MTD)','Reclamaciones enviadas (mes)')}</span></div><strong>{number(claimsMTD)}</strong><small className={delta(claimsMTD,claimsPrior)===null?'':'obr-trend-delta'}>{trend(claimsMTD,claimsPrior)}</small></article>
+    <article className="obr-kpi"><div className="obr-kpi-top"><span className="obr-kpi-icon purple"><CircleDollarSign size={18}/></span><span className="obr-kpi-label">{label(lang,'Collections (MTD)','Cobros (mes)')}</span></div><strong>{money(paymentsMTD)}</strong><small className={delta(paymentsMTD,paymentsPrior)===null?'':'obr-trend-delta'}>{trend(paymentsMTD,paymentsPrior)}</small></article>
     <article className="obr-kpi"><div className="obr-kpi-top"><span className="obr-kpi-icon green"><Wallet size={18}/></span><span className="obr-kpi-label">{label(lang,'AR Balance','Saldo por cobrar')}</span></div><strong>{money(allDue)}</strong><small>{label(lang,'Outstanding across all invoices','Pendiente de todas las facturas')}</small></article>
    </div>
    <div className="obr-charts">
